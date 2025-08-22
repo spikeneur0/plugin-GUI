@@ -325,8 +325,7 @@ bool LfpChannelDisplayInfo::isChannelNumberHidden()
 String LfpChannelDisplayInfo::getTooltip()
 {
     const bool showChannelNumbers = options->getChannelNameState();
-    const String channelString = (isChannelNumberHidden() ? ("--") : showChannelNumbers ? String (getChannelNumber() + 1)
-                                                                                        : getName());
+    const String channelString = showChannelNumbers ? String (getChannelNumber() + 1) : getName();
 
     return channelString;
 }
