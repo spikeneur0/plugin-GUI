@@ -909,37 +909,17 @@ void SyncControlButton::paintButton (Graphics& g, bool isMouseOver, bool isButto
             }
             break;
         }
-        case SyncStatus::HARP_DETECTING:
-        {
-            if (isMouseOver)
-            {
-                //LIGHT PURPLE - analyzing for Harp barcodes
-                g.setColour (Colour (200, 150, 255));
-            }
-            else
-            {
-                //DARK PURPLE - analyzing for Harp barcodes
-                g.setColour (Colour (147, 112, 219));
-            }
-            break;
-        }
         case SyncStatus::HARP_CLOCK:
         {
-            Colour harpClockColour = Colour (255, 20, 147); // Deep pink/magenta for Harp synchronization
-
-            // If the acquisition is not running, use a muted colour
-            if (! CoreServices::getAcquisitionStatus())
-                harpClockColour = harpClockColour.withAlpha (0.4f);
+            Colour harpClockColour = Colour (200, 150, 255); // Light purplse
 
             if (isMouseOver)
             {
-                // HARP PINK - slightly contrasting
-                g.setColour (harpClockColour.contrasting (0.1f));
+                g.setColour (harpClockColour);
             }
             else
             {
-                // HARP PINK
-                g.setColour (harpClockColour);
+                g.setColour (harpClockColour.darker (0.5f));
             }
             break;
         }
@@ -953,21 +933,7 @@ void SyncControlButton::paintButton (Graphics& g, bool isMouseOver, bool isButto
     
     if (node->isMainDataStream (streamKey))
     {
-        if (node->synchronizer.isHarpStream (streamKey))
-        {
-            // Main Harp stream - show both indicators
-            g.drawText ("MH", getLocalBounds().reduced (3), juce::Justification::centred);
-        }
-        else
-        {
-            // Main stream
-            g.drawText ("M", getLocalBounds().reduced (3), juce::Justification::centred);
-        }
-    }
-    else if (node->synchronizer.isHarpStream (streamKey))
-    {
-        // Harp stream (not main)
-        g.drawText ("H", getLocalBounds().reduced (3), juce::Justification::centred);
+        g.drawText ("M", getLocalBounds().reduced (3), juce::Justification::centred);
     }
 }
 
