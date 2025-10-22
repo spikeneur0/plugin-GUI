@@ -96,7 +96,7 @@ jobs:
       - name: Install test-suite
         shell: powershell
         run: |
-          git clone --branch juce8 https://github.com/open-ephys/open-ephys-python-tools.git C:\open-ephys-python-tools
+          git clone --branch main https://github.com/open-ephys/open-ephys-python-tools.git C:\open-ephys-python-tools
           cd C:\open-ephys-python-tools
           pip install -e .
           pip install psutil
