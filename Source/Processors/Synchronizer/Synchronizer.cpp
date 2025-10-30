@@ -32,7 +32,7 @@
 bool HarpDecoder::decodeBarcode(HarpBarcode& barcode, double expectedSampleRate)
 {
 
-    LOGD ("Decoding barcode...");
+    //LOGD ("Decoding barcode...");
     
     // Convert events to bit sequence
     std::array<bool, TOTAL_BITS> bits;
@@ -62,7 +62,7 @@ bool HarpDecoder::decodeBarcode(HarpBarcode& barcode, double expectedSampleRate)
     //    std::cout << bit ? 1 : 0;
     //std::cout << std::endl;
 
-    LOGD ("Bits decoded: ", bitIndex);
+    //LOGD ("Bits decoded: ", bitIndex);
     
     if (bitIndex < TOTAL_BITS) return false;
     
@@ -80,7 +80,7 @@ bool HarpDecoder::decodeBarcode(HarpBarcode& barcode, double expectedSampleRate)
     barcode.isComplete = true;
     barcode.isValid = true;
 
-    LOGD ("Found Harp barcode: ", barcode.encodedTime, " at sample ", barcode.localStartSample);
+    //LOGD ("Found Harp barcode: ", barcode.encodedTime, " at sample ", barcode.localStartSample);
     
     return true;
 }
@@ -114,11 +114,11 @@ uint32_t HarpDecoder::extractTimestamp(const std::array<bool, TOTAL_BITS>& bits)
 
 bool HarpDecoder::validateBitTiming(const HarpBarcode& barcode)
 {
-    LOGD ("Validating bit timing.");
+    //LOGD ("Validating bit timing.");
     // Check overall duration
     if (std::abs(barcode.actualDuration - EXPECTED_BARCODE_DURATION_MS) > 5.0)
     {
-        LOGD ("Overall duration more than 5 ms off.");
+        //LOGD ("Overall duration more than 5 ms off.");
         return false;
     }
         
@@ -128,20 +128,20 @@ bool HarpDecoder::validateBitTiming(const HarpBarcode& barcode)
     {
         if (std::abs(barcode.bitDurations[i] - EXPECTED_BIT_DURATION_MS) > BIT_TOLERANCE_MS)
         {
-            LOGD ("Failed tolerance for bit ", i);
+           // LOGD ("Failed tolerance for bit ", i);
             return false;
         }
             
     }
 
-    LOGD ("OK.");
+   // LOGD ("OK.");
     
     return true;
 }
 
 bool HarpDecoder::validateBarcodeStructure(const std::array<bool, TOTAL_BITS>& bits)
 {
-    LOGD ("Validating barcode structure.");
+    //LOGD ("Validating barcode structure.");
     // Check start bit (should be LOW)
     if (bits[0] != false) return false;
     
@@ -155,7 +155,7 @@ bool HarpDecoder::validateBarcodeStructure(const std::array<bool, TOTAL_BITS>& b
             return false;
     }
 
-    LOGD ("OK.");
+    //LOGD ("OK.");
     
     return true;
 }
@@ -284,20 +284,20 @@ double SyncStream::getSyncAccuracy()
     if (pulses.size() > 0)
     {
 
-        LOGD ("Sync accuracy for stream ", streamKey);
+        //LOGD ("Sync accuracy for stream ", streamKey);
 
-        LOGD ("latestSyncSampleNumber: ", latestSyncSampleNumber);
-        LOGD ("latestGlobalSyncTime: ", latestGlobalSyncTime);
-        LOGD ("globalStartTime: ", globalStartTime);
-        LOGD ("actualSampleRate: ", actualSampleRate);
-        LOGD ("baselineMatchingPulse.globalTimestamp: ", baselineMatchingPulse.globalTimestamp);
+        //LOGD ("latestSyncSampleNumber: ", latestSyncSampleNumber);
+        //LOGD ("latestGlobalSyncTime: ", latestGlobalSyncTime);
+        //LOGD ("globalStartTime: ", globalStartTime);
+        //LOGD ("actualSampleRate: ", actualSampleRate);
+        //LOGD ("baselineMatchingPulse.globalTimestamp: ", baselineMatchingPulse.globalTimestamp);
 
         // NEW CALCULATION:
         double estimatedGlobalTime = double(latestSyncSampleNumber - baselineMatchingPulse.localSampleNumber)
                                          / actualSampleRate
                                      + (baselineMatchingPulse.globalTimestamp);
-        LOGD ("estimatedGlobalTime: ", estimatedGlobalTime);
-        LOGD ("difference: ", latestGlobalSyncTime - estimatedGlobalTime);
+        //LOGD ("estimatedGlobalTime: ", estimatedGlobalTime);
+        //LOGD ("difference: ", latestGlobalSyncTime - estimatedGlobalTime);
 
         return (estimatedGlobalTime - latestGlobalSyncTime) * 1000;
     }
@@ -309,8 +309,8 @@ double SyncStream::getSyncAccuracy()
 
 void SyncStream::syncWith (const SyncStream* mainStream)
 {
-    LOGD ("Synchronizing ", streamKey, " with ", mainStream->streamKey, "...");
-    LOGD ("Expected sample rate: ", expectedSampleRate);
+    //LOGD ("Synchronizing ", streamKey, " with ", mainStream->streamKey, "...");
+    //LOGD ("Expected sample rate: ", expectedSampleRate);
 
     if (mainStream->pulses.size() < 2 || pulses.size() < 2)
     {
@@ -511,7 +511,7 @@ void SyncStream::processHarpEvent(int64 sampleNumber, bool state)
 
         if (timeSinceLastEvent > 0.5)
         {
-                LOGD ("COMPLETED BARCODE.");
+                //LOGD ("COMPLETED BARCODE.");
                 completedBarcodes.push_back (currentBarcode);
                 currentBarcode = {};
         }
@@ -521,7 +521,7 @@ void SyncStream::processHarpEvent(int64 sampleNumber, bool state)
 
     if (currentBarcode.localStartSample == 0)
     {
-        LOGD ("STARTING NEW BARCODE COLLECTION.");
+        //LOGD ("STARTING NEW BARCODE COLLECTION.");
         currentBarcode.localStartSample = sampleNumber;
         currentBarcode.localStartTimestamp = double (sampleNumber) / expectedSampleRate;
         currentBarcode.computerTimeMillis = Time::currentTimeMillis();
@@ -567,12 +567,12 @@ bool SyncStream::validateBarcodeTimestamp(const HarpBarcode& barcode)
         auto& lastBarcode = completedBarcodes[completedBarcodes.size() - 2];
         if (barcode.encodedTime != lastBarcode.encodedTime + 1)
         {
-            LOGD ("Non-monotonic increase");
+            //LOGD ("Non-monotonic increase");
             return false; // Should increment by 1 second
         }
         else
         {
-            LOGD ("Expected barcode found!");
+            //LOGD ("Expected barcode found!");
         }
     }
     
@@ -587,23 +587,23 @@ void SyncStream::predictNextBarcodeStart(const HarpBarcode& barcode)
 
 void SyncStream::attemptBarcodeDecoding()
 {
-    LOGD ("Attempting Harp barcode decoding for stream ", streamKey);
+   // LOGD ("Attempting Harp barcode decoding for stream ", streamKey);
 
     if (completedBarcodes.size() == 0)
     {
-        LOGD (" No completed barcodes yet.");
+        //LOGD (" No completed barcodes yet.");
         numDecodingAttempts += 1;
         return;
     }
     else
     {
-        LOGD (" Completed barcodes: ", completedBarcodes.size());
+        //LOGD (" Completed barcodes: ", completedBarcodes.size());
     }
       
     // decode last barcode
     if (harpDecoder.decodeBarcode(completedBarcodes.back(), expectedSampleRate))
     {
-        LOGD ("Successful decoding...setting isHarpStream to true.");
+       // LOGD ("Successful decoding...setting isHarpStream to true.");
         isHarpStream = true;
         isSynchronized = true;
 
@@ -611,22 +611,22 @@ void SyncStream::attemptBarcodeDecoding()
         // Validate timing
         if (!validateBarcodeTimestamp(completedBarcodes.back()))
         {
-            LOGD ("Non-consecutive barcodes, clearing completed barcodes");
+            //LOGD ("Non-consecutive barcodes, clearing completed barcodes");
             completedBarcodes.clear();
         }
     }
     else
     {
-        LOGD ("Unsuccessful decoding");
+        //LOGD ("Unsuccessful decoding");
 
         if (completedBarcodes.size() == 0)
         {
-            LOGD ("No completed barcodes, setting Harp detection to false");
+           // LOGD ("No completed barcodes, setting Harp detection to false");
             harpDetectionActive = false;
         }
         else
         {
-            LOGD ("Previous completed barcodes, keeping Harp detection active");
+           // LOGD ("Previous completed barcodes, keeping Harp detection active");
         }
             
     }
@@ -648,11 +648,11 @@ void SyncStream::syncWithHarp()
     
     if (std::abs (estimatedSampleRate - expectedSampleRate) / expectedSampleRate < 0.05)
     {
-        LOGD ("Estimated sample rate from Harp barcodes: ", estimatedSampleRate);
+        //LOGD ("Estimated sample rate from Harp barcodes: ", estimatedSampleRate);
         actualSampleRate = estimatedSampleRate;
 
         // Calculate global start time
-        LOGD ("Estimated global start time: ", double (firstBarcode.encodedTime) - firstBarcode.localStartTimestamp);
+        //LOGD ("Estimated global start time: ", double (firstBarcode.encodedTime) - firstBarcode.localStartTimestamp);
         globalStartTime = (double (firstBarcode.encodedTime) - firstBarcode.localStartTimestamp) / 1000;
         baselineMatchingPulse.globalTimestamp = double (firstBarcode.encodedTime);
         baselineMatchingPulse.localSampleNumber = firstBarcode.localStartSample;
@@ -661,7 +661,7 @@ void SyncStream::syncWithHarp()
 
         isSynchronized = true;
 
-        LOGD ("Harp stream ", streamKey, " synchronized. Sample rate: ", actualSampleRate, ", start time: ", globalStartTime);
+        //LOGD ("Harp stream ", streamKey, " synchronized. Sample rate: ", actualSampleRate, ", start time: ", globalStartTime);
     }
     
 }
