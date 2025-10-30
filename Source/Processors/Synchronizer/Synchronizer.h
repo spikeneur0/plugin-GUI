@@ -233,6 +233,9 @@ public:
     
     /** true if Harp detection is currently active */
     bool harpDetectionActive = true;
+
+    /** Number of Harp barcode decoding attempts made */
+    int numDecodingAttempts = 0;
     
     /** Baseline matching barcode for Harp synchronization */
     HarpBarcode baselineMatchingBarcode;
@@ -291,6 +294,7 @@ private:
     int64 barcodeStartTime = -1; // System time when current barcode collection started
     int64 lastEventSample = -1;
     bool lastEventState = true; // Default HIGH
+   
     
     // Detection state
     int consecutiveValidBarcodes = 0;
