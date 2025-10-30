@@ -774,7 +774,7 @@ void FileReader::addEventsInRange (int64 start, int64 stop)
             uint8 ttlBit = events.channels[i];
             bool state = events.channelStates[i] > 0;
             TTLEventPtr event = TTLEvent::createTTLEvent (eventChannels[0], events.sampleNumbers[i], ttlBit, state);
-            addEvent (event, int (absoluteCurrentSampleNumber));
+            addEvent (event, int (absoluteCurrentSampleNumber - start));
         }
     }
 }
