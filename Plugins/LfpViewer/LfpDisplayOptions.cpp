@@ -552,13 +552,13 @@ LfpDisplayOptions::LfpDisplayOptions (LfpDisplayCanvas* canvas_, LfpDisplaySplit
     lfpDisplay->setRange (voltageRanges[ContinuousChannel::Type::ADC][selectedVoltageRange[ContinuousChannel::Type::ADC] - 1].getFloatValue()
                               * rangeGain[ContinuousChannel::Type::ADC],
                           ContinuousChannel::Type::ADC);
-    
+
     // Handle Auto scaling for AUX channels during initialization
     String auxRangeValue = voltageRanges[ContinuousChannel::Type::AUX][selectedVoltageRange[ContinuousChannel::Type::AUX] - 1];
-    if (auxRangeValue.equalsIgnoreCase("Auto"))
+    if (auxRangeValue.equalsIgnoreCase ("Auto"))
     {
         // Set a default range value for the type (used as fallback)
-        lfpDisplay->setRange(2000.0f * rangeGain[ContinuousChannel::Type::AUX], ContinuousChannel::Type::AUX);
+        lfpDisplay->setRange (2000.0f * rangeGain[ContinuousChannel::Type::AUX], ContinuousChannel::Type::AUX);
         // Apply individual auto-scaling to each AUX channel based on their InputRange
         lfpDisplay->setAutoRangeForAuxChannels();
     }
@@ -1212,12 +1212,12 @@ void LfpDisplayOptions::comboBoxChanged (ComboBox* cb)
         if (cb->getSelectedId())
         {
             String selectedText = voltageRanges[selectedChannelType][cb->getSelectedId() - 1];
-            
+
             // Check if "Auto" is selected for AUX channels
-            if (selectedChannelType == ContinuousChannel::Type::AUX && selectedText.equalsIgnoreCase("Auto"))
+            if (selectedChannelType == ContinuousChannel::Type::AUX && selectedText.equalsIgnoreCase ("Auto"))
             {
                 // Set a default range value for the type (used as fallback)
-                lfpDisplay->setRange(2000.0f * rangeGain[selectedChannelType], selectedChannelType);
+                lfpDisplay->setRange (2000.0f * rangeGain[selectedChannelType], selectedChannelType);
                 // Apply individual auto-scaling to each AUX channel based on their InputRange
                 lfpDisplay->setAutoRangeForAuxChannels();
             }
@@ -1233,14 +1233,12 @@ void LfpDisplayOptions::comboBoxChanged (ComboBox* cb)
             {
                 // Check if we should skip the first item (Auto) when validating range
                 int firstRangeIndex = 0;
-                if (selectedChannelType == ContinuousChannel::Type::AUX && 
-                    voltageRanges[selectedChannelType][0].equalsIgnoreCase("Auto"))
+                if (selectedChannelType == ContinuousChannel::Type::AUX && voltageRanges[selectedChannelType][0].equalsIgnoreCase ("Auto"))
                 {
                     firstRangeIndex = 1;
                 }
-                
-                if (firstRangeIndex < voltageRanges[selectedChannelType].size() &&
-                    vRange < voltageRanges[selectedChannelType][firstRangeIndex].getFloatValue())
+
+                if (firstRangeIndex < voltageRanges[selectedChannelType].size() && vRange < voltageRanges[selectedChannelType][firstRangeIndex].getFloatValue())
                 {
                     cb->setSelectedId (firstRangeIndex + 1, dontSendNotification);
                     vRange = voltageRanges[selectedChannelType][firstRangeIndex].getFloatValue();
@@ -1433,7 +1431,7 @@ ContinuousChannel::Type LfpDisplayOptions::getSelectedType()
 
 bool LfpDisplayOptions::isAuxAutoScaleEnabled()
 {
-    return selectedVoltageRangeValues[ContinuousChannel::Type::AUX].equalsIgnoreCase("Auto");
+    return selectedVoltageRangeValues[ContinuousChannel::Type::AUX].equalsIgnoreCase ("Auto");
 }
 
 void LfpDisplayOptions::setSelectedType (ContinuousChannel::Type type, bool toggleButton)
@@ -1452,7 +1450,11 @@ void LfpDisplayOptions::setSelectedType (ContinuousChannel::Type type, bool togg
     else
         rangeSelection->setText (selectedVoltageRangeValues[selectedChannelType], dontSendNotification);
 
-    rangeSelectionLabel->setText ("Range (" + rangeUnits[type] + ")", dontSendNotification);
+    // If AUX and 'Auto' is selected, do not show units
+    if (type == ContinuousChannel::Type::AUX && isAuxAutoScaleEnabled())
+        rangeSelectionLabel->setText ("Range", dontSendNotification);
+    else
+        rangeSelectionLabel->setText ("Range (" + rangeUnits[type] + ")", dontSendNotification);
 
     repaint (5, getHeight() - 55, 300, 100);
 
@@ -1587,12 +1589,12 @@ void LfpDisplayOptions::loadParameters (XmlElement* xml)
             selectedVoltageRange[2] = voltageRanges[2].indexOf (ranges[2]) + 1;
             rangeSelection->setText (ranges[selectedChannelType]);
             lfpDisplay->setRange (ranges[0].getFloatValue() * rangeGain[0], ContinuousChannel::Type::ELECTRODE);
-            
+
             // Handle Auto scaling for AUX channels
-            if (ranges[1].equalsIgnoreCase("Auto"))
+            if (ranges[1].equalsIgnoreCase ("Auto"))
             {
                 // Set a default range value for the type (used as fallback)
-                lfpDisplay->setRange(2000.0f * rangeGain[ContinuousChannel::Type::AUX], ContinuousChannel::Type::AUX);
+                lfpDisplay->setRange (2000.0f * rangeGain[ContinuousChannel::Type::AUX], ContinuousChannel::Type::AUX);
                 // Apply individual auto-scaling to each AUX channel based on their InputRange
                 lfpDisplay->setAutoRangeForAuxChannels();
             }
@@ -1600,7 +1602,7 @@ void LfpDisplayOptions::loadParameters (XmlElement* xml)
             {
                 lfpDisplay->setRange (ranges[1].getFloatValue() * rangeGain[1], ContinuousChannel::Type::AUX);
             }
-            
+
             lfpDisplay->setRange (ranges[2].getFloatValue() * rangeGain[2], ContinuousChannel::Type::ADC);
 
             // LOGD("    Set range in ", MS_FROM_START, " milliseconds");
