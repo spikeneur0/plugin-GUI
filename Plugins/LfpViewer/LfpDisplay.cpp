@@ -162,8 +162,32 @@ ChannelColourScheme* LfpDisplay::getColourSchemePtr()
 
 void LfpDisplay::updateRange (int i)
 {
-    channels[i]->setRange (range[channels[i]->getType()]);
-    channelInfo[i]->setRange (range[channels[i]->getType()]);
+    // Check if this is an AUX channel with auto-scaling enabled
+    if (channels[i]->getType() == ContinuousChannel::Type::AUX && options->isAuxAutoScaleEnabled())
+    {
+        // Apply individual auto-scaling based on this channel's InputRange
+        float rangeMin = canvasSplit->displayBuffer->channelMetadata[i].inputRangeMin;
+        float rangeMax = canvasSplit->displayBuffer->channelMetadata[i].inputRangeMax;
+        float autoRange = rangeMax - rangeMin;
+
+        if (autoRange > 0.0f)
+        {
+            channels[i]->setRange (autoRange);
+            channelInfo[i]->setRange (autoRange);
+        }
+        else
+        {
+            // Fall back to the default range for this type
+            channels[i]->setRange (range[channels[i]->getType()]);
+            channelInfo[i]->setRange (range[channels[i]->getType()]);
+        }
+    }
+    else
+    {
+        // Use the standard range for the channel type
+        channels[i]->setRange (range[channels[i]->getType()]);
+        channelInfo[i]->setRange (range[channels[i]->getType()]);
+    }
 }
 
 void LfpDisplay::setNumChannels (int newChannelCount)
@@ -602,7 +626,10 @@ void LfpDisplay::setRange (float r, ContinuousChannel::Type type)
         for (int i = 0; i < numChans; i++)
         {
             if (channels[i]->getType() == type)
+            {
                 channels[i]->setRange (range[type]);
+                channelInfo[i]->setRange (range[type]);
+            }
         }
 
         if (displayIsPaused)
@@ -612,6 +639,46 @@ void LfpDisplay::setRange (float r, ContinuousChannel::Type type)
 
             refresh();
         }
+    }
+}
+
+void LfpDisplay::setAutoRangeForAuxChannels()
+{
+    if (canvasSplit->displayBuffer == nullptr || channels.size() == 0)
+        return;
+
+    // Apply individual ranges to each AUX channel based on their InputRange
+    for (int i = 0; i < numChans; i++)
+    {
+        if (channels[i]->getType() == ContinuousChannel::Type::AUX)
+        {
+            // Get the InputRange from the channel metadata
+            if (i < canvasSplit->displayBuffer->channelMetadata.size())
+            {
+                float rangeMin = canvasSplit->displayBuffer->channelMetadata[i].inputRangeMin;
+                float rangeMax = canvasSplit->displayBuffer->channelMetadata[i].inputRangeMax;
+                float autoRange = rangeMax - rangeMin;
+
+                if (autoRange > 0.0f)
+                {
+                    channels[i]->setRange (autoRange);
+                    channelInfo[i]->setRange (autoRange);
+                }
+                else
+                {
+                    // Fall back to the default range for this type
+                    channels[i]->setRange (range[ContinuousChannel::Type::AUX]);
+                    channelInfo[i]->setRange (range[ContinuousChannel::Type::AUX]);
+                }
+            }
+        }
+    }
+
+    if (displayIsPaused)
+    {
+        timeOffsetChanged = true;
+        canRefresh = true;
+        refresh();
     }
 }
 
@@ -834,20 +901,25 @@ void LfpDisplay::mouseWheelMove (const MouseEvent& e, const MouseWheelDetails& w
     {
         if (e.mods.isAltDown()) // ALT + scroll wheel -> change channel range (was SHIFT but that clamps wheel.deltaY to 0 on OSX for some reason..)
         {
+            auto chanType = options->getSelectedType();
+
+            if (chanType == ContinuousChannel::AUX && options->isAuxAutoScaleEnabled())
+                return;
+
             int h = getRange();
 
-            int step = options->getRangeStep (options->getSelectedType());
+            int step = options->getRangeStep (chanType);
 
             // std::cout << wheel.deltaY << std::endl;
 
             if (wheel.deltaY > 0)
             {
-                setRange (h + step, options->getSelectedType());
+                setRange (h + step, chanType);
             }
             else
             {
                 if (h > step + 1)
-                    setRange (h - step, options->getSelectedType());
+                    setRange (h - step, chanType);
             }
 
             options->setRangeSelection (h); // update combobox
@@ -1174,6 +1246,7 @@ void LfpDisplay::mouseDown (const MouseEvent& event)
     int dist = 0;
     int mindist = 10000;
     int closest = 5;
+    float chanRange = getRange();
 
     for (int n = 0; n < drawableChannels.size(); n++) // select closest instead of relying on eventComponent
     {
@@ -1188,6 +1261,7 @@ void LfpDisplay::mouseDown (const MouseEvent& event)
         {
             mindist = dist - 1;
             closest = n;
+            chanRange = drawableChannels[n].channel->getRange();
         }
     }
 
@@ -1213,7 +1287,7 @@ void LfpDisplay::mouseDown (const MouseEvent& event)
         {
             drawableChannels[0].channelInfo->updateXY (
                 float (x) / getWidth() * canvasSplit->timebase,
-                (-(float (y) - viewport->getViewPositionY()) / viewport->getViewHeight() * float (getRange())) + float (getRange() / 2));
+                (-(float (y) - viewport->getViewPositionY()) / viewport->getViewHeight() * float (chanRange)) + float (chanRange / 2));
         }
     }
 

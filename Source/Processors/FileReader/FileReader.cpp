@@ -542,6 +542,30 @@ void FileReader::updateSettings()
             };
 
             continuousChannels.add (new ContinuousChannel (channelSettings));
+            auto name = channelInfo[i].name;
+            
+            if (channelInfo[i].type == ContinuousChannel::Type::AUX)
+            {
+                if (name.equalsIgnoreCase("Eul-Y"))
+                    continuousChannels.getLast()->inputRange = { -360.0f, 360.0f };
+                else if (name.equalsIgnoreCase("Eul-R"))
+                    continuousChannels.getLast()->inputRange = { -90.0f, 90.0f };
+                else if (name.equalsIgnoreCase("Eul-P"))
+                    continuousChannels.getLast()->inputRange = { -180.0f, 180.0f };
+                else if (name.startsWithIgnoreCase("Quat"))
+                    continuousChannels.getLast()->inputRange = { -1.0f, 1.0f };
+                else if (name.startsWithIgnoreCase("Acc"))
+                    continuousChannels.getLast()->inputRange = { -100.0f, 100.0f };
+                else if (name.startsWithIgnoreCase("Grav"))
+                    continuousChannels.getLast()->inputRange = { -10.0f, 10.0f };
+                else if (name.equalsIgnoreCase("Temp"))
+                    continuousChannels.getLast()->inputRange = { -100.0f, 100.0f };
+                else if (name.startsWithIgnoreCase("Cal"))
+                    continuousChannels.getLast()->inputRange = { -3.0f, 3.0f };
+                else
+                    continuousChannels.getLast()->inputRange = { -5000.0f, 5000.0f };
+            }
+
             continuousChannels.getLast()->addProcessor (this);
         }
 

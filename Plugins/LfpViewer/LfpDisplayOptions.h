@@ -103,6 +103,9 @@ public:
     /** Returns the selected channel type for the range editor */
     ContinuousChannel::Type getSelectedType();
 
+    /** Returns true if AUX channels are set to auto-scale */
+    bool isAuxAutoScaleEnabled();
+
     /** Returns the name for a given channel type (DATA, AUX, ADC) */
     String getTypeName (ContinuousChannel::Type type);
 
