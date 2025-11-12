@@ -65,7 +65,8 @@ public:
                      String description = "",
                      String structure = "None",
                      float inputRangeMin = -5000.0f,
-                     float inputRangeMax = +5000.0f);
+                     float inputRangeMax = +5000.0f,
+                     String units = "");
 
     /** Initializes the event channel at the start of each buffer */
     void initializeEventChannel (int nSamples);
@@ -95,6 +96,7 @@ public:
         String description = "";
         float inputRangeMin = -5000.0f;
         float inputRangeMax = +5000.0f;
+        String units = "";
     };
 
     Array<ChannelMetadata> channelMetadata;

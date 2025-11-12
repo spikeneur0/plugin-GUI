@@ -95,7 +95,8 @@ void LfpDisplayNode::updateSettings()
                                                 channel->getDescription(),
                                                 "None", // structure
                                                 channel->inputRange.min, // inputRangeMin
-                                                channel->inputRange.max); // inputRangeMax
+                                                channel->inputRange.max, // inputRangeMax
+                                                channel->getUnits()); // units
     }
 
     Array<DisplayBuffer*> toDelete;

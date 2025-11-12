@@ -68,7 +68,8 @@ void DisplayBuffer::addChannel (
     String description,
     String structure,
     float inputRangeMin,
-    float inputRangeMax)
+    float inputRangeMax,
+    String units)
 {
     ChannelMetadata metadata = ChannelMetadata();
     metadata.name = name;
@@ -81,6 +82,7 @@ void DisplayBuffer::addChannel (
     metadata.description = description;
     metadata.inputRangeMin = inputRangeMin;
     metadata.inputRangeMax = inputRangeMax;
+    metadata.units = units;
 
     channelMetadata.add (metadata);
     channelMap[channelNum] = numChannels;

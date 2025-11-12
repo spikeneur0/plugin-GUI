@@ -113,6 +113,12 @@ public:
     /** Return the assigned channel name */
     String getName();
 
+    /** Set the units string used for display */
+    void setUnits (const String& newUnits);
+
+    /** Return the units string for this channel */
+    const String& getUnits() const;
+
     /** Returns the assigned channel number for this display, relative
         to the subset of channels being drawn to the canvas */
     int getDrawableChannelNumber();
@@ -192,6 +198,8 @@ protected:
     int group;
     float depth;
     bool isRecorded;
+
+    String units;
 
     FontOptions channelFont;
 

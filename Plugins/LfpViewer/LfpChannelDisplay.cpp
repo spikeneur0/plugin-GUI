@@ -79,6 +79,16 @@ void LfpChannelDisplay::setType (ContinuousChannel::Type type_)
     typeStr = options->getTypeName (type);
 }
 
+void LfpChannelDisplay::setUnits (const String& newUnits)
+{
+    units = newUnits;
+}
+
+const String& LfpChannelDisplay::getUnits() const
+{
+    return units;
+}
+
 void LfpChannelDisplay::setEnabledState (bool state)
 {
     /*if (state)
