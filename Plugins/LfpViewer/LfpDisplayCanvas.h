@@ -308,8 +308,11 @@ public:
      */
     bool fullredraw;
 
-    /** Left margin for lfp plots (so the ch number text doesnt overlap) */
-    static const int leftmargin = 60; //
+    /** Minimum left margin for LFP plots (so the channel label has space) */
+    static constexpr int minimumLeftMargin = 60;
+
+    /** Left margin for LFP plots, adjusted to fit the widest channel label */
+    int leftmargin = minimumLeftMargin;
 
     Array<bool> isChannelEnabled;
 
@@ -359,6 +362,8 @@ public:
     String getStreamKey();
 
 private:
+    void refreshLeftMargin();
+
     bool isSelected;
     bool isUpdating;
 

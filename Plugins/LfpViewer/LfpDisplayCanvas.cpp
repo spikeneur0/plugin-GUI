@@ -30,6 +30,8 @@
 #include "ShowHideOptionsButton.h"
 
 #include <math.h>
+#include <algorithm>
+#include <cmath>
 
 #define MS_FROM_START Time::highResolutionTicksToSeconds (Time::getHighResolutionTicks() - start) * 1000
 
@@ -750,6 +752,27 @@ String LfpDisplaySplitter::getStreamKey()
     return stream->getKey();
 }
 
+void LfpDisplaySplitter::refreshLeftMargin()
+{
+    int newMargin = minimumLeftMargin;
+
+    if (displayBuffer != nullptr)
+    {
+        const auto labelFont = Font (FontOptions (14.0f));
+        constexpr int padding = 20;
+
+        for (int i = 0; i < displayBuffer->channelMetadata.size(); ++i)
+        {
+            const auto& metadata = displayBuffer->channelMetadata.getReference (i);
+            const float textWidth = labelFont.getStringWidthFloat (metadata.name);
+            const int requiredWidth = static_cast<int> (std::ceil (textWidth)) + padding;
+            newMargin = std::max (newMargin, requiredWidth);
+        }
+    }
+
+    leftmargin = newMargin;
+}
+
 void LfpDisplaySplitter::resized()
 {
     const int timescaleHeight = 30;
@@ -928,6 +951,7 @@ void LfpDisplaySplitter::updateSettings()
         sampleRate = 44100.0f;
 
         options->setEnabled (true);
+        leftmargin = minimumLeftMargin;
     }
     else
     {
@@ -942,6 +966,8 @@ void LfpDisplaySplitter::updateSettings()
 
         options->setEnabled (true);
         channelOverlapFactor = options->selectedOverlapValue.getFloatValue();
+
+        refreshLeftMargin();
     }
 
     if (eventDisplayBuffer == nullptr) // not yet initialized
@@ -968,12 +994,14 @@ void LfpDisplaySplitter::updateSettings()
         lfpDisplay->channels[i]->setDepth (displayBuffer->channelMetadata[i].ypos);
         lfpDisplay->channels[i]->setRecorded (displayBuffer->channelMetadata[i].isRecorded);
         lfpDisplay->channels[i]->updateType (displayBuffer->channelMetadata[i].type);
+        lfpDisplay->channels[i]->setUnits (displayBuffer->channelMetadata[i].units);
 
         lfpDisplay->channelInfo[i]->setName (displayBuffer->channelMetadata[i].name);
         lfpDisplay->channelInfo[i]->setGroup (displayBuffer->channelMetadata[i].group);
         lfpDisplay->channelInfo[i]->setDepth (displayBuffer->channelMetadata[i].ypos);
         lfpDisplay->channelInfo[i]->setRecorded (displayBuffer->channelMetadata[i].isRecorded);
         lfpDisplay->channelInfo[i]->updateType (displayBuffer->channelMetadata[i].type);
+        lfpDisplay->channelInfo[i]->setUnits (displayBuffer->channelMetadata[i].units);
 
         lfpDisplay->updateRange (i);
 
