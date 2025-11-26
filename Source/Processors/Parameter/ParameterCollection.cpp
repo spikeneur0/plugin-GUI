@@ -87,7 +87,44 @@ void ParameterCollection::copyParameterValuesTo (ParameterOwner* pOwner)
     for (auto parameter : parameters)
     {
         if (pOwner->hasParameter (parameter->getName()))
-            pOwner->getParameter (parameter->getName())->currentValue = parameter->getValue();
+        {
+            Parameter* targetParam = pOwner->getParameter (parameter->getName());
+
+            // For MaskChannelsParameter and SelectedChannelsParameter, filter the values
+            // to only include valid channel indices for the target parameter's channel count
+            if (parameter->getType() == Parameter::MASK_CHANNELS_PARAM)
+            {
+                MaskChannelsParameter* targetMaskParam = (MaskChannelsParameter*) targetParam;
+                int targetChannelCount = targetMaskParam->getChannelCount();
+
+                Array<var> filteredValues;
+                for (int i = 0; i < parameter->getValue().getArray()->size(); i++)
+                {
+                    int channelIndex = (int) parameter->getValue()[i];
+                    if (channelIndex >= 0 && channelIndex < targetChannelCount)
+                        filteredValues.add (channelIndex);
+                }
+                targetParam->currentValue = filteredValues;
+            }
+            else if (parameter->getType() == Parameter::SELECTED_CHANNELS_PARAM)
+            {
+                SelectedChannelsParameter* targetSelectedParam = (SelectedChannelsParameter*) targetParam;
+                int targetChannelCount = targetSelectedParam->getChannelCount();
+
+                Array<var> filteredValues;
+                for (int i = 0; i < parameter->getValue().getArray()->size(); i++)
+                {
+                    int channelIndex = (int) parameter->getValue()[i];
+                    if (channelIndex >= 0 && channelIndex < targetChannelCount)
+                        filteredValues.add (channelIndex);
+                }
+                targetParam->currentValue = filteredValues;
+            }
+            else
+            {
+                targetParam->currentValue = parameter->getValue();
+            }
+        }
     }
 }
 
