@@ -70,7 +70,7 @@ bool NpyFile::openFile (String path)
     Result res = file.create();
     if (res.failed())
     {
-        std::cerr << "Error creating file " << path << ":" << res.getErrorMessage() << std::endl;
+        LOGD ("Error creating file ", path, ": ", res.getErrorMessage());
         file.deleteFile();
         Result res = file.create();
         LOGD ("Re-creating file: ", path);
@@ -108,7 +108,7 @@ void NpyFile::writeHeader (const Array<NpyType>& typeList)
     String magicStr = "NUMPY";
     uint16 ver = 0x0001;
     // magic = magic number + magic string + magic version
-    int magicLen = int( sizeof (uint8) + magicStr.getNumBytesAsUTF8() + sizeof (uint16));
+    int magicLen = int (sizeof (uint8) + magicStr.getNumBytesAsUTF8() + sizeof (uint16));
     int nbytesAlign = 64; // header should use an integer multiple of this many bytes
 
     bool multiValue = typeList.size() > 1;
@@ -157,7 +157,7 @@ void NpyFile::writeHeader (const Array<NpyType>& typeList)
 
 void NpyFile::updateHeader()
 {
-    if (true)
+    if (m_okOpen) // only update if file opened successfully
     {
         // overwrite the shape part of the header - even without explicitly calling
         // m_file->flush(), overwriting seems to trigger a flush to disk,
@@ -251,7 +251,7 @@ int NpyType::getTypeLength() const
     if (type == BaseType::CHAR)
         return 1;
     else
-        return int(length);
+        return int (length);
 }
 
 String NpyType::getName() const

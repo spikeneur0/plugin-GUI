@@ -99,6 +99,9 @@ public:
     /** Increases the count of the number of records in the file (must match the number of samples written) */
     void increaseRecordCount (int count = 1);
 
+    /** Returns true if the file was opened successfully */
+    bool isOpen() const { return m_okOpen; }
+
 private:
     /** Opens the file at a specified path */
     bool openFile (String path);

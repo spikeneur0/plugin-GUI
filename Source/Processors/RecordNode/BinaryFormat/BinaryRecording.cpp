@@ -26,6 +26,7 @@
 #include "../../Settings/DataStream.h"
 #include "../../Settings/InfoObject.h"
 
+#include "../../../CoreServices.h"
 #include "../../Events/Spike.h"
 
 #define TIC std::chrono::high_resolution_clock::now()
@@ -95,7 +96,7 @@ void BinaryRecording::openFiles (File rootFolder, int experimentNumber, int reco
         if (streamId != lastStreamId)
         {
             wroteFirstSampleNumber[streamId] = false;
-            
+
             firstChannels.add (channelInfo);
             streamIndex++;
 
@@ -120,7 +121,7 @@ void BinaryRecording::openFiles (File rootFolder, int experimentNumber, int reco
         singleChannelJSON->setProperty ("history", channelInfo->getHistoryString());
         singleChannelJSON->setProperty ("bit_volts", channelInfo->getBitVolts());
         singleChannelJSON->setProperty ("units", channelInfo->getUnits());
-        singleChannelJSON->setProperty ("type", static_cast<int>(channelInfo->getChannelType()));
+        singleChannelJSON->setProperty ("type", static_cast<int> (channelInfo->getChannelType()));
         createChannelMetadata (channelInfo, singleChannelJSON);
 
         singleStreamJSON.add (var (singleChannelJSON));
@@ -140,11 +141,14 @@ void BinaryRecording::openFiles (File rootFolder, int experimentNumber, int reco
         String datPath = getProcessorString (ch);
         String filename = contPath + datPath + "continuous.dat";
 
-        LOGD ("Creating file: ", contPath, datPath, "sample_numbers.npy");
-        ScopedPointer<NpyFile> tFile = new NpyFile (contPath + datPath + "sample_numbers.npy", NpyType (BaseType::INT64, 1));
+        String samplesPath = contPath + datPath + "sample_numbers.npy";
+        LOGD ("Creating file: ", samplesPath);
+        ScopedPointer<NpyFile> tFile = new NpyFile (samplesPath, NpyType (BaseType::INT64, 1));
         m_dataTimestampFiles.add (tFile.release());
 
-        ScopedPointer<NpyFile> syncTimestampFile = new NpyFile (contPath + datPath + "timestamps.npy", NpyType (BaseType::DOUBLE, 1));
+        String syncTimestampPath = contPath + datPath + "timestamps.npy";
+        LOGD ("Creating file: ", syncTimestampPath);
+        ScopedPointer<NpyFile> syncTimestampFile = new NpyFile (syncTimestampPath, NpyType (BaseType::DOUBLE, 1));
         m_dataSyncTimestampFiles.add (syncTimestampFile.release());
 
         DynamicObject::Ptr fileJSON = new DynamicObject();
@@ -332,7 +336,113 @@ void BinaryRecording::openFiles (File rootFolder, int experimentNumber, int reco
 
     settingsJSON->writeAsJSON (settingsFileStream, JSON::FormatOptions {}.withIndentLevel (2).withSpacing (JSON::Spacing::multiLine).withMaxDecimalPlaces (10));
 
-    
+    // Validate that all files were opened successfully
+    if (! validateOpenFiles())
+    {
+        String errorMsg = "Recording stopped! Failed to open one or more recording files. Please check disk space and write permissions.";
+
+        LOGE ("BinaryRecording::openFiles: ", errorMsg);
+
+        // Stop recording and show error message on the message thread
+        CoreServices::setRecordingStatus (false);
+        MessageManager::callAsync ([]
+                                   { CoreServices::sendStatusMessage ("Unable to start recording. Please check the console for errors."); });
+    }
+}
+
+bool BinaryRecording::validateOpenFiles() const
+{
+    bool allFilesValid = true;
+
+    // Check continuous data files (SequentialBlockFile)
+    for (int i = 0; i < m_continuousFiles.size(); i++)
+    {
+        if (m_continuousFiles[i] == nullptr)
+        {
+            allFilesValid = false;
+        }
+    }
+
+    // Check timestamp files
+    for (int i = 0; i < m_dataTimestampFiles.size(); i++)
+    {
+        if (m_dataTimestampFiles[i] == nullptr || ! m_dataTimestampFiles[i]->isOpen())
+        {
+            allFilesValid = false;
+        }
+    }
+
+    // Check sync timestamp files
+    for (int i = 0; i < m_dataSyncTimestampFiles.size(); i++)
+    {
+        if (m_dataSyncTimestampFiles[i] == nullptr || ! m_dataSyncTimestampFiles[i]->isOpen())
+        {
+            allFilesValid = false;
+        }
+    }
+
+    // Check event files
+    for (int i = 0; i < m_eventFiles.size(); i++)
+    {
+        EventRecording* rec = m_eventFiles[i];
+        if (rec != nullptr)
+        {
+            if (rec->data == nullptr || ! rec->data->isOpen())
+            {
+                allFilesValid = false;
+            }
+            if (rec->samples == nullptr || ! rec->samples->isOpen())
+            {
+                allFilesValid = false;
+            }
+            if (rec->timestamps == nullptr || ! rec->timestamps->isOpen())
+            {
+                allFilesValid = false;
+            }
+            // extraFile is optional (only for TTL full words)
+            if (rec->extraFile != nullptr && ! rec->extraFile->isOpen())
+            {
+                allFilesValid = false;
+            }
+        }
+    }
+
+    // Check spike files
+    for (int i = 0; i < m_spikeFiles.size(); i++)
+    {
+        EventRecording* rec = m_spikeFiles[i];
+        if (rec != nullptr)
+        {
+            if (rec->data == nullptr || ! rec->data->isOpen())
+            {
+                allFilesValid = false;
+            }
+            if (rec->samples == nullptr || ! rec->samples->isOpen())
+            {
+                allFilesValid = false;
+            }
+            if (rec->timestamps == nullptr || ! rec->timestamps->isOpen())
+            {
+                allFilesValid = false;
+            }
+            if (rec->channels == nullptr || ! rec->channels->isOpen())
+            {
+                allFilesValid = false;
+            }
+            if (rec->extraFile == nullptr || ! rec->extraFile->isOpen())
+            {
+                allFilesValid = false;
+            }
+        }
+    }
+
+    // Check sync text file
+    if (m_syncTextFile == nullptr)
+    {
+        allFilesValid = false;
+    }
+
+    return allFilesValid;
 }
 
 std::unique_ptr<NpyFile> BinaryRecording::createEventMetadataFile (const MetadataEventObject* channel, String filename, DynamicObject* jsonFile)
@@ -549,6 +659,9 @@ void BinaryRecording::writeContinuousData (int writeChannel,
     /* Get the file index that belongs to the current recording channel */
     int fileIndex = m_fileIndexes[writeChannel];
 
+    if (! m_continuousFiles[fileIndex])
+        return;
+
     /* Write the data to that file */
     m_continuousFiles[fileIndex]->writeChannel (
         m_samplesWritten[writeChannel],
@@ -565,7 +678,7 @@ void BinaryRecording::writeContinuousData (int writeChannel,
 
         uint32 streamId = getContinuousChannel (realChannel)->getStreamId();
 
-        if (! wroteFirstSampleNumber[streamId] )
+        if (! wroteFirstSampleNumber[streamId])
         {
             firstSampleNumber[streamId] = baseSampleNumber;
             wroteFirstSampleNumber[streamId] = true;
@@ -682,11 +795,11 @@ void BinaryRecording::writeTimestampSyncText (uint64 streamId, int64 sampleNumbe
 
     int64 fsn = firstSampleNumber[streamId];
 
-    if(streamId > 0)
+    if (streamId > 0)
         jassert (fsn == sampleNumber);
 
     m_syncTextFile->writeText (syncString + "\r\n", false, false, nullptr);
-    
+
     m_syncTextFile->flush();
 }
 

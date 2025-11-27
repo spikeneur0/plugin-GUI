@@ -89,6 +89,10 @@ private:
     void createChannelMetadata (const MetadataObject* channel, DynamicObject* jsonObject);
     void writeEventMetadata (const MetadataEvent* event, NpyFile* file);
     void increaseEventCounts (EventRecording* rec);
+    
+    /** Validates that all recording files were opened successfully. 
+        Returns true if all files are valid, false otherwise. */
+    bool validateOpenFiles () const;
 
     bool m_saveTTLWords { true };
 

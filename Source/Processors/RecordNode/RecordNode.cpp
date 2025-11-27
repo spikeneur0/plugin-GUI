@@ -865,7 +865,24 @@ void RecordNode::startRecording()
 
     if (! rootFolder.exists())
     {
-        rootFolder.createDirectory();
+        Result res = rootFolder.createDirectory();
+        if (res.failed())
+        {
+            LOGE ("Record Node " + String (getNodeId()) + ": Could not create directory: " + rootFolder.getFullPathName(), " -- ", res.getErrorMessage());
+
+            CoreServices::setRecordingStatus (false);
+
+            if (! headlessMode)
+            {
+                AlertWindow::showMessageBoxAsync (AlertWindow::WarningIcon,
+                                                  "Recording Error",
+                                                  "Record Node " + String (getNodeId()) + " - Could not create recording directory:\n\n"
+                                                      + rootFolder.getFullPathName() + "\n\n"
+                                                      + res.getErrorMessage());
+            }
+
+            return;
+        }
     }
 
     recordThread->setFileComponents (rootFolder, experimentNumber, recordingNumber);
@@ -889,6 +906,9 @@ void RecordNode::startRecording()
 // called by GenericProcessor::setRecording() and CoreServices::setRecordingStatus()
 void RecordNode::stopRecording()
 {
+    if (! isRecording)
+        return;
+
     isRecording = false;
     hasRecorded = true;
     recordingNumber++; // increment recording number within this directory; should be zero for first recording

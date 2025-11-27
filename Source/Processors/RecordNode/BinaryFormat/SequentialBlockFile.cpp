@@ -44,7 +44,8 @@ SequentialBlockFile::~SequentialBlockFile()
     }
 
     //manually flush the last one to avoid trailing zeroes
-    m_memBlocks[0]->partialFlush (m_lastBlockFill * m_nChannels);
+    if (m_memBlocks.size() > 0)
+        m_memBlocks[0]->partialFlush (m_lastBlockFill * m_nChannels);
 }
 
 bool SequentialBlockFile::openFile (String filename)
@@ -53,7 +54,7 @@ bool SequentialBlockFile::openFile (String filename)
     Result res = file.create();
     if (res.failed())
     {
-        std::cerr << "Error creating file " << filename << ":" << res.getErrorMessage() << std::endl;
+        LOGD ("Error creating file ", filename, ": ", res.getErrorMessage());
         file.deleteFile();
         Result res = file.create();
         LOGD ("Re-creating file: ", filename);
@@ -104,7 +105,7 @@ bool SequentialBlockFile::writeChannel (uint64 startPos, int channel, int16* dat
     while (writtenSamples < nSamples)
     {
         int16* blockPtr = m_memBlocks[bIndex]->getData();
-        int samplesToWrite = jmin ((nSamples - writtenSamples), (m_samplesPerBlock - int(startIdx)));
+        int samplesToWrite = jmin ((nSamples - writtenSamples), (m_samplesPerBlock - int (startIdx)));
 
         for (int i = 0; i < samplesToWrite; i++)
         {
