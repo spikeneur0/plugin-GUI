@@ -127,11 +127,11 @@ This test verifies that given a Data Thread, the Source Node will perform this w
 */
 TEST_F(SourceNodeTests, DataAcquisition)
 {
-    tester->startAcquisition(false);
+    tester->getSourceNode()->startAcquisition();
 
     int numSamples = 100;
     auto inputBuffer = createBuffer(1000.0, 20.0, 5, numSamples);
     writeBlock(inputBuffer);
 
-    tester->stopAcquisition();
+    tester->getSourceNode()->stopAcquisition();
 }

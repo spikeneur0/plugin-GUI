@@ -319,7 +319,7 @@ TEST_F (LfpDisplayNodeTests, VisualIntegrityTest)
     Rectangle<int> canvasSnapshot (x, y, width, height);
     ExpectedImage expected (numChannels, sampleRate * 2); //2 seconds to match canvas timebase
 
-    tester->startAcquisition (false);
+    processor->startAcquisition ();
     canvas->beginAnimation();
 
     //Add 5 10Hz waves with +-125uV amplitude
@@ -367,16 +367,16 @@ TEST_F (LfpDisplayNodeTests, VisualIntegrityTest)
     missCount = getImageDifferencePixelCount (expectedImage, canvasImage);
     EXPECT_LE (float (missCount) / float (width * height), errorThreshold);
 
-    tester->stopAcquisition();
+    processor->stopAcquisition();
 }
 
 TEST_F (LfpDisplayNodeTests, DataIntegrityTest)
 {
     int numSamples = 100;
-    tester->startAcquisition (false);
+    processor->startAcquisition ();
 
     auto inputBuffer = createBuffer (1000.0, 20.0, numChannels, numSamples);
     writeBlock (inputBuffer);
 
-    tester->stopAcquisition();
+    processor->stopAcquisition();
 }
