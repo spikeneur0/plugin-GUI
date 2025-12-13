@@ -48,7 +48,14 @@ bool SelectFile::perform()
     pathParam->setNextValue (newPath, false);
 
     // Load the new file
-    processor->setFile (newPath, false);
+    bool success = processor->setFile (newPath, false);
+
+    if (!success)
+    {
+        // If loading the file failed, revert the path parameter to the original path
+        pathParam->setNextValue (originalPath, false);
+        return false;
+    }
 
     // Set the active stream to the first stream
     processor->setActiveStream (0, true);
