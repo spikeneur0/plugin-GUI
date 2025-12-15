@@ -29,9 +29,9 @@
 #include "LfpDisplayNode.h"
 #include "ShowHideOptionsButton.h"
 
-#include <math.h>
 #include <algorithm>
 #include <cmath>
+#include <math.h>
 
 #define MS_FROM_START Time::highResolutionTicksToSeconds (Time::getHighResolutionTicks() - start) * 1000
 
@@ -992,6 +992,10 @@ void LfpDisplaySplitter::updateSettings()
         lfpDisplay->channels[i]->setName (displayBuffer->channelMetadata[i].name);
         lfpDisplay->channels[i]->setGroup (displayBuffer->channelMetadata[i].group);
         lfpDisplay->channels[i]->setDepth (displayBuffer->channelMetadata[i].ypos);
+        lfpDisplay->channels[i]->setXpos (displayBuffer->channelMetadata[i].xpos);
+        lfpDisplay->channels[i]->setMetadataPresence (displayBuffer->channelMetadata[i].hasGroupMetadata,
+                                                      displayBuffer->channelMetadata[i].hasYposMetadata,
+                                                      displayBuffer->channelMetadata[i].hasXposMetadata);
         lfpDisplay->channels[i]->setRecorded (displayBuffer->channelMetadata[i].isRecorded);
         lfpDisplay->channels[i]->updateType (displayBuffer->channelMetadata[i].type);
         lfpDisplay->channels[i]->setUnits (displayBuffer->channelMetadata[i].units);
@@ -999,6 +1003,10 @@ void LfpDisplaySplitter::updateSettings()
         lfpDisplay->channelInfo[i]->setName (displayBuffer->channelMetadata[i].name);
         lfpDisplay->channelInfo[i]->setGroup (displayBuffer->channelMetadata[i].group);
         lfpDisplay->channelInfo[i]->setDepth (displayBuffer->channelMetadata[i].ypos);
+        lfpDisplay->channelInfo[i]->setXpos (displayBuffer->channelMetadata[i].xpos);
+        lfpDisplay->channelInfo[i]->setMetadataPresence (displayBuffer->channelMetadata[i].hasGroupMetadata,
+                                                         displayBuffer->channelMetadata[i].hasYposMetadata,
+                                                         displayBuffer->channelMetadata[i].hasXposMetadata);
         lfpDisplay->channelInfo[i]->setRecorded (displayBuffer->channelMetadata[i].isRecorded);
         lfpDisplay->channelInfo[i]->updateType (displayBuffer->channelMetadata[i].type);
         lfpDisplay->channelInfo[i]->setUnits (displayBuffer->channelMetadata[i].units);

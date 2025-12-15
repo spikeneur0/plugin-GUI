@@ -819,6 +819,18 @@ void LfpChannelDisplay::setDepth (float depth_)
     depth = depth_;
 }
 
+void LfpChannelDisplay::setXpos (float xpos_)
+{
+    xpos = xpos_;
+}
+
+void LfpChannelDisplay::setMetadataPresence (bool hasGroupMetadata_, bool hasYposMetadata_, bool hasXposMetadata_)
+{
+    groupMetadataAvailable = hasGroupMetadata_;
+    yposMetadataAvailable = hasYposMetadata_;
+    xposMetadataAvailable = hasXposMetadata_;
+}
+
 void LfpChannelDisplay::setRecorded (bool recorded_)
 {
     isRecorded = recorded_;

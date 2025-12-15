@@ -86,17 +86,39 @@ void LfpDisplayNode::updateSettings()
             displayBufferMap[streamId]->name = name;
         }
 
+        bool hasGroupMetadata = (! channel->group.name.equalsIgnoreCase ("default"));
+
+        float ypos = channel->position.y;
+        float xpos = channel->position.x;
+        bool hasYposMetadata = false;
+        bool hasXposMetadata = false;
+
+        const int yposMetadataIndex = channel->findMetadata (MetadataDescriptor::MetadataType::FLOAT, 1, "channel.ypos");
+        if (yposMetadataIndex >= 0)
+        {
+            if (const auto* yposValue = channel->getMetadataValue (yposMetadataIndex))
+            {
+                yposValue->getValue (ypos);
+                hasYposMetadata = true;
+                hasXposMetadata = true;
+            }
+        }
+
         displayBufferMap[streamId]->addChannel (channel->getName(), // name
                                                 ch, // index
                                                 channel->getChannelType(), // type
                                                 channel->isRecorded,
                                                 channel->group.number, // group
-                                                channel->position.y, // ypos
+                                                xpos,
+                                                ypos, // ypos
                                                 channel->getDescription(),
                                                 "None", // structure
                                                 channel->inputRange.min, // inputRangeMin
                                                 channel->inputRange.max, // inputRangeMax
-                                                channel->getUnits()); // units
+                                                channel->getUnits(), // units
+                                                hasGroupMetadata,
+                                                hasYposMetadata,
+                                                hasXposMetadata); // metadata flags
     }
 
     Array<DisplayBuffer*> toDelete;

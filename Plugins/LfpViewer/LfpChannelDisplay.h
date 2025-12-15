@@ -89,6 +89,12 @@ public:
     /** Sets the channel depth*/
     void setDepth (float);
 
+    /** Sets the channel x-position */
+    void setXpos (float);
+
+    /** Records which metadata fields were provided for this channel */
+    void setMetadataPresence (bool hasGroupMetadata_, bool hasYposMetadata_, bool hasXposMetadata_);
+
     /** Sets whether or not the channel is recorded by an upstream Record Node*/
     void setRecorded (bool);
 
@@ -176,6 +182,10 @@ public:
 
     float getDepth() { return depth; }
     int getGroup() { return group; }
+    float getXpos() const { return xpos; }
+    bool hasGroupMetadata() const { return groupMetadataAvailable; }
+    bool hasYposMetadata() const { return yposMetadataAvailable; }
+    bool hasXposMetadata() const { return xposMetadataAvailable; }
 
     int ifrom, ito, ito_local, ifrom_local;
 
@@ -195,8 +205,12 @@ protected:
     int drawableChan;
 
     String name;
-    int group;
-    float depth;
+    int group = 0;
+    float depth = 0.0f;
+    float xpos = 0.0f;
+    bool groupMetadataAvailable = false;
+    bool yposMetadataAvailable = false;
+    bool xposMetadataAvailable = false;
     bool isRecorded;
 
     String units;

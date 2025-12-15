@@ -47,8 +47,10 @@
 
 #define MS_FROM_START Time::highResolutionTicksToSeconds (Time::getHighResolutionTicks() - start) * 1000
 
+#include <cmath>
 #include <math.h>
 #include <numeric>
+#include <vector>
 
 using namespace LfpViewer;
 
@@ -258,17 +260,31 @@ void LfpDisplay::setColours()
         {
             if (colourGrouping.equalsIgnoreCase ("By Shank"))
             {
-                /*
-                depth ranges of electrodes for multishank configurations:
-                Shank 1: depth < 10000
-                Shank 2: 10000 ≤ depth < 20000
-                Shank 3: 20000 ≤ depth < 30000
-                Shank 4: depth ≥ 30000
-                */
-                int depth = drawableChannels[i].channel->getDepth();
-                int colourIdx = depth < 10000 ? 0 : depth < 20000 ? 2 : depth < 30000 ? 4 : 6;
-                drawableChannels[i].channel->setColour (getColourSchemePtr()->getColourForIndex (colourIdx));
-                drawableChannels[i].channelInfo->setColour (getColourSchemePtr()->getColourForIndex (colourIdx));
+                auto* channel = drawableChannels[i].channel;
+                auto* info = drawableChannels[i].channelInfo;
+
+                if (channel->hasGroupMetadata())
+                {
+                    const int colourIdx = (channel->getGroup() * 2) % 8;
+                    channel->setColour (getColourSchemePtr()->getColourForIndex (colourIdx));
+                    info->setColour (getColourSchemePtr()->getColourForIndex (colourIdx));
+                }
+                else
+                {
+                    /*
+                    Legacy depth-based shank colouring ranges:
+                    Shank 1: depth < 10000
+                    Shank 2: 10000 ≤ depth < 20000
+                    Shank 3: 20000 ≤ depth < 30000
+                    Shank 4: depth ≥ 30000
+                    */
+                    const int depth = channel->getDepth();
+                    const int colourIdx = depth < 10000 ? 0 : depth < 20000 ? 2
+                                                          : depth < 30000   ? 4
+                                                                            : 6;
+                    channel->setColour (getColourSchemePtr()->getColourForIndex (colourIdx));
+                    info->setColour (getColourSchemePtr()->getColourForIndex (colourIdx));
+                }
             }
             else
             {
@@ -281,10 +297,24 @@ void LfpDisplay::setColours()
     {
         if (colourGrouping.equalsIgnoreCase ("By Shank"))
         {
-            int depth = drawableChannels[0].channel->getDepth();
-            int colourIdx = depth < 10000 ? 0 : depth < 20000 ? 2 : depth < 30000 ? 4 : 6;
-            drawableChannels[0].channel->setColour (getColourSchemePtr()->getColourForIndex (colourIdx));
-            drawableChannels[0].channelInfo->setColour (getColourSchemePtr()->getColourForIndex (colourIdx));
+            auto* channel = drawableChannels[0].channel;
+            auto* info = drawableChannels[0].channelInfo;
+
+            if (channel->hasGroupMetadata())
+            {
+                const int colourIdx = channel->getGroup();
+                channel->setColour (getColourSchemePtr()->getColourForIndex (colourIdx));
+                info->setColour (getColourSchemePtr()->getColourForIndex (colourIdx));
+            }
+            else
+            {
+                const int depth = channel->getDepth();
+                const int colourIdx = depth < 10000 ? 0 : depth < 20000 ? 2
+                                                      : depth < 30000   ? 4
+                                                                        : 6;
+                channel->setColour (getColourSchemePtr()->getColourForIndex (colourIdx));
+                info->setColour (getColourSchemePtr()->getColourForIndex (colourIdx));
+            }
         }
         else
         {
@@ -1092,23 +1122,43 @@ void LfpDisplay::rebuildDrawableChannelsList()
         const int numChannels = channelsToDraw.size();
 
         std::vector<float> depths (numChannels);
+        std::vector<float> xposValues (numChannels);
+        std::vector<bool> hasYposMetadata (numChannels);
+        std::vector<bool> hasXposMetadata (numChannels);
+        std::vector<int> groups (numChannels);
+        std::vector<bool> hasGroupMetadata (numChannels);
 
         bool allSame = true;
+        bool anyYposMetadata = false;
+        bool anyXposMetadata = false;
+        bool anyGroupMetadata = false;
         float last = channelsToDraw[0].channelInfo->getDepth();
 
         for (int i = 0; i < channelsToDraw.size(); i++)
         {
-            float depth = channelsToDraw[i].channelInfo->getDepth();
+            auto* info = channelsToDraw[i].channelInfo;
+            const float depth = info->getDepth();
 
             if (depth != last)
                 allSame = false;
 
             depths[i] = depth;
+            xposValues[i] = info->getXpos();
+            hasYposMetadata[i] = info->hasYposMetadata();
+            hasXposMetadata[i] = info->hasXposMetadata();
+            groups[i] = info->getGroup();
+            hasGroupMetadata[i] = info->hasGroupMetadata();
 
+            anyYposMetadata = anyYposMetadata || hasYposMetadata[i];
+            anyXposMetadata = anyXposMetadata || hasXposMetadata[i];
+            anyGroupMetadata = anyGroupMetadata || hasGroupMetadata[i];
             last = depth;
         }
 
-        if (allSame)
+        const bool positionMetadataAvailable = anyYposMetadata && anyXposMetadata;
+        const bool groupMetadataAvailable = anyGroupMetadata;
+
+        if (! groupMetadataAvailable && allSame && ! anyYposMetadata)
         {
             LOGD ("No depth info found.");
         }
@@ -1118,7 +1168,21 @@ void LfpDisplay::rebuildDrawableChannelsList()
 
             std::iota (V.begin(), V.end(), 0); //Initializing
             sort (V.begin(), V.end(), [&] (int i, int j)
-                  { return depths[i] <= depths[j]; });
+                  {
+                      const float depthDiff = depths[i] - depths[j];
+                      const float depthEpsilon = 1.0e-3f;
+
+                      if (groupMetadataAvailable && groups[i] != groups[j])
+                          return groups[i] < groups[j];
+
+                      if (std::abs (depthDiff) >= depthEpsilon)
+                          return depths[i] < depths[j];
+
+                      if (positionMetadataAvailable)
+                          return xposValues[i] < xposValues[j];
+
+                      return i < j; // deterministic fallback
+                  });
 
             Array<LfpChannelTrack> orderedDrawableChannels;
 
