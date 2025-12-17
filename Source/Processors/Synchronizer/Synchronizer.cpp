@@ -262,9 +262,9 @@ void SyncStream::addEvent (int64 sampleNumber, bool state)
 
 double SyncStream::getLatestSyncTime()
 {
-    //LOGD ("Getting latest sync time for stream ", streamKey, "...");
-    //LOGD ("Time::currentTimeMillis(): ", Time::currentTimeMillis());
-    //LOGD ("latestSyncMillis: ", latestSyncMillis);
+    LOGC ("Getting latest sync time for stream ", streamKey, "...");
+    LOGC ("Time::currentTimeMillis(): ", Time::currentTimeMillis());
+    LOGC ("latestSyncMillis: ", latestSyncMillis);
    
 
     if (latestSyncMillis != -1)
@@ -648,7 +648,7 @@ void SyncStream::syncWithHarp()
     
     if (std::abs (estimatedSampleRate - expectedSampleRate) / expectedSampleRate < 0.05)
     {
-        //LOGD ("Estimated sample rate from Harp barcodes: ", estimatedSampleRate);
+        LOGC (streamKey, " total barcodes = ", completedBarcodes.size(), "; estimated sample rate: ", estimatedSampleRate);
         actualSampleRate = estimatedSampleRate;
 
         // Calculate global start time
@@ -660,8 +660,15 @@ void SyncStream::syncWithHarp()
         latestGlobalSyncTime = double(lastBarcode.encodedTime);
 
         isSynchronized = true;
+        latestSyncMillis = Time::currentTimeMillis();
 
         //LOGD ("Harp stream ", streamKey, " synchronized. Sample rate: ", actualSampleRate, ", start time: ", globalStartTime);
+    }
+    else
+    {
+        LOGC (streamKey, " estimated sample rate out of range; clearing Harp barcodes.");
+        isSynchronized = false;
+        completedBarcodes.clear();
     }
     
 }
