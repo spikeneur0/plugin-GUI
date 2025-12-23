@@ -199,6 +199,11 @@ void BinaryFileSource::fillRecordInfo()
             streamName = streamName.trimCharactersAtEnd ("/");
 
             File sampleNumbersFile = m_rootPath.getChildFile ("events").getChildFile (streamName).getChildFile (sampleNumbersFilename);
+            if (! sampleNumbersFile.existsAsFile())
+            {
+                LOGE ("Sample numbers file not found: ", sampleNumbersFile.getFullPathName(), ". Unable to load events for this stream.");
+                continue;
+            }
             std::unique_ptr<MemoryMappedFile> sampleNumbersMap (new MemoryMappedFile (sampleNumbersFile, MemoryMappedFile::readOnly));
 
             if (sampleNumbersFile.getSize() == EVENT_HEADER_SIZE_IN_BYTES)
