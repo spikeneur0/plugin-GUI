@@ -103,6 +103,7 @@ void FileReader::parameterValueChanged (Parameter* p)
 {
     if (p->getName() == "selected_file")
     {
+        LOGC ("FileReader::parameterValueChanged - selected_file changed to: ", p->getValue().toString());
         setFile (p->getValue(), false);
     }
     else if (p->getName() == "active_stream")
@@ -239,6 +240,8 @@ bool FileReader::setFile (String fullpath, bool shouldUpdateSignalChain)
         }
     }
 
+    LOGC ("[FileReader] set file: ", fullpath);
+
     //Open file
     File file (fullpath);
 
@@ -262,12 +265,14 @@ bool FileReader::setFile (String fullpath, bool shouldUpdateSignalChain)
         if (! input)
         {
             LOGE ("Error creating file source for extension ", ext);
+            showWarningAsync ("Failed to open file", "Error creating file source for extension " + ext);
             return false;
         }
     }
     else
     {
         input = nullptr;
+        showWarningAsync ("Failed to open file", "File type \"" + ext + "\" not supported");
         CoreServices::sendStatusMessage ("File type not supported");
         return false;
     }
@@ -275,8 +280,8 @@ bool FileReader::setFile (String fullpath, bool shouldUpdateSignalChain)
     if (! input->openFile (file))
     {
         input = nullptr;
+        showWarningAsync ("Invalid file", "The selected file is invalid. Please make sure the file is not corrupted and has valid format.");
         CoreServices::sendStatusMessage ("Invalid file");
-
         return false;
     }
 
@@ -284,6 +289,7 @@ bool FileReader::setFile (String fullpath, bool shouldUpdateSignalChain)
     if (isEmptyFile)
     {
         input = nullptr;
+        showWarningAsync ("Failed to open file", "Continuous data file is missing or empty.");
         CoreServices::sendStatusMessage ("Empty file. Ignoring open operation");
 
         return false;
@@ -316,6 +322,17 @@ bool FileReader::setFile (String fullpath, bool shouldUpdateSignalChain)
     firstProcess = false;
 
     return true;
+}
+
+void FileReader::showWarningAsync (const String& title, const String& message) const
+{
+    if (headlessMode)
+        return;
+
+    MessageManager::callAsync ([title, message]() 
+                               { AlertWindow::showMessageBoxAsync (AlertWindow::WarningIcon,
+                                                                   title,
+                                                                   message); });
 }
 
 void FileReader::setActiveStream (int index, bool reset)
