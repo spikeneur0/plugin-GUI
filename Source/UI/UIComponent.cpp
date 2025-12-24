@@ -476,6 +476,33 @@ void UIComponent::setUIBusy (bool busy)
     repaint();
 }
 
+void UIComponent::checkForPluginUpdates()
+{
+    // Run the check on a background thread to avoid blocking the UI
+    Thread::launch ([this]()
+                    {
+                        int numUpdates = PluginInstaller::checkForPluginUpdates();
+
+                        if (numUpdates > 0)
+                        {
+                            MessageManager::callAsync ([this, numUpdates]()
+                            {
+                                String message = String (numUpdates) + " plugin update" + (numUpdates > 1 ? "s" : "") 
+                                                + " available. Open the Plugin Installer to update.";
+                                
+                                AttributedString s;
+                                s.setText (message);
+                                s.setColour (findColour (ThemeColours::defaultText));
+                                s.setJustification (Justification::left);
+                                s.setWordWrap (AttributedString::WordWrap::byWord);
+                                s.setFont (FontOptions ("Inter", "Regular", 16.0f));
+
+                                bubbleMsgComponent->showAt ({5, 5, 195, 32}, s, 4000);
+                            });
+                        } 
+                    });
+}
+
 void UIComponent::showBubbleMessage (Component* component, const String& message)
 {
     AttributedString s;

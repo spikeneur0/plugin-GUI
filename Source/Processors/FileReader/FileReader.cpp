@@ -103,7 +103,6 @@ void FileReader::parameterValueChanged (Parameter* p)
 {
     if (p->getName() == "selected_file")
     {
-        LOGC ("FileReader::parameterValueChanged - selected_file changed to: ", p->getValue().toString());
         setFile (p->getValue(), false);
     }
     else if (p->getName() == "active_stream")
@@ -239,8 +238,6 @@ bool FileReader::setFile (String fullpath, bool shouldUpdateSignalChain)
             fullpath = defaultFile.getFullPathName();
         }
     }
-
-    LOGC ("[FileReader] set file: ", fullpath);
 
     //Open file
     File file (fullpath);

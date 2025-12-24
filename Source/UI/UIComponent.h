@@ -210,6 +210,9 @@ public:
     /** Sets the busy state of the UIComponent */
     void setUIBusy (bool busy);
 
+    /** Checks for plugin updates and shows a bubble message if any are available */
+    void checkForPluginUpdates();
+
 private:
     ScopedPointer<DataViewport> dataViewport;
     ScopedPointer<SignalChainTabComponent> signalChainTabComponent;

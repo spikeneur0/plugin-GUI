@@ -244,6 +244,13 @@ MainWindow::MainWindow (const File& fileToLoad, bool isConsoleApp_) : isConsoleA
         LatestVersionCheckerAndUpdater::getInstance()->checkForNewVersion (true, this);
 #endif
 
+    // Check for plugin updates and notify user if any are available
+    if (! isConsoleApp)
+    {
+        UIComponent* ui = (UIComponent*) documentWindow->getContentComponent();
+        ui->checkForPluginUpdates();
+    }
+
     Process::setPriority (Process::HighPriority);
 }
 
