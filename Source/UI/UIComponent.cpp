@@ -487,9 +487,9 @@ void UIComponent::checkForPluginUpdates()
                         {
                             MessageManager::callAsync ([this, numUpdates]()
                             {
-                                String message = String (numUpdates) + " plugin update" + (numUpdates > 1 ? "s" : "") 
-                                                + " available. Open the Plugin Installer to update.";
-                                
+                                String message = String (numUpdates) + " plugin update" 
+                                                 + (numUpdates > 1 ? "s" : "") + " available";
+
                                 AttributedString s;
                                 s.setText (message);
                                 s.setColour (findColour (ThemeColours::defaultText));
@@ -499,8 +499,7 @@ void UIComponent::checkForPluginUpdates()
 
                                 bubbleMsgComponent->showAt ({5, 5, 195, 32}, s, 4000);
                             });
-                        } 
-                    });
+                        } });
 }
 
 void UIComponent::showBubbleMessage (Component* component, const String& message)
