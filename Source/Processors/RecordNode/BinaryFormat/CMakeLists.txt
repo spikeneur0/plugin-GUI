@@ -9,6 +9,8 @@ add_sources(open-ephys
 	NpyFile.h
 	SequentialBlockFile.cpp
 	SequentialBlockFile.h
+	SIMDConverter.cpp
+	SIMDConverter.h
 	)
 
 #add nested directories

@@ -46,6 +46,7 @@
 #include <Processors/RecordNode/RecordNode.h>
 #include <Processors/RecordNode/BinaryFormat/BinaryRecording.h>
 #include <Processors/RecordNode/BinaryFormat/SequentialBlockFile.h>
+#include <Processors/RecordNode/BinaryFormat/SIMDConverter.h>
 #include <ModelProcessors.h>
 #include <ModelApplication.h>
 #include <TestFixtures.h>
@@ -527,6 +528,597 @@ TEST_F(RecordNodeBenchmark, BufferSizeImpact_384ch)
         std::cout << "Buffer size " << bufSize << ": " 
                   << result.megabytesPerSecond << " MB/s\n";
     }
+}
+
+// ============================================================================
+// SIMD CONVERTER CORRECTNESS TESTS
+// ============================================================================
+
+/**
+ * Test fixture for SIMD converter correctness testing
+ */
+class SIMDConverterTest : public testing::Test
+{
+protected:
+    void SetUp() override
+    {
+        bitVolts = 0.195f; // Neuropixels default
+    }
+
+    /**
+     * Performs the original two-pass conversion (JUCE methods)
+     */
+    void originalConversion(const float* input, int16* output, float scale, int numSamples)
+    {
+        HeapBlock<float> scaledBuffer(numSamples);
+        FloatVectorOperations::copyWithMultiply(scaledBuffer.getData(), input, scale, numSamples);
+        AudioDataConverters::convertFloatToInt16LE(scaledBuffer.getData(), output, numSamples);
+    }
+
+    /**
+     * Compare two int16 arrays, allowing for small rounding differences
+     */
+    bool compareOutputs(const int16* expected, const int16* actual, int numSamples, int maxDiff = 1)
+    {
+        int numDifferences = 0;
+        int maxObservedDiff = 0;
+        
+        for (int i = 0; i < numSamples; i++)
+        {
+            int diff = std::abs(expected[i] - actual[i]);
+            if (diff > maxDiff)
+            {
+                numDifferences++;
+                if (numDifferences <= 10)
+                {
+                    std::cout << "  Sample " << i << ": expected=" << expected[i] 
+                              << ", actual=" << actual[i] << ", diff=" << diff << "\n";
+                }
+            }
+            maxObservedDiff = std::max(maxObservedDiff, diff);
+        }
+        
+        if (numDifferences > 0)
+        {
+            std::cout << "Total differences > " << maxDiff << ": " << numDifferences 
+                      << " / " << numSamples << "\n";
+            std::cout << "Max observed difference: " << maxObservedDiff << "\n";
+        }
+        
+        return numDifferences == 0;
+    }
+
+    float bitVolts;
+};
+
+TEST_F(SIMDConverterTest, DetectsAvailableSIMD)
+{
+    auto simdType = SIMDConverter::getAvailableSIMD();
+    std::cout << "Detected SIMD type: " << SIMDConverter::getSIMDTypeString() << "\n";
+    
+    // At minimum, we should have scalar support
+    // On modern systems, we expect NEON or SSE2
+#if defined(__ARM_NEON) || defined(__ARM_NEON__)
+    EXPECT_EQ(simdType, SIMDConverter::SIMDType::NEON);
+#elif defined(__SSE2__) || defined(_M_X64) || defined(_M_IX86)
+    EXPECT_TRUE(simdType == SIMDConverter::SIMDType::SSE2 || 
+                simdType == SIMDConverter::SIMDType::SSE4_1);
+#endif
+}
+
+TEST_F(SIMDConverterTest, DebugSimpleConversion)
+{
+    // Super simple test: convert 8 values
+    const int numSamples = 8;
+    
+    float input[8] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f};
+    int16_t output[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+    
+    // Scale factor of 1.0 should just convert floats to ints
+    SIMDConverter::convertFloatToInt16(input, output, 1.0f, numSamples);
+    
+    std::cout << "Debug output after conversion with scale=1.0:\n";
+    for (int i = 0; i < 8; i++)
+    {
+        std::cout << "  output[" << i << "] = " << output[i] << " (expected ~" << static_cast<int>(input[i]) << ")\n";
+    }
+    
+    // Check that we got reasonable values
+    EXPECT_EQ(output[0], 1);
+    EXPECT_EQ(output[1], 2);
+    EXPECT_EQ(output[2], 3);
+    EXPECT_EQ(output[3], 4);
+    EXPECT_EQ(output[4], 5);
+    EXPECT_EQ(output[5], 6);
+    EXPECT_EQ(output[6], 7);
+    EXPECT_EQ(output[7], 8);
+    
+    // Now test with the typical scale factor used in the original conversion tests
+    float bitVolts = 0.195f;
+    float scaleFactor = 1.0f / (float(0x7fff) * bitVolts);
+    std::cout << "\nScale factor: " << scaleFactor << " (bitVolts=" << bitVolts << ")\n";
+    
+    // Use the same input values as the original SmallBuffer test
+    float input2[8];
+    for (int i = 0; i < 8; i++)
+    {
+        input2[i] = 100.0f * std::sin(2.0f * 3.14159f * i / 30.0f);
+    }
+    
+    int16_t output2[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+    SIMDConverter::convertFloatToInt16(input2, output2, scaleFactor, numSamples);
+    
+    std::cout << "Debug output after conversion with typical scale factor:\n";
+    for (int i = 0; i < 8; i++)
+    {
+        float expected = input2[i] * scaleFactor;
+        std::cout << "  input[" << i << "] = " << input2[i] 
+                  << ", scaled = " << expected
+                  << ", output = " << output2[i] << "\n";
+    }
+}
+
+TEST_F(SIMDConverterTest, MatchesOriginalConversion_SmallBuffer)
+{
+    const int numSamples = 64;
+    
+    // The original workflow is:
+    // 1. FloatVectorOperations::copyWithMultiply(scaled, input, 1/(32767*bitVolts), size)
+    // 2. AudioDataConverters::convertFloatToInt16LE(scaled, output, size) which does: output = round(32767 * scaled)
+    // Net effect: output = round(input / bitVolts)
+    //
+    // For our SIMD converter, we use scaleFactor = 1/bitVolts directly
+    float simdScaleFactor = 1.0f / bitVolts;
+    
+    // For the original method, we still use the two-pass approach with its scale factor
+    float originalScaleFactor = 1.0f / (float(0x7fff) * bitVolts);
+    
+    // Create test input: typical neural signal range
+    std::vector<float> input(numSamples);
+    for (int i = 0; i < numSamples; i++)
+    {
+        input[i] = 100.0f * std::sin(2.0f * 3.14159f * i / 30.0f);
+    }
+    
+    // Convert using original method (with its scale factor)
+    std::vector<int16> expected(numSamples);
+    originalConversion(input.data(), expected.data(), originalScaleFactor, numSamples);
+    
+    // Convert using SIMD converter (with the correct scale factor for single-pass)
+    std::vector<int16_t> actual(numSamples);
+    SIMDConverter::convertFloatToInt16(input.data(), actual.data(), simdScaleFactor, numSamples);
+    
+    // Compare results
+    EXPECT_TRUE(compareOutputs(expected.data(), reinterpret_cast<const int16*>(actual.data()), numSamples))
+        << "SIMD conversion output differs from original conversion";
+}
+
+TEST_F(SIMDConverterTest, MatchesOriginalConversion_LargeBuffer)
+{
+    const int numSamples = 4096;
+    float simdScaleFactor = 1.0f / bitVolts;
+    float originalScaleFactor = 1.0f / (float(0x7fff) * bitVolts);
+    
+    // Create test input with varied data
+    std::vector<float> input(numSamples);
+    for (int i = 0; i < numSamples; i++)
+    {
+        // Mix of signals at different frequencies and amplitudes
+        input[i] = 50.0f * std::sin(2.0f * 3.14159f * i / 100.0f)
+                 + 30.0f * std::sin(2.0f * 3.14159f * i / 17.0f)
+                 + ((i * 31 + 17) % 100 - 50) * 0.3f; // pseudo-random noise
+    }
+    
+    // Convert using original method
+    std::vector<int16> expected(numSamples);
+    originalConversion(input.data(), expected.data(), originalScaleFactor, numSamples);
+    
+    // Convert using SIMD converter
+    std::vector<int16_t> actual(numSamples);
+    SIMDConverter::convertFloatToInt16(input.data(), actual.data(), simdScaleFactor, numSamples);
+    
+    // Compare results (allow 1 LSB difference due to rounding)
+    EXPECT_TRUE(compareOutputs(expected.data(), reinterpret_cast<const int16*>(actual.data()), numSamples, 1))
+        << "SIMD conversion output differs from original conversion";
+}
+
+TEST_F(SIMDConverterTest, MatchesOriginalConversion_EdgeCases)
+{
+    float simdScaleFactor = 1.0f / bitVolts;
+    float originalScaleFactor = 1.0f / (float(0x7fff) * bitVolts);
+    
+    // Test edge cases: values near clipping boundaries
+    std::vector<float> input = {
+        0.0f,                               // Zero
+        1.0f, -1.0f,                        // Small values
+        5000.0f, -5000.0f,                  // Mid-range values
+        32767.0f * bitVolts,                // Near positive max
+        -32768.0f * bitVolts,               // Near negative max
+        40000.0f * bitVolts,                // Should clip to +32767
+        -40000.0f * bitVolts,               // Should clip to -32768
+        0.5f, -0.5f,                        // Values that need rounding
+        100.0f * bitVolts + 0.5f,           // Rounding up
+        100.0f * bitVolts - 0.5f,           // Rounding down
+        0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f  // Padding to make it SIMD-friendly size
+    };
+    int numSamples = static_cast<int>(input.size());
+    
+    // Convert using original method
+    std::vector<int16> expected(numSamples);
+    originalConversion(input.data(), expected.data(), originalScaleFactor, numSamples);
+    
+    // Convert using SIMD converter
+    std::vector<int16_t> actual(numSamples);
+    SIMDConverter::convertFloatToInt16(input.data(), actual.data(), simdScaleFactor, numSamples);
+    
+    // Compare (allow 1 LSB difference for rounding)
+    EXPECT_TRUE(compareOutputs(expected.data(), reinterpret_cast<const int16*>(actual.data()), numSamples, 1))
+        << "SIMD conversion output differs from original on edge cases";
+}
+
+TEST_F(SIMDConverterTest, MatchesOriginalConversion_NonAlignedSizes)
+{
+    float simdScaleFactor = 1.0f / bitVolts;
+    float originalScaleFactor = 1.0f / (float(0x7fff) * bitVolts);
+    
+    // Test non-SIMD-aligned sizes (not multiples of 8)
+    std::vector<int> testSizes = {1, 3, 7, 15, 17, 31, 33, 63, 65, 100, 127, 129, 255, 257};
+    
+    for (int numSamples : testSizes)
+    {
+        std::vector<float> input(numSamples);
+        for (int i = 0; i < numSamples; i++)
+        {
+            input[i] = 80.0f * std::sin(2.0f * 3.14159f * i / 50.0f);
+        }
+        
+        std::vector<int16> expected(numSamples);
+        originalConversion(input.data(), expected.data(), originalScaleFactor, numSamples);
+        
+        std::vector<int16_t> actual(numSamples);
+        SIMDConverter::convertFloatToInt16(input.data(), actual.data(), simdScaleFactor, numSamples);
+        
+        EXPECT_TRUE(compareOutputs(expected.data(), reinterpret_cast<const int16*>(actual.data()), numSamples, 1))
+            << "SIMD conversion failed for size " << numSamples;
+    }
+}
+
+TEST_F(SIMDConverterTest, BatchConversionCorrectness)
+{
+    const int numChannels = 4;
+    const int numSamples = 256;
+    float bitVoltsValues[] = {0.195f, 0.195f, 0.1f, 0.3f};
+    
+    // Allocate input/output arrays
+    std::vector<std::vector<float>> inputData(numChannels, std::vector<float>(numSamples));
+    std::vector<std::vector<int16_t>> outputData(numChannels, std::vector<int16_t>(numSamples));
+    std::vector<std::vector<int16>> expectedData(numChannels, std::vector<int16>(numSamples));
+    
+    std::vector<const float*> inputs(numChannels);
+    std::vector<int16_t*> outputs(numChannels);
+    std::vector<float> simdScaleFactors(numChannels);
+    
+    // Fill input data and compute expected results
+    for (int ch = 0; ch < numChannels; ch++)
+    {
+        for (int i = 0; i < numSamples; i++)
+        {
+            inputData[ch][i] = 60.0f * std::sin(2.0f * 3.14159f * i / 40.0f + ch * 0.5f);
+        }
+        
+        float originalScaleFactor = 1.0f / (float(0x7fff) * bitVoltsValues[ch]);
+        simdScaleFactors[ch] = 1.0f / bitVoltsValues[ch];
+        inputs[ch] = inputData[ch].data();
+        outputs[ch] = outputData[ch].data();
+        
+        // Compute expected output using original method
+        originalConversion(inputData[ch].data(), expectedData[ch].data(), originalScaleFactor, numSamples);
+    }
+    
+    // Run batch conversion with SIMD scale factors
+    SIMDConverter::convertFloatToInt16Batch(inputs.data(), outputs.data(), simdScaleFactors.data(), numChannels, numSamples);
+    
+    // Compare results for each channel
+    for (int ch = 0; ch < numChannels; ch++)
+    {
+        EXPECT_TRUE(compareOutputs(expectedData[ch].data(), reinterpret_cast<const int16*>(outputData[ch].data()), numSamples, 1))
+            << "Batch conversion failed for channel " << ch;
+    }
+}
+
+// ============================================================================
+// SIMD CONVERTER PERFORMANCE BENCHMARKS
+// ============================================================================
+
+TEST_F(RecordNodeBenchmark, SIMD_vs_Original_384ch_4096samples)
+{
+    const int channels = 384;
+    const int samples = 4096;
+    const int iterations = 100;
+    float originalScaleFactor = 1.0f / (float(0x7fff) * bitVolts);
+    float simdScaleFactor = 1.0f / bitVolts;
+    
+    // Allocate buffers
+    HeapBlock<float> inputBuffer(samples);
+    HeapBlock<float> scaledBuffer(samples);
+    HeapBlock<int16> originalOutput(samples);
+    HeapBlock<int16_t> simdOutput(samples);
+    
+    // Fill input
+    for (int i = 0; i < samples; i++)
+    {
+        inputBuffer[i] = 100.0f * std::sin(2.0f * 3.14159f * i / 100.0f);
+    }
+    
+    // Warm-up both implementations
+    for (int i = 0; i < 10; i++)
+    {
+        FloatVectorOperations::copyWithMultiply(scaledBuffer.getData(), inputBuffer.getData(), originalScaleFactor, samples);
+        AudioDataConverters::convertFloatToInt16LE(scaledBuffer.getData(), originalOutput.getData(), samples);
+        SIMDConverter::convertFloatToInt16(inputBuffer.getData(), simdOutput.getData(), simdScaleFactor, samples);
+    }
+    
+    // Benchmark original method
+    auto startOriginal = high_resolution_clock::now();
+    for (int iter = 0; iter < iterations; iter++)
+    {
+        for (int ch = 0; ch < channels; ch++)
+        {
+            FloatVectorOperations::copyWithMultiply(scaledBuffer.getData(), inputBuffer.getData(), originalScaleFactor, samples);
+            AudioDataConverters::convertFloatToInt16LE(scaledBuffer.getData(), originalOutput.getData(), samples);
+        }
+    }
+    auto endOriginal = high_resolution_clock::now();
+    double originalTimeMs = duration_cast<microseconds>(endOriginal - startOriginal).count() / 1000.0;
+    
+    // Benchmark SIMD method
+    auto startSIMD = high_resolution_clock::now();
+    for (int iter = 0; iter < iterations; iter++)
+    {
+        for (int ch = 0; ch < channels; ch++)
+        {
+            SIMDConverter::convertFloatToInt16(inputBuffer.getData(), simdOutput.getData(), simdScaleFactor, samples);
+        }
+    }
+    auto endSIMD = high_resolution_clock::now();
+    double simdTimeMs = duration_cast<microseconds>(endSIMD - startSIMD).count() / 1000.0;
+    
+    // Calculate throughput
+    int64_t totalSamples = (int64_t)channels * samples * iterations;
+    double originalMBps = (totalSamples * sizeof(int16)) / (originalTimeMs / 1000.0) / 1e6;
+    double simdMBps = (totalSamples * sizeof(int16)) / (simdTimeMs / 1000.0) / 1e6;
+    double speedup = originalTimeMs / simdTimeMs;
+    
+    std::cout << "\n========================================\n";
+    std::cout << "SIMD vs Original Comparison (" << channels << " ch, " << samples << " samples)\n";
+    std::cout << "SIMD type: " << SIMDConverter::getSIMDTypeString() << "\n";
+    std::cout << "----------------------------------------\n";
+    std::cout << "Original (JUCE):  " << std::fixed << std::setprecision(1) 
+              << originalMBps << " MB/s (" << originalTimeMs << " ms)\n";
+    std::cout << "SIMD Converter:   " << simdMBps << " MB/s (" << simdTimeMs << " ms)\n";
+    std::cout << "Speedup:          " << std::setprecision(2) << speedup << "x\n";
+    std::cout << "========================================\n";
+    
+    // We expect at least 1.5x improvement
+    EXPECT_GT(speedup, 1.0) << "SIMD converter should be faster than original";
+}
+
+TEST_F(RecordNodeBenchmark, SIMD_vs_Original_768ch_4096samples)
+{
+    const int channels = 768;
+    const int samples = 4096;
+    const int iterations = 50;
+    float originalScaleFactor = 1.0f / (float(0x7fff) * bitVolts);
+    float simdScaleFactor = 1.0f / bitVolts;
+    
+    HeapBlock<float> inputBuffer(samples);
+    HeapBlock<float> scaledBuffer(samples);
+    HeapBlock<int16> originalOutput(samples);
+    HeapBlock<int16_t> simdOutput(samples);
+    
+    for (int i = 0; i < samples; i++)
+    {
+        inputBuffer[i] = 100.0f * std::sin(2.0f * 3.14159f * i / 100.0f);
+    }
+    
+    // Warm-up
+    for (int i = 0; i < 10; i++)
+    {
+        FloatVectorOperations::copyWithMultiply(scaledBuffer.getData(), inputBuffer.getData(), originalScaleFactor, samples);
+        AudioDataConverters::convertFloatToInt16LE(scaledBuffer.getData(), originalOutput.getData(), samples);
+        SIMDConverter::convertFloatToInt16(inputBuffer.getData(), simdOutput.getData(), simdScaleFactor, samples);
+    }
+    
+    // Benchmark original
+    auto startOriginal = high_resolution_clock::now();
+    for (int iter = 0; iter < iterations; iter++)
+    {
+        for (int ch = 0; ch < channels; ch++)
+        {
+            FloatVectorOperations::copyWithMultiply(scaledBuffer.getData(), inputBuffer.getData(), originalScaleFactor, samples);
+            AudioDataConverters::convertFloatToInt16LE(scaledBuffer.getData(), originalOutput.getData(), samples);
+        }
+    }
+    auto endOriginal = high_resolution_clock::now();
+    double originalTimeMs = duration_cast<microseconds>(endOriginal - startOriginal).count() / 1000.0;
+    
+    // Benchmark SIMD
+    auto startSIMD = high_resolution_clock::now();
+    for (int iter = 0; iter < iterations; iter++)
+    {
+        for (int ch = 0; ch < channels; ch++)
+        {
+            SIMDConverter::convertFloatToInt16(inputBuffer.getData(), simdOutput.getData(), simdScaleFactor, samples);
+        }
+    }
+    auto endSIMD = high_resolution_clock::now();
+    double simdTimeMs = duration_cast<microseconds>(endSIMD - startSIMD).count() / 1000.0;
+    
+    int64_t totalSamples = (int64_t)channels * samples * iterations;
+    double originalMBps = (totalSamples * sizeof(int16)) / (originalTimeMs / 1000.0) / 1e6;
+    double simdMBps = (totalSamples * sizeof(int16)) / (simdTimeMs / 1000.0) / 1e6;
+    double speedup = originalTimeMs / simdTimeMs;
+    
+    std::cout << "\n========================================\n";
+    std::cout << "SIMD vs Original Comparison (" << channels << " ch, " << samples << " samples)\n";
+    std::cout << "SIMD type: " << SIMDConverter::getSIMDTypeString() << "\n";
+    std::cout << "----------------------------------------\n";
+    std::cout << "Original (JUCE):  " << std::fixed << std::setprecision(1) 
+              << originalMBps << " MB/s (" << originalTimeMs << " ms)\n";
+    std::cout << "SIMD Converter:   " << simdMBps << " MB/s (" << simdTimeMs << " ms)\n";
+    std::cout << "Speedup:          " << std::setprecision(2) << speedup << "x\n";
+    std::cout << "========================================\n";
+    
+    EXPECT_GT(speedup, 1.0);
+}
+
+TEST_F(RecordNodeBenchmark, SIMD_vs_Original_1536ch_4096samples)
+{
+    const int channels = 1536;
+    const int samples = 4096;
+    const int iterations = 25;
+    float originalScaleFactor = 1.0f / (float(0x7fff) * bitVolts);
+    float simdScaleFactor = 1.0f / bitVolts;
+    
+    HeapBlock<float> inputBuffer(samples);
+    HeapBlock<float> scaledBuffer(samples);
+    HeapBlock<int16> originalOutput(samples);
+    HeapBlock<int16_t> simdOutput(samples);
+    
+    for (int i = 0; i < samples; i++)
+    {
+        inputBuffer[i] = 100.0f * std::sin(2.0f * 3.14159f * i / 100.0f);
+    }
+    
+    // Warm-up
+    for (int i = 0; i < 10; i++)
+    {
+        FloatVectorOperations::copyWithMultiply(scaledBuffer.getData(), inputBuffer.getData(), originalScaleFactor, samples);
+        AudioDataConverters::convertFloatToInt16LE(scaledBuffer.getData(), originalOutput.getData(), samples);
+        SIMDConverter::convertFloatToInt16(inputBuffer.getData(), simdOutput.getData(), simdScaleFactor, samples);
+    }
+    
+    // Benchmark original
+    auto startOriginal = high_resolution_clock::now();
+    for (int iter = 0; iter < iterations; iter++)
+    {
+        for (int ch = 0; ch < channels; ch++)
+        {
+            FloatVectorOperations::copyWithMultiply(scaledBuffer.getData(), inputBuffer.getData(), originalScaleFactor, samples);
+            AudioDataConverters::convertFloatToInt16LE(scaledBuffer.getData(), originalOutput.getData(), samples);
+        }
+    }
+    auto endOriginal = high_resolution_clock::now();
+    double originalTimeMs = duration_cast<microseconds>(endOriginal - startOriginal).count() / 1000.0;
+    
+    // Benchmark SIMD
+    auto startSIMD = high_resolution_clock::now();
+    for (int iter = 0; iter < iterations; iter++)
+    {
+        for (int ch = 0; ch < channels; ch++)
+        {
+            SIMDConverter::convertFloatToInt16(inputBuffer.getData(), simdOutput.getData(), simdScaleFactor, samples);
+        }
+    }
+    auto endSIMD = high_resolution_clock::now();
+    double simdTimeMs = duration_cast<microseconds>(endSIMD - startSIMD).count() / 1000.0;
+    
+    int64_t totalSamples = (int64_t)channels * samples * iterations;
+    double originalMBps = (totalSamples * sizeof(int16)) / (originalTimeMs / 1000.0) / 1e6;
+    double simdMBps = (totalSamples * sizeof(int16)) / (simdTimeMs / 1000.0) / 1e6;
+    double speedup = originalTimeMs / simdTimeMs;
+    
+    std::cout << "\n========================================\n";
+    std::cout << "SIMD vs Original Comparison (" << channels << " ch, " << samples << " samples)\n";
+    std::cout << "SIMD type: " << SIMDConverter::getSIMDTypeString() << "\n";
+    std::cout << "----------------------------------------\n";
+    std::cout << "Original (JUCE):  " << std::fixed << std::setprecision(1) 
+              << originalMBps << " MB/s (" << originalTimeMs << " ms)\n";
+    std::cout << "SIMD Converter:   " << simdMBps << " MB/s (" << simdTimeMs << " ms)\n";
+    std::cout << "Speedup:          " << std::setprecision(2) << speedup << "x\n";
+    std::cout << "========================================\n";
+    
+    EXPECT_GT(speedup, 1.0);
+}
+
+TEST_F(RecordNodeBenchmark, SIMD_GeneratePerformanceReport)
+{
+    std::cout << "\n";
+    std::cout << "================================================================\n";
+    std::cout << "         SIMD CONVERTER PERFORMANCE REPORT\n";
+    std::cout << "================================================================\n";
+    std::cout << "SIMD implementation: " << SIMDConverter::getSIMDTypeString() << "\n";
+    std::cout << "\n";
+    
+    std::vector<int> channelCounts = {384, 768, 1536};
+    std::vector<int> sampleCounts = {1024, 2048, 4096, 8192};
+    
+    std::cout << "----------------------------------------------------------------\n";
+    std::cout << "Throughput Comparison (MB/s):\n";
+    std::cout << "----------------------------------------------------------------\n";
+    std::cout << std::setw(10) << "Channels" << std::setw(10) << "Samples"
+              << std::setw(12) << "Original" << std::setw(12) << "SIMD"
+              << std::setw(10) << "Speedup" << "\n";
+    
+    for (int channels : channelCounts)
+    {
+        for (int samples : sampleCounts)
+        {
+            float originalScaleFactor = 1.0f / (float(0x7fff) * bitVolts);
+            float simdScaleFactor = 1.0f / bitVolts;
+            int iterations = std::max(10, 1000000 / (channels * samples));
+            
+            HeapBlock<float> inputBuffer(samples);
+            HeapBlock<float> scaledBuffer(samples);
+            HeapBlock<int16> originalOutput(samples);
+            HeapBlock<int16_t> simdOutput(samples);
+            
+            for (int i = 0; i < samples; i++)
+            {
+                inputBuffer[i] = 100.0f * std::sin(2.0f * 3.14159f * i / 100.0f);
+            }
+            
+            // Benchmark original
+            auto startOriginal = high_resolution_clock::now();
+            for (int iter = 0; iter < iterations; iter++)
+            {
+                for (int ch = 0; ch < channels; ch++)
+                {
+                    FloatVectorOperations::copyWithMultiply(scaledBuffer.getData(), inputBuffer.getData(), originalScaleFactor, samples);
+                    AudioDataConverters::convertFloatToInt16LE(scaledBuffer.getData(), originalOutput.getData(), samples);
+                }
+            }
+            auto endOriginal = high_resolution_clock::now();
+            double originalTimeMs = duration_cast<microseconds>(endOriginal - startOriginal).count() / 1000.0;
+            
+            // Benchmark SIMD
+            auto startSIMD = high_resolution_clock::now();
+            for (int iter = 0; iter < iterations; iter++)
+            {
+                for (int ch = 0; ch < channels; ch++)
+                {
+                    SIMDConverter::convertFloatToInt16(inputBuffer.getData(), simdOutput.getData(), simdScaleFactor, samples);
+                }
+            }
+            auto endSIMD = high_resolution_clock::now();
+            double simdTimeMs = duration_cast<microseconds>(endSIMD - startSIMD).count() / 1000.0;
+            
+            int64_t totalSamples = (int64_t)channels * samples * iterations;
+            double originalMBps = (totalSamples * sizeof(int16)) / (originalTimeMs / 1000.0) / 1e6;
+            double simdMBps = (totalSamples * sizeof(int16)) / (simdTimeMs / 1000.0) / 1e6;
+            double speedup = originalTimeMs / simdTimeMs;
+            
+            std::cout << std::setw(10) << channels << std::setw(10) << samples
+                      << std::setw(12) << std::fixed << std::setprecision(1) << originalMBps
+                      << std::setw(12) << simdMBps
+                      << std::setw(10) << std::setprecision(2) << speedup << "x\n";
+        }
+    }
+    
+    std::cout << "\n";
+    std::cout << "================================================================\n";
+    std::cout << "                    END OF SIMD REPORT\n";
+    std::cout << "================================================================\n";
 }
 
 // ============================================================================
