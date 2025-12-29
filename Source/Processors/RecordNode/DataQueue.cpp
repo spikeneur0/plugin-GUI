@@ -158,16 +158,22 @@ float DataQueue::writeSynchronizedTimestamps (double start, double step, int des
         LOGE (__FUNCTION__, " Recording Data Queue Overflow: sz1: ", size1, " sz2: ", size2, " nSamples: ", nSamples);
     }
 
+    // Get direct pointer access for faster writes
+    double* writePtr = m_FTSBuffer.getWritePointer (destChannel);
+
+    // Fill first segment
     for (int i = 0; i < size1; i++)
     {
-        m_FTSBuffer.setSample (destChannel, index1 + i, start + (double) i * step);
+        writePtr[index1 + i] = start + (double) i * step;
     }
 
+    // Fill second segment (wrap-around) if present
     if (size2 > 0)
     {
+        double offset = start + (double) size1 * step;
         for (int i = 0; i < size2; i++)
         {
-            m_FTSBuffer.setSample (destChannel, index2 + i, start + (double) (size1 * step) + double (i * step));
+            writePtr[index2 + i] = offset + (double) i * step;
         }
     }
 
@@ -214,8 +220,69 @@ float DataQueue::writeChannel (const AudioBuffer<float>& buffer,
     return 1.0f - (float) m_fifos[destChannel]->getFreeSpace() / (float) m_fifos[destChannel]->getTotalSize();
 }
 
+float DataQueue::writeAllChannels (const AudioBuffer<float>& buffer,
+                                   const Array<int>& srcChannels,
+                                   int nSamples,
+                                   int64 sampleNumber)
+{
+    if (m_numChans == 0 || nSamples == 0)
+        return 0.0f;
+
+    // Get FIFO indices from first channel - all channels should be in sync
+    int index1, size1, index2, size2;
+    m_fifos[0]->prepareToWrite (nSamples, index1, size1, index2, size2);
+
+    if ((size1 + size2) < nSamples)
+    {
+        LOGE (__FUNCTION__, " Recording Data Queue Overflow: sz1: ", size1, " sz2: ", size2, " nSamples: ", nSamples);
+    }
+
+    float maxUsage = 0.0f;
+
+    // Fill sample numbers once for channel 0
+    fillSampleNumbers (0, index1, size1, sampleNumber);
+    if (size2 > 0)
+    {
+        fillSampleNumbers (0, index2, size2, sampleNumber + size1);
+    }
+
+    // Batch copy and update all channels
+    for (int destChannel = 0; destChannel < m_numChans; ++destChannel)
+    {
+        int srcChannel = srcChannels[destChannel];
+
+        // Copy first segment
+        m_buffer.copyFrom (destChannel, index1, buffer, srcChannel, 0, size1);
+
+        // Copy second segment (wrap-around) if present
+        if (size2 > 0)
+        {
+            m_buffer.copyFrom (destChannel, index2, buffer, srcChannel, size1, size2);
+        }
+
+        // Copy sample numbers from channel 0 (faster than calling fillSampleNumbers for each)
+        if (destChannel > 0)
+        {
+            std::memcpy (m_sampleNumbers[destChannel]->data(),
+                         m_sampleNumbers[0]->data(),
+                         m_numBlocks * sizeof (int64));
+        }
+
+        // Update FIFO state - need to call prepareToWrite for channels > 0
+        if (destChannel > 0)
+        {
+            int d1, d2, d3, d4;
+            m_fifos[destChannel]->prepareToWrite (nSamples, d1, d2, d3, d4);
+        }
+        m_fifos[destChannel]->finishedWrite (size1 + size2);
+    }
+
+    // Return usage from last channel (all should be the same)
+    return 1.0f - (float) m_fifos[m_numChans - 1]->getFreeSpace() / (float) m_fifos[m_numChans - 1]->getTotalSize();
+}
+
 /*
-We could copy the internal circular buffer to an external one, as DataBuffer does. This class
+We could copy the internal circular buffer to an external one, as DataBuffer does.
 is, however, intended for disk writing, which is one of the most CPU-critical systems. Just
 allowing the record subsystem to access the internal buffer is way faster, although it has to be
 done with special care and manually finish the read process.

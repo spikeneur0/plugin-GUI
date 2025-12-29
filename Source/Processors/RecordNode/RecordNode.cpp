@@ -791,6 +791,7 @@ bool RecordNode::stopAcquisition()
 // called by GenericProcessor::setRecording() and CoreServices::setRecordingStatus()
 void RecordNode::startRecording()
 {
+    
     Array<int> chanProcessorMap;
     Array<int> chanOrderinProc;
     OwnedArray<RecordProcessorInfo> procInfo;
@@ -867,6 +868,9 @@ void RecordNode::startRecording()
     int bufferSize = ads.bufferSize;
 
     dataQueues.clear();
+    streamSourceChannels.clear();
+    int globalChannelIdx = 0;
+
     for (int i = 0; i < dataStreams.size(); i++)
     {
         // Only create queue if this stream has recorded channels
@@ -876,12 +880,24 @@ void RecordNode::startRecording()
             queue->setChannelCount (recordedChannelsPerStream[i]);
             queue->setTimestampStreamCount (1);  // Each queue has one timestamp stream
             dataQueues.add (queue);
+
+            // Pre-compute source channel array for this stream
+            Array<int>* srcChannels = new Array<int>();
+            srcChannels->ensureStorageAllocated (recordedChannelsPerStream[i]);
+            for (int j = 0; j < recordedChannelsPerStream[i]; j++)
+            {
+                srcChannels->add (channelMap[globalChannelIdx + j]);
+            }
+            streamSourceChannels.add (srcChannels);
         }
         else
         {
             // Add nullptr placeholder to maintain stream index alignment
             dataQueues.add (nullptr);
+            streamSourceChannels.add (nullptr);
         }
+
+        globalChannelIdx += recordedChannelsPerStream[i];
     }
 
     recordThread->setQueuePointers (&dataQueues, eventQueue.get(), spikeQueue.get());
@@ -1099,7 +1115,10 @@ void RecordNode::process (AudioBuffer<float>& buffer)
         {
             streamIndex++;
 
-            int recordChanCount = (*stream)["channels"].getArray()->size();
+            // Use pre-computed array size to avoid JSON lookup on every call
+            int recordChanCount = (streamSourceChannels[streamIndex] != nullptr)
+                                      ? streamSourceChannels[streamIndex]->size()
+                                      : 0;
 
             if (recordChanCount == 0)
                 continue;
@@ -1110,8 +1129,6 @@ void RecordNode::process (AudioBuffer<float>& buffer)
             uint32 numSamples = getNumSamplesInBlock (streamId);
 
             int64 sampleNumber = getFirstSampleNumberForBlock (streamId);
-
-            float totalFifoUsage = 0.0f;
 
             double first, second;
 
@@ -1142,22 +1159,21 @@ void RecordNode::process (AudioBuffer<float>& buffer)
                     numSamples);
             }
 
-            for (int i = 0; i < recordChanCount; i++)
+            if (numSamples > 0 && recordChanCount > 0 && streamSourceChannels[streamIndex] != nullptr)
             {
-                channelIndex++;
-
-                if (numSamples > 0)
-                {
-                    // Write to per-stream queue with local channel index (i)
-                    totalFifoUsage += dataQueues[streamIndex]->writeChannel (buffer,
-                                                               channelMap[channelIndex],
-                                                               i,  // local channel index within stream
-                                                               numSamples,
-                                                               sampleNumber);
-                }
+                // Batch write all channels at once using pre-computed source channels
+                fifoUsage[streamId] = dataQueues[streamIndex]->writeAllChannels (
+                    buffer,
+                    *streamSourceChannels[streamIndex],
+                    numSamples,
+                    sampleNumber);
+            }
+            else
+            {
+                fifoUsage[streamId] = 0.0f;
             }
 
-            fifoUsage[streamId] = totalFifoUsage / recordChanCount;
+            channelIndex += recordChanCount;
 
             if (fifoUsage[streamId] > 0.9)
                 fifoAlmostFull = true;

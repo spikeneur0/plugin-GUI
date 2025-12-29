@@ -293,6 +293,7 @@ private:
     int recordingNumber;
 
     OwnedArray<DataQueue> dataQueues;  // One DataQueue per stream for race-condition-free reading
+    OwnedArray<Array<int>> streamSourceChannels;  // Pre-computed source channel indices per stream
     std::unique_ptr<EventMsgQueue> eventQueue;
     std::unique_ptr<SpikeMsgQueue> spikeQueue;
 

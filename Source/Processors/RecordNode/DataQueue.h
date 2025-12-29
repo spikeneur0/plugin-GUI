@@ -69,6 +69,22 @@ public:
     /** Writes an array of data for one channel */
     float writeChannel (const AudioBuffer<float>& buffer, int srcChannel, int destChannel, int nSamples, int64 sampleNumber);
 
+    /** 
+     * Batch write: writes data for all channels in a single operation.
+     * Much faster than calling writeChannel() repeatedly because it uses
+     * a single FIFO operation for all channels.
+     * 
+     * @param buffer      Source audio buffer
+     * @param srcChannels Array mapping dest channel index to source channel index
+     * @param nSamples    Number of samples to write per channel
+     * @param sampleNumber Starting sample number for this block
+     * @return Maximum FIFO usage across all channels (0.0 to 1.0)
+     */
+    float writeAllChannels (const AudioBuffer<float>& buffer, 
+                            const Array<int>& srcChannels,
+                            int nSamples, 
+                            int64 sampleNumber);
+
     /** Writes an array of timestamps for one stream */
     float writeSynchronizedTimestamps (double start, double step, int destChannel, int nSamples);
 
