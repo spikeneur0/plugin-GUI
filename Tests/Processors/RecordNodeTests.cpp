@@ -206,8 +206,8 @@ protected:
     }
 
     static int16_t minValPossible() {
-        // The min value is actually -32767 in the math in RecordNode, not -32768 like the "true" min for int16_t
-        return (std::numeric_limits<int16_t>::min)() + 1;
+        // The SIMDConverter correctly uses the full int16 range [-32768, 32767]
+        return (std::numeric_limits<int16_t>::min)();
     }
 
     static int16_t maxValPossible() {

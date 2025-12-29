@@ -22,6 +22,7 @@
 */
 
 #include "BinaryRecording.h"
+#include "SIMDConverter.h"
 
 #include "../../Settings/DataStream.h"
 #include "../../Settings/InfoObject.h"
@@ -651,10 +652,10 @@ void BinaryRecording::writeContinuousData (int writeChannel,
         m_bufferSize = size;
     }
 
-    /* Convert signal from float to int w/ bitVolts scaling */
-    double multFactor = 1 / (float (0x7fff) * getContinuousChannel (realChannel)->getBitVolts());
-    FloatVectorOperations::copyWithMultiply (m_scaledBuffer.getData(), dataBuffer, multFactor, size);
-    AudioDataConverters::convertFloatToInt16LE (m_scaledBuffer.getData(), m_intBuffer.getData(), size);
+    /* Convert signal from float to int16 w/ bitVolts scaling using SIMD-optimized conversion.
+       The scale factor converts microvolts to int16 units: output = input / bitVolts */
+    float scaleFactor = 1.0f / getContinuousChannel (realChannel)->getBitVolts();
+    SIMDConverter::convertFloatToInt16 (dataBuffer, m_intBuffer.getData(), scaleFactor, size);
 
     /* Get the file index that belongs to the current recording channel */
     int fileIndex = m_fileIndexes[writeChannel];
