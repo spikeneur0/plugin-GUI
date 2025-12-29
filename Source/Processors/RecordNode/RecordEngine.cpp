@@ -131,6 +131,22 @@ int RecordEngine::getNumRecordedSpikeChannels() const
     return recordNode->getTotalSpikeChannels();
 }
 
+void RecordEngine::writeContinuousDataBatch (const int* writeChannels,
+                                             const int* realChannels,
+                                             const float* const* dataBuffers,
+                                             const double* timestampBuffer,
+                                             int numChannels,
+                                             int numSamples,
+                                             int fileIndex)
+{
+    // Default implementation: fall back to per-channel writes
+    // Subclasses can override for optimized batch processing
+    for (int i = 0; i < numChannels; i++)
+    {
+        writeContinuousData (writeChannels[i], realChannels[i], dataBuffers[i], timestampBuffer, numSamples);
+    }
+}
+
 void RecordEngine::configureEngine()
 {
     if (! manager)

@@ -62,6 +62,18 @@ public:
                               const double* timestampBuffer,
                               int size);
 
+    /** 
+     * Writes continuous data for all channels of a stream in a single batch operation.
+     * Uses SIMD-optimized conversion and cache-efficient interleaving.
+     */
+    void writeContinuousDataBatch (const int* writeChannels,
+                                   const int* realChannels,
+                                   const float* const* dataBuffers,
+                                   const double* timestampBuffer,
+                                   int numChannels,
+                                   int numSamples,
+                                   int fileIndex) override;
+
     /** Writes an event to disk */
     void writeEvent (int eventIndex, const EventPacket& packet);
 
@@ -101,6 +113,14 @@ private:
     HeapBlock<int64> m_sampleNumberBuffer;
     int m_bufferSize;
     int m_syncTimestampBufferSize;
+
+    // Batch conversion buffers
+    static const int MAX_BATCH_CHANNELS = 512;  // Maximum channels per batch
+    std::vector<float> m_batchScaleFactors;
+    std::vector<int16*> m_batchIntBufferPtrs;
+    HeapBlock<int16> m_batchIntBuffer;  // Separate buffer for batch writes
+    int m_batchBufferSamples { 0 };      // Samples per channel in batch buffer
+    int m_batchBufferChannels { 0 };     // Number of channels in batch buffer
 
     Array<unsigned int> m_channelIndexes;
     Array<unsigned int> m_fileIndexes;

@@ -129,6 +129,108 @@ bool SequentialBlockFile::writeChannel (uint64 startPos, int channel, int16* dat
     return true;
 }
 
+bool SequentialBlockFile::writeChannelBatch (uint64 startPos, int16* const* channelData, int numChannels, int nSamples)
+{
+    if (! m_file)
+    {
+        printf ("[RN]SequentialBlockFile::writeChannelBatch returned false: (!m_file)\n");
+        return false;
+    }
+
+    if (numChannels != m_nChannels)
+    {
+        printf ("[RN]SequentialBlockFile::writeChannelBatch: channel count mismatch (%d vs %d)\n", 
+                numChannels, m_nChannels);
+        return false;
+    }
+
+    int bIndex = m_memBlocks.size() - 1;
+    if ((bIndex < 0) || (m_memBlocks[bIndex]->getOffset() + m_samplesPerBlock) < (startPos + nSamples))
+        allocateBlocks (startPos, nSamples);
+
+    for (bIndex = m_memBlocks.size() - 1; bIndex >= 0; bIndex--)
+    {
+        if (m_memBlocks[bIndex]->getOffset() <= startPos)
+            break;
+    }
+    if (bIndex < 0)
+    {
+        return false;
+    }
+
+    int writtenSamples = 0;
+    uint64 startIdx = startPos - m_memBlocks[bIndex]->getOffset();
+    int dataIdx = 0;
+    int lastBlockIdx = m_memBlocks.size() - 1;
+
+    // Process in blocks for better cache utilization
+    // Block size chosen to fit in L1 cache (typically 32-64KB)
+    const int cacheBlockSamples = 64;  // Process 64 samples at a time
+
+    // Cache blocking parameters - chosen to fit in L1 cache (~32KB)
+    // For a tile of TILE_SAMPLES x TILE_CHANNELS:
+    // - Input: TILE_CHANNELS pointers (8 bytes each) + TILE_SAMPLES * TILE_CHANNELS * 2 bytes data
+    // - Output: TILE_SAMPLES * nChannels * 2 bytes (but we only write TILE_CHANNELS at a time)
+    // With 256 samples x 64 channels: 256 * 64 * 2 = 32KB input data per tile
+    const int TILE_SAMPLES = 256;
+    const int TILE_CHANNELS = 64;
+
+    while (writtenSamples < nSamples)
+    {
+        int16* blockPtr = m_memBlocks[bIndex]->getData();
+        int samplesToWrite = jmin ((nSamples - writtenSamples), (m_samplesPerBlock - int (startIdx)));
+
+        uint64 baseMemPos = startIdx * m_nChannels;
+
+        // Process in tiles to optimize cache usage
+        // For each tile of samples:
+        for (int sampleTileStart = 0; sampleTileStart < samplesToWrite; sampleTileStart += TILE_SAMPLES)
+        {
+            int sampleTileEnd = jmin (sampleTileStart + TILE_SAMPLES, samplesToWrite);
+
+            // For each tile of channels:
+            for (int channelTileStart = 0; channelTileStart < m_nChannels; channelTileStart += TILE_CHANNELS)
+            {
+                int channelTileEnd = jmin (channelTileStart + TILE_CHANNELS, m_nChannels);
+
+                // Process this tile - iterate samples in outer loop to optimize output writes
+                for (int s = sampleTileStart; s < sampleTileEnd; s++)
+                {
+                    uint64 memPos = baseMemPos + s * m_nChannels + channelTileStart;
+                    int srcIdx = dataIdx + s;
+
+                    // Write channels in this tile for this sample
+                    for (int ch = channelTileStart; ch < channelTileEnd; ch++)
+                    {
+                        blockPtr[memPos + (ch - channelTileStart)] = channelData[ch][srcIdx];
+                    }
+                }
+            }
+        }
+
+        writtenSamples += samplesToWrite;
+        dataIdx += samplesToWrite;
+
+        // Update the last block fill index
+        size_t samplePos = startIdx + samplesToWrite;
+        if (bIndex == lastBlockIdx && samplePos > m_lastBlockFill)
+        {
+            m_lastBlockFill = samplePos;
+        }
+
+        startIdx = 0;
+        bIndex++;
+    }
+
+    // Update current block for all channels
+    for (int ch = 0; ch < m_nChannels; ch++)
+    {
+        m_currentBlock.set (ch, bIndex - 1);
+    }
+
+    return true;
+}
+
 void SequentialBlockFile::allocateBlocks (uint64 startIndex, int numSamples)
 {
     //First deallocate full blocks

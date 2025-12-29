@@ -66,6 +66,19 @@ public:
     /** Writes nSamples of data for a particular channel */
     bool writeChannel (uint64 startPos, int channel, int16* data, int nSamples);
 
+    /** 
+     * Writes data for all channels at once with optimized interleaving.
+     * This is more efficient than calling writeChannel() for each channel separately
+     * because it performs interleaving in a cache-friendly manner.
+     * 
+     * @param startPos     Starting sample position in the file
+     * @param channelData  Array of pointers to int16 data for each channel
+     * @param numChannels  Number of channels (must match m_nChannels)
+     * @param nSamples     Number of samples per channel
+     * @return true if write was successful
+     */
+    bool writeChannelBatch (uint64 startPos, int16* const* channelData, int numChannels, int nSamples);
+
 private:
     std::shared_ptr<FileOutputStream> m_file;
     const int m_nChannels;

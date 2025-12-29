@@ -167,62 +167,110 @@ void RecordThread::writeData (const AudioBuffer<float>& dataBuffer,
     {
         m_engine->updateLatestSampleNumbers (sampleNumbers);
 
-        /* Copy data to record engine */
-        for (int chan = 0; chan < m_numChannels; ++chan)
+        // Group channels by stream (identified by timestamp buffer channel) for batch writes
+        // Channels with the same timestamp buffer belong to the same stream
+        int chan = 0;
+        while (chan < m_numChannels)
         {
-            if (dataBufferIdxs[chan].size1 > 0)
+            // Skip channels with no data
+            if (dataBufferIdxs[chan].size1 == 0)
             {
-                const double* r = timestampBuffer.getReadPointer (m_timestampBufferChannelArray[chan],
-                                                                  dataBufferIdxs[chan].index1);
+                chan++;
+                continue;
+            }
 
-                //if (chan == 0)
-                //  std::cout << "Writing " << dataBufferIdxs[chan].size1 << " samples for channel 0"
-                //            << std::endl;
+            // Find all consecutive channels belonging to the same stream with matching buffer positions
+            int currentStream = m_timestampBufferChannelArray[chan];
+            int batchStartChan = chan;
+            int numSamples = dataBufferIdxs[chan].size1;
+            int bufferIndex = dataBufferIdxs[chan].index1;
 
+            // Clear batch arrays
+            m_batchWriteChannels.clear();
+            m_batchRealChannels.clear();
+            m_batchDataPtrs.clear();
+
+            // Collect channels for this batch
+            while (chan < m_numChannels &&
+                   m_timestampBufferChannelArray[chan] == currentStream &&
+                   dataBufferIdxs[chan].size1 == numSamples &&
+                   dataBufferIdxs[chan].index1 == bufferIndex)
+            {
+                m_batchWriteChannels.push_back (chan);
+                m_batchRealChannels.push_back (m_channelArray[chan]);
+                m_batchDataPtrs.push_back (dataBuffer.getReadPointer (chan, bufferIndex));
+                chan++;
+            }
+
+            int batchSize = static_cast<int> (m_batchWriteChannels.size());
+
+            // Get timestamp buffer for this stream
+            const double* timestamps = timestampBuffer.getReadPointer (currentStream, bufferIndex);
+
+            // Use batch write if we have multiple channels, otherwise use single-channel write
+            if (batchSize > 1)
+            {
+                m_engine->writeContinuousDataBatch (
+                    m_batchWriteChannels.data(),
+                    m_batchRealChannels.data(),
+                    m_batchDataPtrs.data(),
+                    timestamps,
+                    batchSize,
+                    numSamples,
+                    currentStream); // file index = stream index for BinaryRecording
+            }
+            else
+            {
                 m_engine->writeContinuousData (
-                    chan, // write channel (index among all recorded channels)
-                    m_channelArray[chan], // real channel (index within processor)
-                    dataBuffer.getReadPointer (chan, dataBufferIdxs[chan].index1), // pointer to float
-                    r, // pointer to float
-                    dataBufferIdxs[chan].size1); // integer
+                    m_batchWriteChannels[0],
+                    m_batchRealChannels[0],
+                    m_batchDataPtrs[0],
+                    timestamps,
+                    numSamples);
+            }
 
-                /*if (chan == 0)
-			{
+            // Handle wrap-around (size2) if present
+            if (dataBufferIdxs[batchStartChan].size2 > 0)
+            {
+                int numSamples2 = dataBufferIdxs[batchStartChan].size2;
+                int bufferIndex2 = dataBufferIdxs[batchStartChan].index2;
 
-				std::cout << chan << " " << m_channelArray[chan] <<
-					" " << dataBufferIdxs[chan].index1 <<
-					" " << dataBufferIdxs[chan].size1 <<
-					" " << dataBufferIdxs[chan].index2 <<
-					" " << dataBufferIdxs[chan].size2
-					<< " "
-					<< *r << std::endl;
-
-				std::cout << chan << " " << m_timestampBufferChannelArray[chan] <<
-					" " << timestampBufferIdxs[m_timestampBufferChannelArray[chan]].index1 <<
-					" " << timestampBufferIdxs[m_timestampBufferChannelArray[chan]].size1 <<
-					" " << timestampBufferIdxs[m_timestampBufferChannelArray[chan]].index2 <<
-					" " << timestampBufferIdxs[m_timestampBufferChannelArray[chan]].size2
-					<< " "
-					<< *r << std::endl;
-			}*/
-
-                //samplesWritten += dataBufferIdxs[chan].size1;
-
-                if (dataBufferIdxs[chan].size2 > 0)
+                // Update sample numbers for all channels in the batch
+                for (int i = 0; i < batchSize; i++)
                 {
-                    sampleNumbers.set (chan, sampleNumbers[chan] + dataBufferIdxs[chan].size1);
+                    int batchChan = m_batchWriteChannels[i];
+                    sampleNumbers.set (batchChan, sampleNumbers[batchChan] + numSamples);
+                }
+                m_engine->updateLatestSampleNumbers (sampleNumbers, m_batchWriteChannels[0]);
 
-                    m_engine->updateLatestSampleNumbers (sampleNumbers, chan);
+                // Update data pointers for the second segment
+                for (int i = 0; i < batchSize; i++)
+                {
+                    int batchChan = m_batchWriteChannels[i];
+                    m_batchDataPtrs[i] = dataBuffer.getReadPointer (batchChan, bufferIndex2);
+                }
 
+                const double* timestamps2 = timestampBuffer.getReadPointer (currentStream, bufferIndex2);
+
+                if (batchSize > 1)
+                {
+                    m_engine->writeContinuousDataBatch (
+                        m_batchWriteChannels.data(),
+                        m_batchRealChannels.data(),
+                        m_batchDataPtrs.data(),
+                        timestamps2,
+                        batchSize,
+                        numSamples2,
+                        currentStream);
+                }
+                else
+                {
                     m_engine->writeContinuousData (
-                        chan, // write channel (index among all recorded channels)
-                        m_channelArray[chan], // real channel (index within processor)
-                        dataBuffer.getReadPointer (chan, dataBufferIdxs[chan].index2), // pointer to float
-                        timestampBuffer.getReadPointer (m_timestampBufferChannelArray[chan],
-                                                        dataBufferIdxs[chan].index2), // pointer to float
-                        dataBufferIdxs[chan].size2); // integer
-
-                    //samplesWritten += dataBufferIdxs[chan].size2;
+                        m_batchWriteChannels[0],
+                        m_batchRealChannels[0],
+                        m_batchDataPtrs[0],
+                        timestamps2,
+                        numSamples2);
                 }
             }
         }

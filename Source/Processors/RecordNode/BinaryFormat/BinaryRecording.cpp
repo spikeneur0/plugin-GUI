@@ -786,6 +786,109 @@ void BinaryRecording::writeSpike (int electrodeIndex, const Spike* spike)
     increaseEventCounts (rec);
 }
 
+void BinaryRecording::writeContinuousDataBatch (const int* writeChannels,
+                                                 const int* realChannels,
+                                                 const float* const* dataBuffers,
+                                                 const double* timestampBuffer,
+                                                 int numChannels,
+                                                 int numSamples,
+                                                 int fileIndex)
+{
+    if (numSamples == 0 || numChannels == 0)
+        return;
+
+    // Ensure we have enough batch buffer space
+    if (numSamples > m_batchBufferSamples || numChannels > m_batchBufferChannels)
+    {
+        int newSamples = jmax (numSamples, m_batchBufferSamples);
+        int newChannels = jmax (numChannels, m_batchBufferChannels);
+        
+        LOGD ("BinaryRecording::writeContinuousDataBatch: Resizing batch buffer to ", 
+              newChannels, " channels x ", newSamples, " samples");
+        
+        m_batchIntBuffer.malloc (newSamples * newChannels);
+        m_batchBufferSamples = newSamples;
+        m_batchBufferChannels = newChannels;
+    }
+
+    // Ensure sample number buffer is large enough
+    if (numSamples > m_bufferSize)
+    {
+        m_sampleNumberBuffer.malloc (numSamples);
+        m_bufferSize = numSamples;
+    }
+
+    // Resize batch pointer arrays if needed
+    if (m_batchScaleFactors.size() < static_cast<size_t> (numChannels))
+    {
+        m_batchScaleFactors.resize (numChannels);
+        m_batchIntBufferPtrs.resize (numChannels);
+    }
+
+    // Get file and validate
+    if (fileIndex < 0 || fileIndex >= m_continuousFiles.size() || ! m_continuousFiles[fileIndex])
+        return;
+
+    // Setup scale factors and output buffer pointers for each channel
+    // Each channel gets a contiguous region of m_batchIntBuffer
+    for (int i = 0; i < numChannels; i++)
+    {
+        m_batchScaleFactors[i] = 1.0f / getContinuousChannel (realChannels[i])->getBitVolts();
+        m_batchIntBufferPtrs[i] = m_batchIntBuffer.getData() + i * numSamples;
+    }
+
+    // Batch convert all channels using SIMD
+    SIMDConverter::convertFloatToInt16Batch (
+        dataBuffers,
+        m_batchIntBufferPtrs.data(),
+        m_batchScaleFactors.data(),
+        numChannels,
+        numSamples);
+
+    // Get starting sample position (all channels in a stream have same position)
+    uint64 startPos = m_samplesWritten[writeChannels[0]];
+
+    // Write all channels at once using batch interleaving
+    m_continuousFiles[fileIndex]->writeChannelBatch (
+        startPos,
+        m_batchIntBufferPtrs.data(),
+        numChannels,
+        numSamples);
+
+    // Update samples written for all channels
+    for (int i = 0; i < numChannels; i++)
+    {
+        m_samplesWritten.set (writeChannels[i], m_samplesWritten[writeChannels[i]] + numSamples);
+    }
+
+    // Write timestamps (only once per stream, using the first channel)
+    // Find which channel in this batch is the first channel for this file (channel index 0 within stream)
+    for (int i = 0; i < numChannels; i++)
+    {
+        if (m_channelIndexes[writeChannels[i]] == 0)
+        {
+            int64 baseSampleNumber = getLatestSampleNumber (writeChannels[i]);
+            uint32 streamId = getContinuousChannel (realChannels[i])->getStreamId();
+
+            if (! wroteFirstSampleNumber[streamId])
+            {
+                firstSampleNumber[streamId] = baseSampleNumber;
+                wroteFirstSampleNumber[streamId] = true;
+            }
+
+            for (int s = 0; s < numSamples; s++)
+                m_sampleNumberBuffer[s] = baseSampleNumber + s;
+
+            m_dataTimestampFiles[fileIndex]->writeData (m_sampleNumberBuffer, numSamples * sizeof (int64));
+            m_dataTimestampFiles[fileIndex]->increaseRecordCount (numSamples);
+
+            m_dataSyncTimestampFiles[fileIndex]->writeData (timestampBuffer, numSamples * sizeof (double));
+            m_dataSyncTimestampFiles[fileIndex]->increaseRecordCount (numSamples);
+            break;
+        }
+    }
+}
+
 void BinaryRecording::writeTimestampSyncText (uint64 streamId, int64 sampleNumber, float sourceSampleRate, String text)
 {
     if (! m_syncTextFile)

@@ -1122,6 +1122,266 @@ TEST_F(RecordNodeBenchmark, SIMD_GeneratePerformanceReport)
 }
 
 // ============================================================================
+// BATCH WRITE BENCHMARKS
+// ============================================================================
+
+/**
+ * Benchmark comparing per-channel vs batch interleaved writes in SequentialBlockFile
+ */
+TEST_F(RecordNodeBenchmark, BatchWrite_vs_PerChannel_Interleave_384ch)
+{
+    const int channels = 384;
+    const int samples = 4096;
+    const int iterations = 50;
+    
+    // Allocate test data - one buffer per channel
+    std::vector<HeapBlock<int16>> channelData(channels);
+    std::vector<int16*> channelPtrs(channels);
+    
+    for (int ch = 0; ch < channels; ch++)
+    {
+        channelData[ch].malloc(samples);
+        channelPtrs[ch] = channelData[ch].getData();
+        for (int s = 0; s < samples; s++)
+        {
+            channelData[ch][s] = static_cast<int16>((ch * 100 + s) % 32767);
+        }
+    }
+    
+    double perChannelTimeMs = 0.0;
+    double batchTimeMs = 0.0;
+    
+    // Per-channel benchmark
+    for (int iter = 0; iter < iterations; iter++)
+    {
+        auto tempFile = parentRecordingDir / ("bench_perchan_" + std::to_string(iter) + ".dat");
+        
+        SequentialBlockFile blockFile(channels, 4096);
+        blockFile.openFile(tempFile.string());
+        
+        auto startTime = high_resolution_clock::now();
+        
+        for (int ch = 0; ch < channels; ch++)
+        {
+            blockFile.writeChannel(0, ch, channelPtrs[ch], samples);
+        }
+        
+        auto endTime = high_resolution_clock::now();
+        perChannelTimeMs += duration_cast<microseconds>(endTime - startTime).count() / 1000.0;
+        
+        std::filesystem::remove(tempFile);
+    }
+    
+    // Batch benchmark
+    for (int iter = 0; iter < iterations; iter++)
+    {
+        auto tempFile = parentRecordingDir / ("bench_batch_" + std::to_string(iter) + ".dat");
+        
+        SequentialBlockFile blockFile(channels, 4096);
+        blockFile.openFile(tempFile.string());
+        
+        auto startTime = high_resolution_clock::now();
+        
+        blockFile.writeChannelBatch(0, channelPtrs.data(), channels, samples);
+        
+        auto endTime = high_resolution_clock::now();
+        batchTimeMs += duration_cast<microseconds>(endTime - startTime).count() / 1000.0;
+        
+        std::filesystem::remove(tempFile);
+    }
+    
+    // Calculate throughput
+    int64_t totalSamples = (int64_t)channels * samples * iterations;
+    double perChannelMBps = (totalSamples * sizeof(int16)) / (perChannelTimeMs / 1000.0) / 1e6;
+    double batchMBps = (totalSamples * sizeof(int16)) / (batchTimeMs / 1000.0) / 1e6;
+    double speedup = perChannelTimeMs / batchTimeMs;
+    
+    std::cout << "\n========================================\n";
+    std::cout << "Batch vs Per-Channel Interleaved Write (" << channels << " ch, " << samples << " samples)\n";
+    std::cout << "----------------------------------------\n";
+    std::cout << "Per-channel:  " << std::fixed << std::setprecision(1) 
+              << perChannelMBps << " MB/s (" << perChannelTimeMs << " ms)\n";
+    std::cout << "Batch:        " << batchMBps << " MB/s (" << batchTimeMs << " ms)\n";
+    std::cout << "Speedup:      " << std::setprecision(2) << speedup << "x\n";
+    std::cout << "========================================\n";
+    
+    // Batch write should be at least as fast (speedup >= 1.0)
+    EXPECT_GE(speedup, 0.8) << "Batch write should not be significantly slower than per-channel";
+}
+
+/**
+ * Benchmark comparing per-channel vs batch interleaved writes with 768 channels
+ */
+TEST_F(RecordNodeBenchmark, BatchWrite_vs_PerChannel_Interleave_768ch)
+{
+    const int channels = 768;
+    const int samples = 4096;
+    const int iterations = 25;
+    
+    std::vector<HeapBlock<int16>> channelData(channels);
+    std::vector<int16*> channelPtrs(channels);
+    
+    for (int ch = 0; ch < channels; ch++)
+    {
+        channelData[ch].malloc(samples);
+        channelPtrs[ch] = channelData[ch].getData();
+        for (int s = 0; s < samples; s++)
+        {
+            channelData[ch][s] = static_cast<int16>((ch * 100 + s) % 32767);
+        }
+    }
+    
+    double perChannelTimeMs = 0.0;
+    double batchTimeMs = 0.0;
+    
+    for (int iter = 0; iter < iterations; iter++)
+    {
+        auto tempFile = parentRecordingDir / ("bench_perchan_768_" + std::to_string(iter) + ".dat");
+        
+        SequentialBlockFile blockFile(channels, 4096);
+        blockFile.openFile(tempFile.string());
+        
+        auto startTime = high_resolution_clock::now();
+        
+        for (int ch = 0; ch < channels; ch++)
+        {
+            blockFile.writeChannel(0, ch, channelPtrs[ch], samples);
+        }
+        
+        auto endTime = high_resolution_clock::now();
+        perChannelTimeMs += duration_cast<microseconds>(endTime - startTime).count() / 1000.0;
+        
+        std::filesystem::remove(tempFile);
+    }
+    
+    for (int iter = 0; iter < iterations; iter++)
+    {
+        auto tempFile = parentRecordingDir / ("bench_batch_768_" + std::to_string(iter) + ".dat");
+        
+        SequentialBlockFile blockFile(channels, 4096);
+        blockFile.openFile(tempFile.string());
+        
+        auto startTime = high_resolution_clock::now();
+        
+        blockFile.writeChannelBatch(0, channelPtrs.data(), channels, samples);
+        
+        auto endTime = high_resolution_clock::now();
+        batchTimeMs += duration_cast<microseconds>(endTime - startTime).count() / 1000.0;
+        
+        std::filesystem::remove(tempFile);
+    }
+    
+    int64_t totalSamples = (int64_t)channels * samples * iterations;
+    double perChannelMBps = (totalSamples * sizeof(int16)) / (perChannelTimeMs / 1000.0) / 1e6;
+    double batchMBps = (totalSamples * sizeof(int16)) / (batchTimeMs / 1000.0) / 1e6;
+    double speedup = perChannelTimeMs / batchTimeMs;
+    
+    std::cout << "\n========================================\n";
+    std::cout << "Batch vs Per-Channel Interleaved Write (" << channels << " ch, " << samples << " samples)\n";
+    std::cout << "----------------------------------------\n";
+    std::cout << "Per-channel:  " << std::fixed << std::setprecision(1) 
+              << perChannelMBps << " MB/s (" << perChannelTimeMs << " ms)\n";
+    std::cout << "Batch:        " << batchMBps << " MB/s (" << batchTimeMs << " ms)\n";
+    std::cout << "Speedup:      " << std::setprecision(2) << speedup << "x\n";
+    std::cout << "========================================\n";
+    
+    EXPECT_GE(speedup, 0.8);
+}
+
+/**
+ * Comprehensive batch write performance report
+ */
+TEST_F(RecordNodeBenchmark, BatchWrite_PerformanceReport)
+{
+    std::cout << "\n";
+    std::cout << "================================================================\n";
+    std::cout << "         BATCH WRITE PERFORMANCE REPORT\n";
+    std::cout << "================================================================\n";
+    std::cout << "\n";
+    
+    std::vector<int> channelCounts = {384, 768, 1536};
+    std::vector<int> sampleCounts = {1024, 2048, 4096};
+    
+    std::cout << "----------------------------------------------------------------\n";
+    std::cout << "SequentialBlockFile Interleaved Write Comparison:\n";
+    std::cout << "----------------------------------------------------------------\n";
+    std::cout << std::setw(10) << "Channels" << std::setw(10) << "Samples"
+              << std::setw(14) << "Per-ch MB/s" << std::setw(12) << "Batch MB/s"
+              << std::setw(10) << "Speedup" << "\n";
+    
+    for (int channels : channelCounts)
+    {
+        std::vector<HeapBlock<int16>> channelData(channels);
+        std::vector<int16*> channelPtrs(channels);
+        
+        for (int ch = 0; ch < channels; ch++)
+        {
+            channelData[ch].malloc(8192);  // Max sample size
+            channelPtrs[ch] = channelData[ch].getData();
+            for (int s = 0; s < 8192; s++)
+            {
+                channelData[ch][s] = static_cast<int16>((ch * 100 + s) % 32767);
+            }
+        }
+        
+        for (int samples : sampleCounts)
+        {
+            int iterations = std::max(5, 500000 / (channels * samples));
+            
+            double perChannelTimeMs = 0.0;
+            double batchTimeMs = 0.0;
+            
+            for (int iter = 0; iter < iterations; iter++)
+            {
+                auto tempFile = parentRecordingDir / "bench_temp.dat";
+                
+                // Per-channel write
+                {
+                    SequentialBlockFile blockFile(channels, 4096);
+                    blockFile.openFile(tempFile.string());
+                    
+                    auto startTime = high_resolution_clock::now();
+                    for (int ch = 0; ch < channels; ch++)
+                    {
+                        blockFile.writeChannel(0, ch, channelPtrs[ch], samples);
+                    }
+                    auto endTime = high_resolution_clock::now();
+                    perChannelTimeMs += duration_cast<microseconds>(endTime - startTime).count() / 1000.0;
+                }
+                std::filesystem::remove(tempFile);
+                
+                // Batch write
+                {
+                    SequentialBlockFile blockFile(channels, 4096);
+                    blockFile.openFile(tempFile.string());
+                    
+                    auto startTime = high_resolution_clock::now();
+                    blockFile.writeChannelBatch(0, channelPtrs.data(), channels, samples);
+                    auto endTime = high_resolution_clock::now();
+                    batchTimeMs += duration_cast<microseconds>(endTime - startTime).count() / 1000.0;
+                }
+                std::filesystem::remove(tempFile);
+            }
+            
+            int64_t totalSamples = (int64_t)channels * samples * iterations;
+            double perChannelMBps = (totalSamples * sizeof(int16)) / (perChannelTimeMs / 1000.0) / 1e6;
+            double batchMBps = (totalSamples * sizeof(int16)) / (batchTimeMs / 1000.0) / 1e6;
+            double speedup = perChannelTimeMs / batchTimeMs;
+            
+            std::cout << std::setw(10) << channels << std::setw(10) << samples
+                      << std::setw(14) << std::fixed << std::setprecision(1) << perChannelMBps
+                      << std::setw(12) << batchMBps
+                      << std::setw(10) << std::setprecision(2) << speedup << "x\n";
+        }
+    }
+    
+    std::cout << "\n";
+    std::cout << "================================================================\n";
+    std::cout << "                 END OF BATCH WRITE REPORT\n";
+    std::cout << "================================================================\n";
+}
+
+// ============================================================================
 // COMPREHENSIVE BASELINE REPORT
 // ============================================================================
 

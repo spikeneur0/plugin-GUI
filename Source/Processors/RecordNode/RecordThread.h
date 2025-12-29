@@ -105,6 +105,12 @@ private:
     int spikesReceived;
     int spikesWritten;
 
+    // Batch write support - pre-allocated buffers for grouping channels by stream
+    std::vector<int> m_batchWriteChannels;       // Write channel indices for current batch
+    std::vector<int> m_batchRealChannels;        // Real channel indices for current batch
+    std::vector<const float*> m_batchDataPtrs;   // Data buffer pointers for current batch
+    std::vector<int> m_streamToFileIndex;        // Maps stream index to file index
+
     File m_rootFolder;
     int m_experimentNumber;
     int m_recordingNumber;

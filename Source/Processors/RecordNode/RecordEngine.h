@@ -98,6 +98,26 @@ public:
                                       const double* timestampBuffer,
                                       int size) = 0;
 
+    /** 
+     * Write continuous data for all channels of a stream in a single batch operation.
+     * This is more efficient than calling writeContinuousData() for each channel.
+     * 
+     * @param writeChannels   Array of write channel indices (indices among all recorded channels)
+     * @param realChannels    Array of real channel indices (indices within processor)
+     * @param dataBuffers     Array of pointers to float data buffers (one per channel)
+     * @param timestampBuffer Pointer to synchronized timestamp buffer (shared across channels)
+     * @param numChannels     Number of channels in this batch
+     * @param numSamples      Number of samples per channel
+     * @param fileIndex       Index of the file/stream to write to
+     */
+    virtual void writeContinuousDataBatch (const int* writeChannels,
+                                           const int* realChannels,
+                                           const float* const* dataBuffers,
+                                           const double* timestampBuffer,
+                                           int numChannels,
+                                           int numSamples,
+                                           int fileIndex);
+
     /** Write a single event to disk (TTL or TEXT) */
     virtual void writeEvent (int eventChannel, const EventPacket& event) = 0;
 
