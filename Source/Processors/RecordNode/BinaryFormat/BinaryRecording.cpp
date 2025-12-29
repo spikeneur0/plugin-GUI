@@ -848,12 +848,30 @@ void BinaryRecording::writeContinuousDataBatch (const int* writeChannels,
     // Get starting sample position (all channels in a stream have same position)
     uint64 startPos = m_samplesWritten[writeChannels[0]];
 
-    // Write all channels at once using batch interleaving
-    m_continuousFiles[fileIndex]->writeChannelBatch (
-        startPos,
-        m_batchIntBufferPtrs.data(),
-        numChannels,
-        numSamples);
+    // Try batch interleaving if we have all channels for this file
+    // The file's channel count is determined by the stream's channel count
+    // If we have a partial batch, fall back to per-channel writes
+    bool useBatchWrite = m_continuousFiles[fileIndex] != nullptr && 
+                          m_continuousFiles[fileIndex]->writeChannelBatch (
+                              startPos,
+                              m_batchIntBufferPtrs.data(),
+                              numChannels,
+                              numSamples);
+    
+    if (! useBatchWrite)
+    {
+        // Fall back to per-channel writes for partial batches
+        for (int i = 0; i < numChannels; i++)
+        {
+            int writeChannel = writeChannels[i];
+            int channelIdx = m_channelIndexes[writeChannel];
+            m_continuousFiles[fileIndex]->writeChannel (
+                startPos, 
+                channelIdx, 
+                m_batchIntBufferPtrs[i], 
+                numSamples);
+        }
+    }
 
     // Update samples written for all channels
     for (int i = 0; i < numChannels; i++)

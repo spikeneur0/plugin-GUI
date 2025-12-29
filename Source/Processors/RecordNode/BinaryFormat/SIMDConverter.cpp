@@ -359,3 +359,249 @@ void SIMDConverter::convertFloatToInt16Batch (const float* const* inputs,
         convertFloatToInt16 (inputs[ch], outputs[ch], scaleFactors[ch], numSamples);
     }
 }
+
+// ============================================================================
+// Interleaving implementation
+// ============================================================================
+
+SIMDConverter::TileConfig SIMDConverter::getRecommendedTileConfig (int numChannels)
+{
+    // Target: Keep working set in L1 cache (~32KB)
+    // Working set = tileSamples * tileChannels * 2 bytes (int16)
+    // Plus output buffer: tileSamples * numChannels * 2 bytes
+    
+    // Tuned based on benchmark results (TileSizeTuning_Interleaving test)
+    // Larger tile channels (128) with larger tile samples perform better
+    // due to better SIMD vector utilization and cache line efficiency
+    
+    TileConfig config;
+    
+    if (numChannels >= 1024)
+    {
+        // Very high channel count: use larger tiles for better throughput
+        // Benchmark showed 256x64 is ~10% faster than 128x32 at 1536 channels
+        config.tileSamples = 256;
+        config.tileChannels = 128;
+    }
+    else if (numChannels >= 384)
+    {
+        // Neuropixels range: 256x128 provides best performance
+        // ~2% better than 256x64 at 384-768 channels
+        config.tileSamples = 256;
+        config.tileChannels = 128;
+    }
+    else if (numChannels >= 64)
+    {
+        // Medium channel count: larger sample tiles
+        config.tileSamples = 512;
+        config.tileChannels = 64;
+    }
+    else
+    {
+        // Low channel count: process all channels together
+        config.tileSamples = 1024;
+        config.tileChannels = numChannels;
+    }
+    
+    return config;
+}
+
+// Scalar interleaving (fallback and reference implementation)
+static void interleaveScalar (const int16_t* const* channelData,
+                              int16_t* output,
+                              int numChannels,
+                              int numSamples,
+                              int tileSamples,
+                              int tileChannels)
+{
+    // Process in tiles for cache efficiency
+    for (int sampleTile = 0; sampleTile < numSamples; sampleTile += tileSamples)
+    {
+        int sampleEnd = std::min (sampleTile + tileSamples, numSamples);
+        
+        for (int channelTile = 0; channelTile < numChannels; channelTile += tileChannels)
+        {
+            int channelEnd = std::min (channelTile + tileChannels, numChannels);
+            
+            // Process this tile: samples in outer loop for sequential output writes
+            for (int s = sampleTile; s < sampleEnd; s++)
+            {
+                int16_t* outPtr = output + s * numChannels + channelTile;
+                
+                for (int ch = channelTile; ch < channelEnd; ch++)
+                {
+                    *outPtr++ = channelData[ch][s];
+                }
+            }
+        }
+    }
+}
+
+#if defined(__ARM_NEON) || defined(__ARM_NEON__)
+// ARM NEON optimized interleaving
+static void interleaveNEON (const int16_t* const* channelData,
+                            int16_t* output,
+                            int numChannels,
+                            int numSamples,
+                            int tileSamples,
+                            int tileChannels)
+{
+    // Process in tiles for cache efficiency
+    for (int sampleTile = 0; sampleTile < numSamples; sampleTile += tileSamples)
+    {
+        int sampleEnd = std::min (sampleTile + tileSamples, numSamples);
+        
+        for (int channelTile = 0; channelTile < numChannels; channelTile += tileChannels)
+        {
+            int channelEnd = std::min (channelTile + tileChannels, numChannels);
+            int tileWidth = channelEnd - channelTile;
+            
+            // Process this tile
+            for (int s = sampleTile; s < sampleEnd; s++)
+            {
+                int16_t* outPtr = output + s * numChannels + channelTile;
+                int ch = channelTile;
+                
+                // Use NEON to copy 8 channels at a time when aligned
+                // This is beneficial when tileWidth >= 8
+                while (ch + 8 <= channelEnd)
+                {
+                    // Load 8 values from 8 different channel pointers
+                    // Unfortunately, NEON doesn't have a gather instruction,
+                    // so we load individually and combine
+                    int16x8_t vals = {
+                        channelData[ch + 0][s],
+                        channelData[ch + 1][s],
+                        channelData[ch + 2][s],
+                        channelData[ch + 3][s],
+                        channelData[ch + 4][s],
+                        channelData[ch + 5][s],
+                        channelData[ch + 6][s],
+                        channelData[ch + 7][s]
+                    };
+                    
+                    // Store 8 values contiguously to output
+                    vst1q_s16 (outPtr, vals);
+                    
+                    outPtr += 8;
+                    ch += 8;
+                }
+                
+                // Handle remaining channels
+                while (ch < channelEnd)
+                {
+                    *outPtr++ = channelData[ch][s];
+                    ch++;
+                }
+            }
+        }
+    }
+}
+#endif
+
+#if defined(__SSE2__) || defined(_M_X64) || defined(_M_IX86)
+// x86 SSE2 optimized interleaving
+static void interleaveSSE2 (const int16_t* const* channelData,
+                            int16_t* output,
+                            int numChannels,
+                            int numSamples,
+                            int tileSamples,
+                            int tileChannels)
+{
+    // Process in tiles for cache efficiency
+    for (int sampleTile = 0; sampleTile < numSamples; sampleTile += tileSamples)
+    {
+        int sampleEnd = std::min (sampleTile + tileSamples, numSamples);
+        
+        for (int channelTile = 0; channelTile < numChannels; channelTile += tileChannels)
+        {
+            int channelEnd = std::min (channelTile + tileChannels, numChannels);
+            int tileWidth = channelEnd - channelTile;
+            
+            // Process this tile
+            for (int s = sampleTile; s < sampleEnd; s++)
+            {
+                int16_t* outPtr = output + s * numChannels + channelTile;
+                int ch = channelTile;
+                
+                // Use SSE2 to copy 8 channels at a time
+                while (ch + 8 <= channelEnd)
+                {
+                    // Manually gather 8 int16 values and pack into __m128i
+                    // SSE2 doesn't have gather, so we use scalar loads + set
+                    __m128i vals = _mm_set_epi16 (
+                        channelData[ch + 7][s],
+                        channelData[ch + 6][s],
+                        channelData[ch + 5][s],
+                        channelData[ch + 4][s],
+                        channelData[ch + 3][s],
+                        channelData[ch + 2][s],
+                        channelData[ch + 1][s],
+                        channelData[ch + 0][s]
+                    );
+                    
+                    // Store 8 values contiguously
+                    _mm_storeu_si128 (reinterpret_cast<__m128i*> (outPtr), vals);
+                    
+                    outPtr += 8;
+                    ch += 8;
+                }
+                
+                // Handle remaining channels
+                while (ch < channelEnd)
+                {
+                    *outPtr++ = channelData[ch][s];
+                    ch++;
+                }
+            }
+        }
+    }
+}
+#endif
+
+void SIMDConverter::interleaveInt16 (const int16_t* const* channelData,
+                                     int16_t* output,
+                                     int numChannels,
+                                     int numSamples,
+                                     int tileSamples,
+                                     int tileChannels)
+{
+    if (numSamples <= 0 || numChannels <= 0)
+        return;
+    
+    // Use recommended tile sizes if not specified
+    if (tileSamples <= 0 || tileChannels <= 0)
+    {
+        TileConfig config = getRecommendedTileConfig (numChannels);
+        if (tileSamples <= 0)
+            tileSamples = config.tileSamples;
+        if (tileChannels <= 0)
+            tileChannels = config.tileChannels;
+    }
+    
+    // Clamp tile sizes to actual dimensions
+    tileSamples = std::min (tileSamples, numSamples);
+    tileChannels = std::min (tileChannels, numChannels);
+    
+    SIMDType simd = getAvailableSIMD();
+    
+    switch (simd)
+    {
+#if defined(__ARM_NEON) || defined(__ARM_NEON__)
+        case SIMDType::NEON:
+            interleaveNEON (channelData, output, numChannels, numSamples, tileSamples, tileChannels);
+            return;
+#endif
+
+#if defined(__SSE2__) || defined(_M_X64) || defined(_M_IX86)
+        case SIMDType::SSE4_1:
+        case SIMDType::SSE2:
+            interleaveSSE2 (channelData, output, numChannels, numSamples, tileSamples, tileChannels);
+            return;
+#endif
+
+        default:
+            interleaveScalar (channelData, output, numChannels, numSamples, tileSamples, tileChannels);
+            return;
+    }
+}

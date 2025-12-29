@@ -22,6 +22,7 @@
 */
 
 #include "SequentialBlockFile.h"
+#include "SIMDConverter.h"
 
 SequentialBlockFile::SequentialBlockFile (int nChannels, int samplesPerBlock) : m_file (nullptr),
                                                                                 m_nChannels (nChannels),
@@ -163,50 +164,32 @@ bool SequentialBlockFile::writeChannelBatch (uint64 startPos, int16* const* chan
     int dataIdx = 0;
     int lastBlockIdx = m_memBlocks.size() - 1;
 
-    // Process in blocks for better cache utilization
-    // Block size chosen to fit in L1 cache (typically 32-64KB)
-    const int cacheBlockSamples = 64;  // Process 64 samples at a time
-
-    // Cache blocking parameters - chosen to fit in L1 cache (~32KB)
-    // For a tile of TILE_SAMPLES x TILE_CHANNELS:
-    // - Input: TILE_CHANNELS pointers (8 bytes each) + TILE_SAMPLES * TILE_CHANNELS * 2 bytes data
-    // - Output: TILE_SAMPLES * nChannels * 2 bytes (but we only write TILE_CHANNELS at a time)
-    // With 256 samples x 64 channels: 256 * 64 * 2 = 32KB input data per tile
-    const int TILE_SAMPLES = 256;
-    const int TILE_CHANNELS = 64;
+    // Get recommended tile configuration for cache-efficient interleaving
+    auto tileConfig = SIMDConverter::getRecommendedTileConfig (m_nChannels);
 
     while (writtenSamples < nSamples)
     {
         int16* blockPtr = m_memBlocks[bIndex]->getData();
         int samplesToWrite = jmin ((nSamples - writtenSamples), (m_samplesPerBlock - int (startIdx)));
 
-        uint64 baseMemPos = startIdx * m_nChannels;
-
-        // Process in tiles to optimize cache usage
-        // For each tile of samples:
-        for (int sampleTileStart = 0; sampleTileStart < samplesToWrite; sampleTileStart += TILE_SAMPLES)
+        // Create adjusted channel data pointers for the current data offset
+        std::vector<const int16_t*> adjustedChannelPtrs (m_nChannels);
+        for (int ch = 0; ch < m_nChannels; ch++)
         {
-            int sampleTileEnd = jmin (sampleTileStart + TILE_SAMPLES, samplesToWrite);
-
-            // For each tile of channels:
-            for (int channelTileStart = 0; channelTileStart < m_nChannels; channelTileStart += TILE_CHANNELS)
-            {
-                int channelTileEnd = jmin (channelTileStart + TILE_CHANNELS, m_nChannels);
-
-                // Process this tile - iterate samples in outer loop to optimize output writes
-                for (int s = sampleTileStart; s < sampleTileEnd; s++)
-                {
-                    uint64 memPos = baseMemPos + s * m_nChannels + channelTileStart;
-                    int srcIdx = dataIdx + s;
-
-                    // Write channels in this tile for this sample
-                    for (int ch = channelTileStart; ch < channelTileEnd; ch++)
-                    {
-                        blockPtr[memPos + (ch - channelTileStart)] = channelData[ch][srcIdx];
-                    }
-                }
-            }
+            adjustedChannelPtrs[ch] = channelData[ch] + dataIdx;
         }
+
+        // Calculate output position in the block
+        int16_t* outputPtr = blockPtr + startIdx * m_nChannels;
+
+        // Use SIMD-optimized interleaving with cache-blocked tiles
+        SIMDConverter::interleaveInt16 (
+            adjustedChannelPtrs.data(),
+            outputPtr,
+            m_nChannels,
+            samplesToWrite,
+            tileConfig.tileSamples,
+            tileConfig.tileChannels);
 
         writtenSamples += samplesToWrite;
         dataIdx += samplesToWrite;

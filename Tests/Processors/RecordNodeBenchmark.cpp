@@ -1459,3 +1459,244 @@ TEST_F(RecordNodeBenchmark, GenerateBaselineReport)
     std::cout << "                    END OF BASELINE REPORT\n";
     std::cout << "================================================================\n";
 }
+
+// ============================================================================
+// TILE SIZE TUNING BENCHMARKS
+// ============================================================================
+
+/**
+ * Benchmark to test different tile sizes for the SIMD interleaving.
+ * This helps find the optimal tile configuration for cache efficiency.
+ */
+TEST_F(RecordNodeBenchmark, TileSizeTuning_Interleaving)
+{
+    std::cout << "\n";
+    std::cout << "================================================================\n";
+    std::cout << "         TILE SIZE TUNING FOR INTERLEAVING\n";
+    std::cout << "================================================================\n";
+    std::cout << "SIMD type: " << SIMDConverter::getSIMDTypeString() << "\n";
+    std::cout << "\n";
+    
+    // Test different tile configurations
+    std::vector<std::pair<int, int>> tileConfigs = {
+        {64, 32},
+        {128, 32},
+        {128, 64},
+        {256, 32},
+        {256, 64},
+        {256, 128},
+        {512, 32},
+        {512, 64},
+        {1024, 64},
+        {2048, 64}
+    };
+    
+    std::vector<int> channelCounts = {384, 768, 1536};
+    const int samples = 4096;
+    const int iterations = 30;
+    
+    for (int channels : channelCounts)
+    {
+        std::cout << "\n----------------------------------------------------------------\n";
+        std::cout << "Channel count: " << channels << "\n";
+        std::cout << "----------------------------------------------------------------\n";
+        std::cout << std::setw(12) << "Tile Samp" << std::setw(12) << "Tile Ch"
+                  << std::setw(14) << "MB/s" << std::setw(12) << "Time (ms)" << "\n";
+        
+        // Allocate test data
+        std::vector<HeapBlock<int16>> channelData(channels);
+        std::vector<int16*> channelPtrs(channels);
+        HeapBlock<int16> outputBuffer(channels * samples);
+        
+        for (int ch = 0; ch < channels; ch++)
+        {
+            channelData[ch].malloc(samples);
+            channelPtrs[ch] = channelData[ch].getData();
+            for (int s = 0; s < samples; s++)
+            {
+                channelData[ch][s] = static_cast<int16>((ch * 100 + s) % 32767);
+            }
+        }
+        
+        // Test default configuration first
+        auto defaultConfig = SIMDConverter::getRecommendedTileConfig(channels);
+        
+        double defaultTimeMs = 0.0;
+        for (int iter = 0; iter < iterations; iter++)
+        {
+            auto startTime = high_resolution_clock::now();
+            
+            // Cast to const int16_t* const*
+            std::vector<const int16_t*> constPtrs(channels);
+            for (int ch = 0; ch < channels; ch++)
+                constPtrs[ch] = channelPtrs[ch];
+            
+            SIMDConverter::interleaveInt16(
+                constPtrs.data(),
+                outputBuffer.getData(),
+                channels,
+                samples,
+                defaultConfig.tileSamples,
+                defaultConfig.tileChannels);
+            
+            auto endTime = high_resolution_clock::now();
+            defaultTimeMs += duration_cast<microseconds>(endTime - startTime).count() / 1000.0;
+        }
+        
+        int64_t totalSamples = (int64_t)channels * samples * iterations;
+        double defaultMBps = (totalSamples * sizeof(int16)) / (defaultTimeMs / 1000.0) / 1e6;
+        
+        std::cout << std::setw(12) << defaultConfig.tileSamples 
+                  << std::setw(12) << defaultConfig.tileChannels
+                  << std::setw(14) << std::fixed << std::setprecision(1) << defaultMBps
+                  << std::setw(12) << std::setprecision(2) << defaultTimeMs
+                  << " (default)\n";
+        
+        // Test each tile configuration
+        for (const auto& config : tileConfigs)
+        {
+            int tileSamples = config.first;
+            int tileChannels = config.second;
+            
+            // Skip if tile channels exceeds actual channels
+            if (tileChannels > channels)
+                continue;
+            
+            double timeMs = 0.0;
+            for (int iter = 0; iter < iterations; iter++)
+            {
+                auto startTime = high_resolution_clock::now();
+                
+                std::vector<const int16_t*> constPtrs(channels);
+                for (int ch = 0; ch < channels; ch++)
+                    constPtrs[ch] = channelPtrs[ch];
+                
+                SIMDConverter::interleaveInt16(
+                    constPtrs.data(),
+                    outputBuffer.getData(),
+                    channels,
+                    samples,
+                    tileSamples,
+                    tileChannels);
+                
+                auto endTime = high_resolution_clock::now();
+                timeMs += duration_cast<microseconds>(endTime - startTime).count() / 1000.0;
+            }
+            
+            double mbps = (totalSamples * sizeof(int16)) / (timeMs / 1000.0) / 1e6;
+            
+            std::cout << std::setw(12) << tileSamples << std::setw(12) << tileChannels
+                      << std::setw(14) << std::fixed << std::setprecision(1) << mbps
+                      << std::setw(12) << std::setprecision(2) << timeMs;
+            
+            if (mbps > defaultMBps * 1.05)
+                std::cout << " *BETTER*";
+            else if (mbps < defaultMBps * 0.95)
+                std::cout << " (slower)";
+            
+            std::cout << "\n";
+        }
+    }
+    
+    std::cout << "\n";
+    std::cout << "================================================================\n";
+    std::cout << "                 END OF TILE SIZE TUNING\n";
+    std::cout << "================================================================\n";
+}
+
+/**
+ * Benchmark comparing SIMD interleaving with the original scalar approach.
+ */
+TEST_F(RecordNodeBenchmark, SIMDInterleaving_vs_Scalar)
+{
+    std::cout << "\n";
+    std::cout << "================================================================\n";
+    std::cout << "         SIMD INTERLEAVING VS SCALAR\n";
+    std::cout << "================================================================\n";
+    std::cout << "SIMD type: " << SIMDConverter::getSIMDTypeString() << "\n";
+    std::cout << "\n";
+    
+    std::vector<int> channelCounts = {384, 768, 1536};
+    const int samples = 4096;
+    const int iterations = 50;
+    
+    std::cout << std::setw(10) << "Channels" << std::setw(14) << "Scalar MB/s"
+              << std::setw(14) << "SIMD MB/s" << std::setw(12) << "Speedup" << "\n";
+    std::cout << "----------------------------------------------------------------\n";
+    
+    for (int channels : channelCounts)
+    {
+        // Allocate test data
+        std::vector<HeapBlock<int16>> channelData(channels);
+        std::vector<int16*> channelPtrs(channels);
+        HeapBlock<int16> outputBuffer(channels * samples);
+        
+        for (int ch = 0; ch < channels; ch++)
+        {
+            channelData[ch].malloc(samples);
+            channelPtrs[ch] = channelData[ch].getData();
+            for (int s = 0; s < samples; s++)
+            {
+                channelData[ch][s] = static_cast<int16>((ch * 100 + s) % 32767);
+            }
+        }
+        
+        // Benchmark scalar (simple nested loop)
+        double scalarTimeMs = 0.0;
+        for (int iter = 0; iter < iterations; iter++)
+        {
+            auto startTime = high_resolution_clock::now();
+            
+            // Simple scalar interleaving (reference implementation)
+            int16* output = outputBuffer.getData();
+            for (int s = 0; s < samples; s++)
+            {
+                for (int ch = 0; ch < channels; ch++)
+                {
+                    *output++ = channelPtrs[ch][s];
+                }
+            }
+            
+            auto endTime = high_resolution_clock::now();
+            scalarTimeMs += duration_cast<microseconds>(endTime - startTime).count() / 1000.0;
+        }
+        
+        // Benchmark SIMD with recommended tile config
+        auto config = SIMDConverter::getRecommendedTileConfig(channels);
+        double simdTimeMs = 0.0;
+        for (int iter = 0; iter < iterations; iter++)
+        {
+            auto startTime = high_resolution_clock::now();
+            
+            std::vector<const int16_t*> constPtrs(channels);
+            for (int ch = 0; ch < channels; ch++)
+                constPtrs[ch] = channelPtrs[ch];
+            
+            SIMDConverter::interleaveInt16(
+                constPtrs.data(),
+                outputBuffer.getData(),
+                channels,
+                samples,
+                config.tileSamples,
+                config.tileChannels);
+            
+            auto endTime = high_resolution_clock::now();
+            simdTimeMs += duration_cast<microseconds>(endTime - startTime).count() / 1000.0;
+        }
+        
+        int64_t totalSamples = (int64_t)channels * samples * iterations;
+        double scalarMBps = (totalSamples * sizeof(int16)) / (scalarTimeMs / 1000.0) / 1e6;
+        double simdMBps = (totalSamples * sizeof(int16)) / (simdTimeMs / 1000.0) / 1e6;
+        double speedup = scalarTimeMs / simdTimeMs;
+        
+        std::cout << std::setw(10) << channels
+                  << std::setw(14) << std::fixed << std::setprecision(1) << scalarMBps
+                  << std::setw(14) << simdMBps
+                  << std::setw(12) << std::setprecision(2) << speedup << "x\n";
+    }
+    
+    std::cout << "\n";
+    std::cout << "================================================================\n";
+    std::cout << "             END OF SIMD VS SCALAR COMPARISON\n";
+    std::cout << "================================================================\n";
+}

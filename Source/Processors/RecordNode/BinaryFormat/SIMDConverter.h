@@ -100,6 +100,42 @@ public:
                                           int numChannels,
                                           int numSamples);
 
+    /**
+     * Interleaves data from multiple channel buffers into a single interleaved output buffer.
+     * This is optimized for the memory access patterns in disk recording.
+     * 
+     * Output format: [ch0_s0, ch1_s0, ..., chN_s0, ch0_s1, ch1_s1, ..., chN_s1, ...]
+     * 
+     * @param channelData  Array of pointers to int16 data for each channel (contiguous per channel)
+     * @param output       Pointer to output buffer (will contain interleaved data)
+     * @param numChannels  Number of channels
+     * @param numSamples   Number of samples per channel
+     * @param tileSamples  Tile size for sample dimension (for cache blocking, 0 = auto)
+     * @param tileChannels Tile size for channel dimension (for cache blocking, 0 = auto)
+     */
+    static void interleaveInt16 (const int16_t* const* channelData,
+                                 int16_t* output,
+                                 int numChannels,
+                                 int numSamples,
+                                 int tileSamples = 0,
+                                 int tileChannels = 0);
+
+    /**
+     * Recommended tile sizes based on cache characteristics.
+     * These are tuned for typical L1 cache sizes (32-64KB).
+     */
+    struct TileConfig
+    {
+        int tileSamples;    // Number of samples per tile
+        int tileChannels;   // Number of channels per tile
+    };
+
+    /**
+     * Returns recommended tile configuration for the given channel count.
+     * Optimizes for L1 cache efficiency.
+     */
+    static TileConfig getRecommendedTileConfig (int numChannels);
+
 private:
     // Implementation functions for each SIMD type
     static void convertScalar (const float* input, int16_t* output, float scale, int numSamples);
