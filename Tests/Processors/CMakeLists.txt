@@ -7,6 +7,7 @@ add_sources(${COMPONENT_NAME}_tests
 		SourceNodeTests.cpp
 		RecordNodeTests.cpp
 		RecordNodeBenchmark.cpp
+		SIMDConverterTests.cpp
 		ProcessorGraphTests.cpp
 		EventTests.cpp
 		DataThreadTests.cpp
