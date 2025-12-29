@@ -33,6 +33,10 @@ SequentialBlockFile::SequentialBlockFile (int nChannels, int samplesPerBlock) : 
     m_memBlocks.ensureStorageAllocated (blockArrayInitSize);
     for (int i = 0; i < nChannels; i++)
         m_currentBlock.add (-1);
+    
+    // Pre-allocate batch buffers and cache tile config to avoid hot-path allocations
+    m_batchChannelPtrs.reserve (nChannels);
+    m_tileConfig = SIMDConverter::getRecommendedTileConfig (nChannels);
 }
 
 SequentialBlockFile::~SequentialBlockFile()
@@ -141,7 +145,6 @@ bool SequentialBlockFile::writeChannelBatch (uint64 startPos, int16* const* chan
     // Batch writing requires all channels - return false to signal caller should use per-channel writes
     if (numChannels != m_nChannels)
     {
-        printf ("[RN]SequentialBlockFile::writeChannelBatch channel count mismatch: expected %d, got %d\n", m_nChannels, numChannels);
         return false;
     }
 
@@ -164,32 +167,33 @@ bool SequentialBlockFile::writeChannelBatch (uint64 startPos, int16* const* chan
     int dataIdx = 0;
     int lastBlockIdx = m_memBlocks.size() - 1;
 
-    // Get recommended tile configuration for cache-efficient interleaving
-    auto tileConfig = SIMDConverter::getRecommendedTileConfig (m_nChannels);
-
     while (writtenSamples < nSamples)
     {
         int16* blockPtr = m_memBlocks[bIndex]->getData();
         int samplesToWrite = jmin ((nSamples - writtenSamples), (m_samplesPerBlock - int (startIdx)));
 
-        // Create adjusted channel data pointers for the current data offset
-        std::vector<const int16_t*> adjustedChannelPtrs (m_nChannels);
+        // Use pre-allocated channel pointer array to avoid allocation in hot path
+        // Resize only if needed (should rarely happen after first call)
+        if (m_batchChannelPtrs.size() != static_cast<size_t> (m_nChannels))
+            m_batchChannelPtrs.resize (m_nChannels);
+
         for (int ch = 0; ch < m_nChannels; ch++)
         {
-            adjustedChannelPtrs[ch] = channelData[ch] + dataIdx;
+            m_batchChannelPtrs[ch] = channelData[ch] + dataIdx;
         }
 
         // Calculate output position in the block
         int16_t* outputPtr = blockPtr + startIdx * m_nChannels;
 
         // Use SIMD-optimized interleaving with cache-blocked tiles
+        // Use cached tile config to avoid repeated lookups
         SIMDConverter::interleaveInt16 (
-            adjustedChannelPtrs.data(),
+            m_batchChannelPtrs.data(),
             outputPtr,
             m_nChannels,
             samplesToWrite,
-            tileConfig.tileSamples,
-            tileConfig.tileChannels);
+            m_tileConfig.tileSamples,
+            m_tileConfig.tileChannels);
 
         writtenSamples += samplesToWrite;
         dataIdx += samplesToWrite;

@@ -26,6 +26,7 @@
 
 #include "../../../Utils/Utils.h"
 #include "FileMemoryBlock.h"
+#include "SIMDConverter.h"
 
 #include "../../PluginManager/PluginClass.h"
 
@@ -94,5 +95,9 @@ private:
     /** Compile-time params */
     const int streamBufferSize { 65536 };  // 64KB buffer to reduce system calls
     const int blockArrayInitSize { 128 };
+
+    /** Pre-allocated buffers for batch writing to avoid hot-path allocations */
+    mutable std::vector<const int16_t*> m_batchChannelPtrs;
+    SIMDConverter::TileConfig m_tileConfig;  // Cached tile config for this channel count
 };
 #endif // !SEQUENTIALBLOCKFILE_H
