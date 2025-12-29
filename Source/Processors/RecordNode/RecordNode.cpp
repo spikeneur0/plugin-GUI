@@ -77,13 +77,7 @@ RecordNode::RecordNode()
       hasRecorded (false),
       settingsNeeded (false)
 {
-    //Get the current audio device's buffer size and use as data queue block size
-    AudioDeviceManager& adm = AccessClass::getAudioComponent()->deviceManager;
-    AudioDeviceManager::AudioDeviceSetup ads;
-    adm.getAudioDeviceSetup (ads);
-    int bufferSize = ads.bufferSize;
-
-    dataQueue = std::make_unique<DataQueue> (bufferSize, DATA_BUFFER_NBLOCKS);
+    // Note: DataQueues are created per-stream in startRecording()
     eventQueue = std::make_unique<EventMsgQueue> (EVENT_BUFFER_NEVENTS);
     spikeQueue = std::make_unique<SpikeMsgQueue> (SPIKE_BUFFER_NSPIKES);
 
@@ -467,8 +461,13 @@ void RecordNode::handleBroadcastMessage (const String& msg, const int64 messageS
 
 void RecordNode::updateBlockSize (int newBlockSize)
 {
-    if (dataQueue->getBlockSize() != newBlockSize)
-        dataQueue = std::make_unique<DataQueue> (newBlockSize, DATA_BUFFER_NBLOCKS);
+    // Block size change requires recreating all queues
+    // This will happen on next startRecording() since queues are created per-stream there
+    // Just clear existing queues to ensure fresh creation
+    if (dataQueues.size() > 0 && dataQueues[0]->getBlockSize() != newBlockSize)
+    {
+        dataQueues.clear();
+    }
 }
 
 String RecordNode::getEngineId()
@@ -816,6 +815,9 @@ void RecordNode::startRecording()
 
     int streamIndex = 0;
 
+    // Count recorded channels per stream for creating per-stream DataQueues
+    Array<int> recordedChannelsPerStream;
+
     for (auto stream : dataStreams)
     {
         RecordProcessorInfo* pi = new RecordProcessorInfo();
@@ -827,6 +829,7 @@ void RecordNode::startRecording()
             lastSourceNodeId = stream->getSourceNodeId();
         }
 
+        int recordedChannelsInThisStream = 0;
         for (auto channelRecordState : ((MaskChannelsParameter*) stream->getParameter ("channels"))->getChannelStates())
         {
             if (channelRecordState)
@@ -834,11 +837,13 @@ void RecordNode::startRecording()
                 channelMap.add (channelIndexInRecordNode);
                 localChannelMap.add (channelIndexInStream++);
                 timestampChannelMap.add (streamIndex);
+                recordedChannelsInThisStream++;
             }
 
             channelIndexInRecordNode++;
         }
 
+        recordedChannelsPerStream.add (recordedChannelsInThisStream);
         procInfo.add (pi);
         streamIndex++;
     }
@@ -854,10 +859,32 @@ void RecordNode::startRecording()
     recordThread->setChannelMap (channelMap);
     recordThread->setTimestampChannelMap (timestampChannelMap);
 
-    dataQueue->setChannelCount (numRecordedChannels);
-    dataQueue->setTimestampStreamCount (dataStreams.size());
+    // Create per-stream DataQueues for race-condition-free reading
+    // Get current audio buffer size for queue block size
+    AudioDeviceManager& adm = AccessClass::getAudioComponent()->deviceManager;
+    AudioDeviceManager::AudioDeviceSetup ads;
+    adm.getAudioDeviceSetup (ads);
+    int bufferSize = ads.bufferSize;
 
-    recordThread->setQueuePointers (dataQueue.get(), eventQueue.get(), spikeQueue.get());
+    dataQueues.clear();
+    for (int i = 0; i < dataStreams.size(); i++)
+    {
+        // Only create queue if this stream has recorded channels
+        if (recordedChannelsPerStream[i] > 0)
+        {
+            DataQueue* queue = new DataQueue (bufferSize, DATA_BUFFER_NBLOCKS);
+            queue->setChannelCount (recordedChannelsPerStream[i]);
+            queue->setTimestampStreamCount (1);  // Each queue has one timestamp stream
+            dataQueues.add (queue);
+        }
+        else
+        {
+            // Add nullptr placeholder to maintain stream index alignment
+            dataQueues.add (nullptr);
+        }
+    }
+
+    recordThread->setQueuePointers (&dataQueues, eventQueue.get(), spikeQueue.get());
     recordThread->setFirstBlockFlag (false);
 
     /* Set write properties */
@@ -1088,6 +1115,13 @@ void RecordNode::process (AudioBuffer<float>& buffer)
 
             double first, second;
 
+            // Skip if no queue for this stream (no recorded channels)
+            if (dataQueues[streamIndex] == nullptr)
+            {
+                channelIndex += recordChanCount;
+                continue;
+            }
+
             if (numSamples > 0)
             {
                 if (! synchronizer.streamGeneratesTimestamps (streamKey))
@@ -1100,10 +1134,11 @@ void RecordNode::process (AudioBuffer<float>& buffer)
                     first = getFirstTimestampForBlock (streamId);
                     second = first + 1 / stream->getSampleRate();
                 }
-                dataQueue->writeSynchronizedTimestamps (
+                // Each per-stream queue has only 1 timestamp stream (index 0)
+                dataQueues[streamIndex]->writeSynchronizedTimestamps (
                     first,
                     second - first,
-                    streamIndex,
+                    0,  // timestamp stream index within this queue
                     numSamples);
             }
 
@@ -1113,9 +1148,10 @@ void RecordNode::process (AudioBuffer<float>& buffer)
 
                 if (numSamples > 0)
                 {
-                    totalFifoUsage += dataQueue->writeChannel (buffer,
+                    // Write to per-stream queue with local channel index (i)
+                    totalFifoUsage += dataQueues[streamIndex]->writeChannel (buffer,
                                                                channelMap[channelIndex],
-                                                               channelIndex,
+                                                               i,  // local channel index within stream
                                                                numSamples,
                                                                sampleNumber);
                 }

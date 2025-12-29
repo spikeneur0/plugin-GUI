@@ -60,8 +60,8 @@ public:
     /** Sets the float timestamp channel map */
     void setTimestampChannelMap (const Array<int>& channels);
 
-    /** Sets the pointers to the 3 data queues*/
-    void setQueuePointers (DataQueue* data, EventMsgQueue* events, SpikeMsgQueue* spikes);
+    /** Sets the pointers to the data queues (one per stream), event queue, and spike queue */
+    void setQueuePointers (OwnedArray<DataQueue>* dataQueues, EventMsgQueue* events, SpikeMsgQueue* spikes);
 
     /** Runs the thread */
     void run() override;
@@ -79,10 +79,8 @@ public:
     RecordNode* recordNode;
 
 private:
-    /** Writes continuous data with an array of synchronized timestamps */
-    void writeData (const AudioBuffer<float>& dataBuffer,
-                    const SynchronizedTimestampBuffer& timestampBuffer,
-                    int maxSamples,
+    /** Writes continuous data from all per-stream queues */
+    void writeData (int maxSamples,
                     int maxEvents,
                     int maxSpikes,
                     bool lastBlock = false);
@@ -91,16 +89,18 @@ private:
     Array<int> m_channelArray;
     Array<int> m_timestampBufferChannelArray;
 
-    DataQueue* m_dataQueue;
+    OwnedArray<DataQueue>* m_dataQueues;  // Array of per-stream queues
     EventMsgQueue* m_eventQueue;
     SpikeMsgQueue* m_spikeQueue;
 
     std::atomic<bool> m_receivedFirstBlock;
     std::atomic<bool> m_cleanExit;
 
-    Array<int64> sampleNumbers;
-    std::vector<CircularBufferIndexes> dataBufferIdxs;
-    std::vector<CircularBufferIndexes> timestampBufferIdxs;
+    Array<int64> sampleNumbers;  // Global sample numbers (indexed by global channel)
+    
+    // Per-stream buffer index arrays for independent queue reading
+    std::vector<std::vector<CircularBufferIndexes>> m_perStreamDataIdxs;
+    std::vector<std::vector<CircularBufferIndexes>> m_perStreamTimestampIdxs;
 
     int spikesReceived;
     int spikesWritten;
@@ -109,7 +109,6 @@ private:
     std::vector<int> m_batchWriteChannels;       // Write channel indices for current batch
     std::vector<int> m_batchRealChannels;        // Real channel indices for current batch
     std::vector<const float*> m_batchDataPtrs;   // Data buffer pointers for current batch
-    std::vector<int> m_streamToFileIndex;        // Maps stream index to file index
 
     File m_rootFolder;
     int m_experimentNumber;

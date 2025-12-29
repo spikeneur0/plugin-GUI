@@ -242,12 +242,48 @@ bool DataQueue::startRead (std::vector<CircularBufferIndexes>& dataBufferIdxs,
 
     m_readInProgress = true;
 
+    // First pass: find the minimum samples available across ALL channels
+    // This ensures we don't read from some channels while others are still being written
+    int minSamplesAvailable = INT_MAX;
     for (int chan = 0; chan < m_numChans; ++chan)
     {
         int readyToRead = m_fifos.getUnchecked (chan)->getNumReady();
+        if (readyToRead < minSamplesAvailable)
+            minSamplesAvailable = readyToRead;
+    }
 
-        int samplesToRead = ((readyToRead > nMax) && (nMax > 0)) ? nMax : readyToRead;
+    // Apply nMax limit to the minimum
+    int samplesToRead = ((minSamplesAvailable > nMax) && (nMax > 0)) ? nMax : minSamplesAvailable;
 
+    // If no samples available on any channel, nothing to read
+    if (samplesToRead == 0)
+    {
+        // Initialize all indexes to zero
+        for (int chan = 0; chan < m_numChans; ++chan)
+        {
+            CircularBufferIndexes& idx = dataBufferIdxs[chan];
+            idx.index1 = 0;
+            idx.size1 = 0;
+            idx.index2 = 0;
+            idx.size2 = 0;
+            m_readSamples[chan] = 0;
+        }
+        for (int chan = 0; chan < m_numFTSChans; ++chan)
+        {
+            CircularBufferIndexes& idx = timestampBufferIdxs[chan];
+            idx.index1 = 0;
+            idx.size1 = 0;
+            idx.index2 = 0;
+            idx.size2 = 0;
+            m_readFTSSamples[chan] = 0;
+        }
+        m_readInProgress = false;
+        return false;
+    }
+
+    // Second pass: read the same number of samples from all channels
+    for (int chan = 0; chan < m_numChans; ++chan)
+    {
         CircularBufferIndexes& idx = dataBufferIdxs[chan];
 
         m_fifos.getUnchecked (chan)->prepareToRead (samplesToRead, idx.index1, idx.size1, idx.index2, idx.size2);
@@ -274,13 +310,21 @@ bool DataQueue::startRead (std::vector<CircularBufferIndexes>& dataBufferIdxs,
         m_lastReadSampleNumbers[chan] = sampleNum + idx.size1 + idx.size2;
     }
 
+    // Also find minimum for timestamp streams and read consistently
+    int minFTSSamples = INT_MAX;
+    for (int chan = 0; chan < m_numFTSChans; ++chan)
+    {
+        int readyToRead = m_FTSFifos.getUnchecked (chan)->getNumReady();
+        if (readyToRead < minFTSSamples)
+            minFTSSamples = readyToRead;
+    }
+    int ftsToRead = ((minFTSSamples > nMax) && (nMax > 0)) ? nMax : minFTSSamples;
+
     for (int chan = 0; chan < m_numFTSChans; ++chan)
     {
         CircularBufferIndexes& idx = timestampBufferIdxs[chan];
-        int readyToRead = m_FTSFifos.getUnchecked (chan)->getNumReady();
-        int samplesToRead = ((readyToRead > nMax) && (nMax > 0)) ? nMax : readyToRead;
 
-        m_FTSFifos.getUnchecked (chan)->prepareToRead (samplesToRead, idx.index1, idx.size1, idx.index2, idx.size2);
+        m_FTSFifos.getUnchecked (chan)->prepareToRead (ftsToRead, idx.index1, idx.size1, idx.index2, idx.size2);
         m_readFTSSamples[chan] = idx.size1 + idx.size2;
     }
 

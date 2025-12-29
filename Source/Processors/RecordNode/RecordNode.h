@@ -292,7 +292,7 @@ private:
     int experimentNumber;
     int recordingNumber;
 
-    std::unique_ptr<DataQueue> dataQueue;
+    OwnedArray<DataQueue> dataQueues;  // One DataQueue per stream for race-condition-free reading
     std::unique_ptr<EventMsgQueue> eventQueue;
     std::unique_ptr<SpikeMsgQueue> spikeQueue;
 

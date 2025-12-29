@@ -124,7 +124,7 @@ private:
     unsigned int m_dim2;
 
     /** flush file buffer to disk and update the .npy header every this many records: */
-    const int recordBufferSize { 1024 };
+    const int recordBufferSize { 32768 };
 };
 
 #endif

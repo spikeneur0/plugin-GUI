@@ -74,9 +74,9 @@ void RecordThread::setChannelMap (const Array<int>& channels)
     m_numChannels = channels.size();
 }
 
-void RecordThread::setQueuePointers (DataQueue* data, EventMsgQueue* events, SpikeMsgQueue* spikes)
+void RecordThread::setQueuePointers (OwnedArray<DataQueue>* dataQueues, EventMsgQueue* events, SpikeMsgQueue* spikes)
 {
-    m_dataQueue = data;
+    m_dataQueues = dataQueues;
     m_eventQueue = events;
     m_spikeQueue = spikes;
 }
@@ -89,33 +89,27 @@ void RecordThread::setFirstBlockFlag (bool state)
 
 void RecordThread::run()
 {
-    const AudioBuffer<float>& dataBuffer = m_dataQueue->getContinuousDataBufferReference();
-    const SynchronizedTimestampBuffer& ftsBuffer = m_dataQueue->getTimestampBufferReference();
-
     spikesReceived = 0;
     spikesWritten = 0;
 
+    // Initialize per-channel sample numbers
     sampleNumbers.clear();
-    dataBufferIdxs.clear();
-    timestampBufferIdxs.clear();
-
     for (int chan = 0; chan < m_numChannels; ++chan)
     {
         sampleNumbers.add (0);
-        dataBufferIdxs.push_back (CircularBufferIndexes());
     }
 
-    for (int stream = 0; stream < recordNode->getNumDataStreams(); ++stream)
-    {
-        timestampBufferIdxs.push_back (CircularBufferIndexes());
-    }
+    // Pre-allocate per-stream buffer index arrays
+    int numStreams = recordNode->getNumDataStreams();
+    m_perStreamDataIdxs.resize (numStreams);
+    m_perStreamTimestampIdxs.resize (numStreams);
 
     bool closeEarly = true;
 
     //1-Open Files
     m_cleanExit = false;
     closeEarly = false;
-    Array<int64> sampleNumbers;
+    Array<int64> initSampleNumbers;
 
     m_engine->openFiles (m_rootFolder, m_experimentNumber, m_recordingNumber);
 
@@ -130,12 +124,28 @@ void RecordThread::run()
         wait (1);
     }
 
-    m_dataQueue->getSampleNumbersForBlock (0, sampleNumbers);
-    m_engine->updateLatestSampleNumbers (sampleNumbers);
+    // Get initial sample numbers from each stream's queue
+    int globalChan = 0;
+    for (int streamIdx = 0; streamIdx < numStreams; streamIdx++)
+    {
+        DataQueue* queue = (*m_dataQueues)[streamIdx];
+        if (queue != nullptr)
+        {
+            Array<int64> streamSampleNums;
+            queue->getSampleNumbersForBlock (0, streamSampleNums);
+            for (int i = 0; i < streamSampleNums.size(); i++)
+            {
+                if (globalChan < m_numChannels)
+                    initSampleNumbers.add (streamSampleNums[i]);
+                globalChan++;
+            }
+        }
+    }
+    m_engine->updateLatestSampleNumbers (initSampleNumbers);
 
     //3-Normal loop
     while (! threadShouldExit())
-        writeData (dataBuffer, ftsBuffer, BLOCK_MAX_WRITE_SAMPLES, BLOCK_MAX_WRITE_EVENTS, BLOCK_MAX_WRITE_SPIKES);
+        writeData (BLOCK_MAX_WRITE_SAMPLES, BLOCK_MAX_WRITE_EVENTS, BLOCK_MAX_WRITE_SPIKES);
 
     //LOGD(__FUNCTION__, " Exiting record thread");
     //4-Before closing the thread, try to write the remaining samples
@@ -145,7 +155,7 @@ void RecordThread::run()
     if (! closeEarly)
     {
         // flush the buffers
-        writeData (dataBuffer, ftsBuffer, BLOCK_MAX_WRITE_SAMPLES, BLOCK_MAX_WRITE_EVENTS, BLOCK_MAX_WRITE_SPIKES, true);
+        writeData (BLOCK_MAX_WRITE_SAMPLES, BLOCK_MAX_WRITE_EVENTS, BLOCK_MAX_WRITE_SPIKES, true);
 
         //5-Close files
         m_engine->closeFiles();
@@ -156,126 +166,158 @@ void RecordThread::run()
     //LOGC("RecordThread received ", spikesReceived, " spikes and wrote ", spikesWritten, ".");
 }
 
-void RecordThread::writeData (const AudioBuffer<float>& dataBuffer,
-                              const SynchronizedTimestampBuffer& timestampBuffer,
-                              int maxSamples,
+void RecordThread::writeData (int maxSamples,
                               int maxEvents,
                               int maxSpikes,
                               bool lastBlock)
 {
-    if (m_dataQueue->startRead (dataBufferIdxs, timestampBufferIdxs, sampleNumbers, maxSamples))
+    int numStreams = m_dataQueues->size();
+    int globalChannelOffset = 0;
+
+    // Process each stream independently - this avoids race conditions
+    // between streams with different sample rates
+    for (int streamIdx = 0; streamIdx < numStreams; streamIdx++)
     {
-        m_engine->updateLatestSampleNumbers (sampleNumbers);
+        DataQueue* queue = (*m_dataQueues)[streamIdx];
+        if (queue == nullptr)
+            continue;
 
-        // Group channels by stream (identified by timestamp buffer channel) for batch writes
-        // Channels with the same timestamp buffer belong to the same stream
-        int chan = 0;
-        while (chan < m_numChannels)
+        const AudioBuffer<float>& dataBuffer = queue->getContinuousDataBufferReference();
+        const SynchronizedTimestampBuffer& timestampBuffer = queue->getTimestampBufferReference();
+
+        // Ensure per-stream index arrays are properly sized
+        int numChannelsInStream = 0;
+        for (int ch = 0; ch < m_numChannels; ch++)
         {
-            // Skip channels with no data
-            if (dataBufferIdxs[chan].size1 == 0)
+            if (m_timestampBufferChannelArray[ch] == streamIdx)
+                numChannelsInStream++;
+        }
+
+        m_perStreamDataIdxs[streamIdx].resize (numChannelsInStream);
+        m_perStreamTimestampIdxs[streamIdx].resize (1);  // One timestamp stream per queue
+
+        // Create local sample numbers array for this stream
+        Array<int64> streamSampleNumbers;
+        for (int i = 0; i < numChannelsInStream; i++)
+            streamSampleNumbers.add (0);
+
+        if (queue->startRead (m_perStreamDataIdxs[streamIdx], m_perStreamTimestampIdxs[streamIdx], streamSampleNumbers, maxSamples))
+        {
+            // Update global sample numbers
+            int localChan = 0;
+            for (int globalChan = 0; globalChan < m_numChannels; globalChan++)
             {
-                chan++;
-                continue;
-            }
-
-            // Find all consecutive channels belonging to the same stream with matching buffer positions
-            int currentStream = m_timestampBufferChannelArray[chan];
-            int batchStartChan = chan;
-            int numSamples = dataBufferIdxs[chan].size1;
-            int bufferIndex = dataBufferIdxs[chan].index1;
-
-            // Clear batch arrays
-            m_batchWriteChannels.clear();
-            m_batchRealChannels.clear();
-            m_batchDataPtrs.clear();
-
-            // Collect channels for this batch
-            while (chan < m_numChannels &&
-                   m_timestampBufferChannelArray[chan] == currentStream &&
-                   dataBufferIdxs[chan].size1 == numSamples &&
-                   dataBufferIdxs[chan].index1 == bufferIndex)
-            {
-                m_batchWriteChannels.push_back (chan);
-                m_batchRealChannels.push_back (m_channelArray[chan]);
-                m_batchDataPtrs.push_back (dataBuffer.getReadPointer (chan, bufferIndex));
-                chan++;
-            }
-
-            int batchSize = static_cast<int> (m_batchWriteChannels.size());
-
-            // Get timestamp buffer for this stream
-            const double* timestamps = timestampBuffer.getReadPointer (currentStream, bufferIndex);
-
-            // Use batch write if we have multiple channels, otherwise use single-channel write
-            if (batchSize > 1)
-            {
-                m_engine->writeContinuousDataBatch (
-                    m_batchWriteChannels.data(),
-                    m_batchRealChannels.data(),
-                    m_batchDataPtrs.data(),
-                    timestamps,
-                    batchSize,
-                    numSamples,
-                    currentStream); // file index = stream index for BinaryRecording
-            }
-            else
-            {
-                m_engine->writeContinuousData (
-                    m_batchWriteChannels[0],
-                    m_batchRealChannels[0],
-                    m_batchDataPtrs[0],
-                    timestamps,
-                    numSamples);
-            }
-
-            // Handle wrap-around (size2) if present
-            if (dataBufferIdxs[batchStartChan].size2 > 0)
-            {
-                int numSamples2 = dataBufferIdxs[batchStartChan].size2;
-                int bufferIndex2 = dataBufferIdxs[batchStartChan].index2;
-
-                // Update sample numbers for all channels in the batch
-                for (int i = 0; i < batchSize; i++)
+                if (m_timestampBufferChannelArray[globalChan] == streamIdx)
                 {
-                    int batchChan = m_batchWriteChannels[i];
-                    sampleNumbers.set (batchChan, sampleNumbers[batchChan] + numSamples);
+                    sampleNumbers.set (globalChan, streamSampleNumbers[localChan]);
+                    localChan++;
                 }
-                m_engine->updateLatestSampleNumbers (sampleNumbers, m_batchWriteChannels[0]);
+            }
+            m_engine->updateLatestSampleNumbers (sampleNumbers);
 
-                // Update data pointers for the second segment
-                for (int i = 0; i < batchSize; i++)
+            // Check if we have data to write
+            if (numChannelsInStream > 0 && m_perStreamDataIdxs[streamIdx][0].size1 > 0)
+            {
+                int numSamples = m_perStreamDataIdxs[streamIdx][0].size1;
+                int bufferIndex = m_perStreamDataIdxs[streamIdx][0].index1;
+
+                // Build batch for all channels in this stream
+                m_batchWriteChannels.clear();
+                m_batchRealChannels.clear();
+                m_batchDataPtrs.clear();
+
+                int localChan = 0;
+                for (int globalChan = 0; globalChan < m_numChannels; globalChan++)
                 {
-                    int batchChan = m_batchWriteChannels[i];
-                    m_batchDataPtrs[i] = dataBuffer.getReadPointer (batchChan, bufferIndex2);
+                    if (m_timestampBufferChannelArray[globalChan] == streamIdx)
+                    {
+                        m_batchWriteChannels.push_back (globalChan);
+                        m_batchRealChannels.push_back (m_channelArray[globalChan]);
+                        m_batchDataPtrs.push_back (dataBuffer.getReadPointer (localChan, bufferIndex));
+                        localChan++;
+                    }
                 }
 
-                const double* timestamps2 = timestampBuffer.getReadPointer (currentStream, bufferIndex2);
+                int batchSize = static_cast<int> (m_batchWriteChannels.size());
 
+                // Get timestamp buffer (index 0 since each queue has one timestamp stream)
+                const double* timestamps = timestampBuffer.getReadPointer (0, bufferIndex);
+
+                // Use batch write if we have multiple channels, otherwise use single-channel write
                 if (batchSize > 1)
                 {
                     m_engine->writeContinuousDataBatch (
                         m_batchWriteChannels.data(),
                         m_batchRealChannels.data(),
                         m_batchDataPtrs.data(),
-                        timestamps2,
+                        timestamps,
                         batchSize,
-                        numSamples2,
-                        currentStream);
+                        numSamples,
+                        streamIdx);
                 }
-                else
+                else if (batchSize == 1)
                 {
                     m_engine->writeContinuousData (
                         m_batchWriteChannels[0],
                         m_batchRealChannels[0],
                         m_batchDataPtrs[0],
-                        timestamps2,
-                        numSamples2);
+                        timestamps,
+                        numSamples);
+                }
+
+                // Handle wrap-around (size2) if present
+                if (m_perStreamDataIdxs[streamIdx][0].size2 > 0)
+                {
+                    int numSamples2 = m_perStreamDataIdxs[streamIdx][0].size2;
+                    int bufferIndex2 = m_perStreamDataIdxs[streamIdx][0].index2;
+
+                    // Update sample numbers
+                    localChan = 0;
+                    for (int globalChan = 0; globalChan < m_numChannels; globalChan++)
+                    {
+                        if (m_timestampBufferChannelArray[globalChan] == streamIdx)
+                        {
+                            sampleNumbers.set (globalChan, sampleNumbers[globalChan] + numSamples);
+                            localChan++;
+                        }
+                    }
+                    m_engine->updateLatestSampleNumbers (sampleNumbers, m_batchWriteChannels[0]);
+
+                    // Update data pointers for the second segment
+                    localChan = 0;
+                    for (int i = 0; i < batchSize; i++)
+                    {
+                        m_batchDataPtrs[i] = dataBuffer.getReadPointer (localChan, bufferIndex2);
+                        localChan++;
+                    }
+
+                    const double* timestamps2 = timestampBuffer.getReadPointer (0, bufferIndex2);
+
+                    if (batchSize > 1)
+                    {
+                        m_engine->writeContinuousDataBatch (
+                            m_batchWriteChannels.data(),
+                            m_batchRealChannels.data(),
+                            m_batchDataPtrs.data(),
+                            timestamps2,
+                            batchSize,
+                            numSamples2,
+                            streamIdx);
+                    }
+                    else if (batchSize == 1)
+                    {
+                        m_engine->writeContinuousData (
+                            m_batchWriteChannels[0],
+                            m_batchRealChannels[0],
+                            m_batchDataPtrs[0],
+                            timestamps2,
+                            numSamples2);
+                    }
                 }
             }
-        }
 
-        m_dataQueue->stopRead();
+            queue->stopRead();
+        }
     }
 
     std::vector<EventMessagePtr> events;

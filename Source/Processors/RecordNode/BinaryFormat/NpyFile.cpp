@@ -76,7 +76,8 @@ bool NpyFile::openFile (String path)
         LOGD ("Re-creating file: ", path);
     }
 
-    m_file = file.createOutputStream();
+    // Use 64KB buffer to reduce system calls
+    m_file = file.createOutputStream (65536);
 
     if (! m_file)
         return false;

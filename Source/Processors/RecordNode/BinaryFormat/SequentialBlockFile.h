@@ -92,7 +92,7 @@ private:
     void allocateBlocks (uint64 startIndex, int numSamples);
 
     /** Compile-time params */
-    const int streamBufferSize { 0 };
+    const int streamBufferSize { 65536 };  // 64KB buffer to reduce system calls
     const int blockArrayInitSize { 128 };
 };
 #endif // !SEQUENTIALBLOCKFILE_H

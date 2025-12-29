@@ -136,6 +136,18 @@ public:
      */
     static TileConfig getRecommendedTileConfig (int numChannels);
 
+    /**
+     * Fills a buffer with sequential int64 values starting from a base value.
+     * This is optimized for generating sample number arrays.
+     * 
+     * output[i] = baseValue + i  for i in [0, numSamples)
+     * 
+     * @param output     Pointer to output int64 buffer
+     * @param baseValue  Starting value (output[0] = baseValue)
+     * @param numSamples Number of samples to fill
+     */
+    static void fillSequentialInt64 (int64_t* output, int64_t baseValue, int numSamples);
+
 private:
     // Implementation functions for each SIMD type
     static void convertScalar (const float* input, int16_t* output, float scale, int numSamples);

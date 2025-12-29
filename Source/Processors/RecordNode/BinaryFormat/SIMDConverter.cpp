@@ -605,3 +605,71 @@ void SIMDConverter::interleaveInt16 (const int16_t* const* channelData,
             return;
     }
 }
+
+// ============================================================================
+// Sequential int64 fill (for sample numbers)
+// ============================================================================
+
+void SIMDConverter::fillSequentialInt64 (int64_t* output, int64_t baseValue, int numSamples)
+{
+    if (numSamples <= 0)
+        return;
+
+#if defined(__ARM_NEON) || defined(__ARM_NEON__)
+    // ARM NEON: Process 2 int64 values at a time
+    const int simdWidth = 2;
+    int i = 0;
+    
+    // Initialize increment vector [0, 1] + baseValue -> [base, base+1]
+    int64x2_t vbase = { baseValue, baseValue + 1 };
+    const int64x2_t vIncrement = { 2, 2 };
+    
+    const int numFullIterations = numSamples / simdWidth;
+    
+    for (int iter = 0; iter < numFullIterations; ++iter)
+    {
+        vst1q_s64 (reinterpret_cast<int64_t*> (output + i), vbase);
+        vbase = vaddq_s64 (vbase, vIncrement);
+        i += simdWidth;
+    }
+    
+    // Handle remaining samples
+    int64_t currentValue = baseValue + i;
+    for (; i < numSamples; ++i)
+    {
+        output[i] = currentValue++;
+    }
+
+#elif defined(__SSE2__) || defined(_M_X64) || defined(_M_IX86)
+    // x86 SSE2: Process 2 int64 values at a time
+    const int simdWidth = 2;
+    int i = 0;
+    
+    // Initialize: [base, base+1]
+    __m128i vbase = _mm_set_epi64x (baseValue + 1, baseValue);
+    const __m128i vIncrement = _mm_set_epi64x (2, 2);
+    
+    const int numFullIterations = numSamples / simdWidth;
+    
+    for (int iter = 0; iter < numFullIterations; ++iter)
+    {
+        _mm_storeu_si128 (reinterpret_cast<__m128i*> (output + i), vbase);
+        vbase = _mm_add_epi64 (vbase, vIncrement);
+        i += simdWidth;
+    }
+    
+    // Handle remaining samples
+    int64_t currentValue = baseValue + i;
+    for (; i < numSamples; ++i)
+    {
+        output[i] = currentValue++;
+    }
+
+#else
+    // Scalar fallback - simple loop that compilers can auto-vectorize
+    for (int i = 0; i < numSamples; ++i)
+    {
+        output[i] = baseValue + i;
+    }
+#endif
+}

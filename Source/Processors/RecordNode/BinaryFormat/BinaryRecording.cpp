@@ -685,9 +685,8 @@ void BinaryRecording::writeContinuousData (int writeChannel,
             wroteFirstSampleNumber[streamId] = true;
         }
 
-        for (int i = 0; i < size; i++)
-            /* Generate int sample number */
-            m_sampleNumberBuffer[i] = baseSampleNumber + i;
+        /* Generate sequential sample numbers using SIMD-optimized fill */
+        SIMDConverter::fillSequentialInt64 (m_sampleNumberBuffer, baseSampleNumber, size);
 
         /* Write int timestamps to disc */
         m_dataTimestampFiles[fileIndex]->writeData (m_sampleNumberBuffer, size * sizeof (int64));
@@ -764,9 +763,10 @@ void BinaryRecording::writeSpike (int electrodeIndex, const Spike* spike)
         m_intBuffer.malloc (totalSamples);
     }
 
-    double multFactor = 1 / (float (0x7fff) * channel->getChannelBitVolts (0));
-    FloatVectorOperations::copyWithMultiply (m_scaledBuffer.getData(), spike->getDataPointer(), multFactor, totalSamples);
-    AudioDataConverters::convertFloatToInt16LE (m_scaledBuffer.getData(), m_intBuffer.getData(), totalSamples);
+    /* Convert spike waveforms from float to int16 using SIMD-optimized conversion.
+       Scale factor converts microvolts to int16 units: output = input / bitVolts */
+    float scaleFactor = 1.0f / channel->getChannelBitVolts (0);
+    SIMDConverter::convertFloatToInt16 (spike->getDataPointer(), m_intBuffer.getData(), scaleFactor, totalSamples);
     rec->data->writeData (m_intBuffer.getData(), totalSamples * sizeof (int16));
 
     int64 sampleIdx = spike->getSampleNumber();
@@ -848,6 +848,8 @@ void BinaryRecording::writeContinuousDataBatch (const int* writeChannels,
     // Get starting sample position (all channels in a stream have same position)
     uint64 startPos = m_samplesWritten[writeChannels[0]];
 
+    //LOGD("BinaryRecording::writeContinuousDataBatch: Writing ", numSamples, " samples for ", numChannels, " channels at position ", startPos, " to file index ", fileIndex);
+
     // Try batch interleaving if we have all channels for this file
     // The file's channel count is determined by the stream's channel count
     // If we have a partial batch, fall back to per-channel writes
@@ -894,8 +896,8 @@ void BinaryRecording::writeContinuousDataBatch (const int* writeChannels,
                 wroteFirstSampleNumber[streamId] = true;
             }
 
-            for (int s = 0; s < numSamples; s++)
-                m_sampleNumberBuffer[s] = baseSampleNumber + s;
+            /* Generate sequential sample numbers using SIMD-optimized fill */
+            SIMDConverter::fillSequentialInt64 (m_sampleNumberBuffer, baseSampleNumber, numSamples);
 
             m_dataTimestampFiles[fileIndex]->writeData (m_sampleNumberBuffer, numSamples * sizeof (int64));
             m_dataTimestampFiles[fileIndex]->increaseRecordCount (numSamples);
@@ -921,8 +923,7 @@ void BinaryRecording::writeTimestampSyncText (uint64 streamId, int64 sampleNumbe
         jassert (fsn == sampleNumber);
 
     m_syncTextFile->writeText (syncString + "\r\n", false, false, nullptr);
-
-    m_syncTextFile->flush();
+    // Note: flush removed - file will be flushed on close or by OS buffering
 }
 
 RecordEngineManager* BinaryRecording::getEngineManager()

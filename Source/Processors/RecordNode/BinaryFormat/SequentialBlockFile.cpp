@@ -138,10 +138,10 @@ bool SequentialBlockFile::writeChannelBatch (uint64 startPos, int16* const* chan
         return false;
     }
 
+    // Batch writing requires all channels - return false to signal caller should use per-channel writes
     if (numChannels != m_nChannels)
     {
-        printf ("[RN]SequentialBlockFile::writeChannelBatch: channel count mismatch (%d vs %d)\n", 
-                numChannels, m_nChannels);
+        printf ("[RN]SequentialBlockFile::writeChannelBatch channel count mismatch: expected %d, got %d\n", m_nChannels, numChannels);
         return false;
     }
 
