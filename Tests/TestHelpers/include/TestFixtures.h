@@ -79,9 +79,9 @@ public:
         LookAndFeel::setDefaultLookAndFeel (customLookAndFeel.get());
 
         // All of these sets the global state in AccessClass in their constructors
-        //audioComponent = std::make_unique<AudioComponent>();
+        audioComponent = std::make_unique<AudioComponent>();
         processorGraph = std::make_unique<ProcessorGraph> (true);
-        //controlPanel = std::make_unique<ControlPanel> (processorGraph.get(), audioComponent.get(), true);
+        controlPanel = std::make_unique<ControlPanel> (processorGraph.get(), audioComponent.get(), true);
 
         SourceNode* snTemp = sourceNodeBuilder.buildSourceNode();
         sourceNodeId = nextProcessorId++;
@@ -97,12 +97,12 @@ public:
         sn->initialize (false);
         sn->setDestNode (nullptr);
 
-        //controlPanel->updateRecordEngineList();
+        controlPanel->updateRecordEngineList();
 
         // Refresh everything
         processorGraph->updateSettings (sn);
 
-        //controlPanel->colourChanged();
+        controlPanel->colourChanged();
     }
 
     virtual ~ProcessorTester()
