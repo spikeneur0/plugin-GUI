@@ -24,6 +24,11 @@
 #ifndef SIMDCONVERTER_H
 #define SIMDCONVERTER_H
 
+// MSVC with /arch:AVX doesn't define __SSE4_1__, but AVX implies SSE4.1 support
+#if defined(_MSC_VER) && defined(__AVX__) && !defined(__SSE4_1__)
+    #define __SSE4_1__ 1
+#endif
+
 #include <cstdint>
 #include <string>
 

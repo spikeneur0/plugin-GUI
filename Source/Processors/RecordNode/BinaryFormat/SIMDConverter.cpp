@@ -273,8 +273,7 @@ void SIMDConverter::convertSSE4_1 (const float* input, int16_t* output, float sc
         f0 = _mm_mul_ps (f0, vscale);
         f1 = _mm_mul_ps (f1, vscale);
         
-        // Round to nearest integer (SSE4.1)
-        // _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC = 0x00 | 0x08 = 0x08
+        // Round to nearest integer (SSE4.1 - uses banker's rounding)
         f0 = _mm_round_ps (f0, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC);
         f1 = _mm_round_ps (f1, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC);
         

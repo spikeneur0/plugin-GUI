@@ -40,6 +40,8 @@ BinaryRecording::BinaryRecording()
     m_scaledBuffer.malloc (MAX_BUFFER_SIZE);
     m_intBuffer.malloc (MAX_BUFFER_SIZE);
     m_sampleNumberBuffer.malloc (MAX_BUFFER_SIZE);
+
+    LOGD ("BinaryRecording SIMD type: ", SIMDConverter::getSIMDTypeString());
 }
 
 BinaryRecording::~BinaryRecording() {}
