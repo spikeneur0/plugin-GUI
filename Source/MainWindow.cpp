@@ -142,7 +142,17 @@ MainWindow::MainWindow (const File& fileToLoad, bool isConsoleApp_) : isConsoleA
 #ifdef JUCE_WINDOWS
         documentWindow->setUsingNativeTitleBar (false);
 #ifdef NDEBUG
-        ShowWindow (GetConsoleWindow(), SW_HIDE);
+        // Only hide console if launched by double-clicking (not from CLI)
+        // Check if console is attached to a parent process (CLI) or standalone
+        DWORD processList[2];
+        DWORD processCount = GetConsoleProcessList (processList, 2);
+
+        // If only 1 process (this app), it was launched by double-clicking
+        // If more than 1, it was launched from an existing console (CLI)
+        if (processCount == 1)
+        {
+            ShowWindow (GetConsoleWindow(), SW_HIDE);
+        }
 #endif
 #else
         documentWindow->setUsingNativeTitleBar (true); // Use native title bar on Mac and Linux
