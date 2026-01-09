@@ -96,6 +96,7 @@ void ParameterCollection::copyParameterValuesTo (ParameterOwner* pOwner)
             {
                 MaskChannelsParameter* targetMaskParam = (MaskChannelsParameter*) targetParam;
                 int targetChannelCount = targetMaskParam->getChannelCount();
+                const int savedChannelCount = owner.channel_count;
 
                 Array<var> filteredValues;
                 for (int i = 0; i < parameter->getValue().getArray()->size(); i++)
@@ -104,6 +105,15 @@ void ParameterCollection::copyParameterValuesTo (ParameterOwner* pOwner)
                     if (channelIndex >= 0 && channelIndex < targetChannelCount)
                         filteredValues.add (channelIndex);
                 }
+
+                // Auto-include any channels that exist on the device but were absent in the
+                // saved configuration (e.g., saved with fewer channels than currently available).
+                if (targetChannelCount > savedChannelCount)
+                {
+                    for (int ch = savedChannelCount; ch < targetChannelCount; ++ch)
+                        filteredValues.addIfNotAlreadyThere (ch);
+                }
+
                 targetParam->currentValue = filteredValues;
             }
             else if (parameter->getType() == Parameter::SELECTED_CHANNELS_PARAM)
