@@ -52,7 +52,7 @@ public:
     ~DataQueue();
 
     /// -----------  NOT THREAD SAFE  -------------- //
-    /** Sets the number of continuous channel buffers needed */
+    /** Sets the number of continuous channel buffers needed (all channels belong to one stream) */
     void setChannelCount (int nChans);
 
     /** Sets the number of timestamp buffers needed */
@@ -61,8 +61,8 @@ public:
     /** Changes the number of blocks in the queue */
     void resize (int nBlocks);
 
-    /** Returns an array of sample numbers for a given block*/
-    void getSampleNumbersForBlock (int idx, Array<int64>& sampleNumbers) const;
+    /** Returns the sample number for a given block (same for all channels in stream) */
+    int64 getSampleNumberForBlock (int idx) const;
 
     /// -----------  THREAD SAFE  -------------- //
 
@@ -88,10 +88,10 @@ public:
     /** Writes an array of timestamps for one stream */
     float writeSynchronizedTimestamps (double start, double step, int destChannel, int nSamples);
 
-    /** Start reading data for one channel */
+    /** Start reading data for all channels in this stream */
     bool startRead (std::vector<CircularBufferIndexes>& dataBufferIdxs,
                     std::vector<CircularBufferIndexes>& timestampBufferIdxs,
-                    Array<int64>& sampleNumbers,
+                    int64& sampleNumber,
                     int nMax);
 
     /** Called when data read is finished */
@@ -107,8 +107,8 @@ public:
     int getBlockSize();
 
 private:
-    /** Fills the sample number buffer for a given channel */
-    void fillSampleNumbers (int channel, int index, int size, int64 sampleNumber);
+    /** Fills the sample number buffer for the stream */
+    void fillSampleNumbers (int index, int size, int64 sampleNumber);
 
     int lastIdx;
 
@@ -120,8 +120,8 @@ private:
 
     std::vector<int> m_readSamples;
     std::vector<int> m_readFTSSamples;
-    OwnedArray<std::vector<int64>> m_sampleNumbers;
-    std::vector<int64> m_lastReadSampleNumbers;
+    std::vector<int64> m_sampleNumbers;       // Per-stream sample numbers (one per block)
+    int64 m_lastReadSampleNumber;             // Last sample number read for the stream
 
     int m_numChans;
     int m_numFTSChans;

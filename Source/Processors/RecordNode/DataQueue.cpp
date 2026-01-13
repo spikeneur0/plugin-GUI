@@ -67,20 +67,20 @@ void DataQueue::setChannelCount (int nChans)
     m_readSamples.clear();
     m_numChans = nChans;
     m_sampleNumbers.clear();
-    m_lastReadSampleNumbers.clear();
+    m_lastReadSampleNumber = 0;
 
     for (int i = 0; i < nChans; ++i)
     {
         m_fifos.add (new AbstractFifo (m_maxSize));
         m_readSamples.push_back (0);
-        m_sampleNumbers.add (new std::vector<int64>());
-
-        for (int j = 0; j < m_numBlocks; j++)
-        {
-            m_sampleNumbers.getLast()->push_back (0);
-        }
-        m_lastReadSampleNumbers.push_back (0);
     }
+
+    // Initialize per-stream sample numbers (one per block)
+    for (int j = 0; j < m_numBlocks; j++)
+    {
+        m_sampleNumbers.push_back (0);
+    }
+
     m_buffer.setSize (nChans, m_maxSize);
 }
 
@@ -98,9 +98,11 @@ void DataQueue::resize (int nBlocks)
         m_fifos[i]->setTotalSize (size);
         m_fifos[i]->reset();
         m_readSamples[i] = 0;
-        m_sampleNumbers[i]->resize (nBlocks);
-        m_lastReadSampleNumbers[i] = 0;
     }
+
+    // Resize per-stream sample numbers
+    m_sampleNumbers.resize (nBlocks);
+    m_lastReadSampleNumber = 0;
 
     m_readFTSSamples.clear();
 
@@ -114,7 +116,7 @@ void DataQueue::resize (int nBlocks)
     m_FTSBuffer.setSize (m_numFTSChans, size);
 }
 
-void DataQueue::fillSampleNumbers (int channel, int index, int size, int64 sampleNumber)
+void DataQueue::fillSampleNumbers (int index, int size, int64 sampleNumber)
 {
     //Search for the next block start.
     int blockMod = index % m_blockSize;
@@ -142,7 +144,7 @@ void DataQueue::fillSampleNumbers (int channel, int index, int size, int64 sampl
         if ((blockStartPos + i) < (index + size))
         {
             latestSampleNumber = startSampleNumber + (i * m_blockSize);
-            m_sampleNumbers[channel]->at (blockIdx) = latestSampleNumber;
+            m_sampleNumbers[blockIdx] = latestSampleNumber;
         }
     }
 }
@@ -202,7 +204,11 @@ float DataQueue::writeChannel (const AudioBuffer<float>& buffer,
                        0,
                        size1);
 
-    fillSampleNumbers (destChannel, index1, size1, sampleNumber);
+    // Only fill sample numbers once per stream (using first channel write)
+    if (destChannel == 0)
+    {
+        fillSampleNumbers (index1, size1, sampleNumber);
+    }
 
     if (size2 > 0)
     {
@@ -213,7 +219,10 @@ float DataQueue::writeChannel (const AudioBuffer<float>& buffer,
                            size1,
                            size2);
 
-        fillSampleNumbers (destChannel, index2, size2, sampleNumber + size1);
+        if (destChannel == 0)
+        {
+            fillSampleNumbers (index2, size2, sampleNumber + size1);
+        }
     }
     m_fifos[destChannel]->finishedWrite (size1 + size2);
 
@@ -239,11 +248,11 @@ float DataQueue::writeAllChannels (const AudioBuffer<float>& buffer,
 
     float maxUsage = 0.0f;
 
-    // Fill sample numbers once for channel 0
-    fillSampleNumbers (0, index1, size1, sampleNumber);
+    // Fill sample numbers once for the stream (not per-channel)
+    fillSampleNumbers (index1, size1, sampleNumber);
     if (size2 > 0)
     {
-        fillSampleNumbers (0, index2, size2, sampleNumber + size1);
+        fillSampleNumbers (index2, size2, sampleNumber + size1);
     }
 
     // Batch copy and update all channels
@@ -260,14 +269,6 @@ float DataQueue::writeAllChannels (const AudioBuffer<float>& buffer,
             m_buffer.copyFrom (destChannel, index2, buffer, srcChannel, size1, size2);
         }
 
-        // Copy sample numbers from channel 0 (faster than calling fillSampleNumbers for each)
-        if (destChannel > 0)
-        {
-            std::memcpy (m_sampleNumbers[destChannel]->data(),
-                         m_sampleNumbers[0]->data(),
-                         m_numBlocks * sizeof (int64));
-        }
-
         // Update FIFO state - need to call prepareToWrite for channels > 0
         if (destChannel > 0)
         {
@@ -278,7 +279,8 @@ float DataQueue::writeAllChannels (const AudioBuffer<float>& buffer,
     }
 
     // Return usage from last channel (all should be the same)
-    return 1.0f - (float) m_fifos[m_numChans - 1]->getFreeSpace() / (float) m_fifos[m_numChans - 1]->getTotalSize();
+    const float usage = 1.0f - (float) m_fifos[m_numChans - 1]->getFreeSpace() / (float) m_fifos[m_numChans - 1]->getTotalSize();
+    return usage;
 }
 
 /*
@@ -300,7 +302,7 @@ const SynchronizedTimestampBuffer& DataQueue::getTimestampBufferReference() cons
 
 bool DataQueue::startRead (std::vector<CircularBufferIndexes>& dataBufferIdxs,
                            std::vector<CircularBufferIndexes>& timestampBufferIdxs,
-                           Array<int64>& sampleNumbers,
+                           int64& sampleNumber,
                            int nMax)
 {
     //This should never happen, but it never hurts to be on the safe side.
@@ -344,37 +346,39 @@ bool DataQueue::startRead (std::vector<CircularBufferIndexes>& dataBufferIdxs,
             idx.size2 = 0;
             m_readFTSSamples[chan] = 0;
         }
+        sampleNumber = m_lastReadSampleNumber;
         m_readInProgress = false;
         return false;
     }
 
-    // Second pass: read the same number of samples from all channels
-    for (int chan = 0; chan < m_numChans; ++chan)
+    // Get sample number for the stream (using first channel's indices)
+    CircularBufferIndexes& firstIdx = dataBufferIdxs[0];
+    m_fifos.getUnchecked (0)->prepareToRead (samplesToRead, firstIdx.index1, firstIdx.size1, firstIdx.index2, firstIdx.size2);
+    m_readSamples[0] = firstIdx.size1 + firstIdx.size2;
+
+    int blockMod = firstIdx.index1 % m_blockSize;
+    int blockDiff = (blockMod == 0) ? 0 : (m_blockSize - blockMod);
+
+    // If the next sample number block is within the data we're reading, include the translated sample number
+    if (blockDiff < (firstIdx.size1 + firstIdx.size2))
+    {
+        int blockIdx = ((firstIdx.index1 + blockDiff) / m_blockSize) % m_numBlocks;
+        sampleNumber = m_sampleNumbers[blockIdx] - blockDiff;
+    }
+    else
+    {
+        // If not, use the last sent sample number
+        sampleNumber = m_lastReadSampleNumber;
+    }
+
+    m_lastReadSampleNumber = sampleNumber + firstIdx.size1 + firstIdx.size2;
+
+    // Read remaining channels with same parameters
+    for (int chan = 1; chan < m_numChans; ++chan)
     {
         CircularBufferIndexes& idx = dataBufferIdxs[chan];
-
         m_fifos.getUnchecked (chan)->prepareToRead (samplesToRead, idx.index1, idx.size1, idx.index2, idx.size2);
         m_readSamples[chan] = idx.size1 + idx.size2;
-
-        int blockMod = idx.index1 % m_blockSize;
-        int blockDiff = (blockMod == 0) ? 0 : (m_blockSize - blockMod);
-
-        //If the next sample number block is within the data we're reading, include the translated sample number in the output
-        int64 sampleNum;
-
-        if (blockDiff < (idx.size1 + idx.size2))
-        {
-            int blockIdx = ((idx.index1 + blockDiff) / m_blockSize) % m_numBlocks;
-            sampleNum = m_sampleNumbers[chan]->at (blockIdx) - blockDiff;
-        }
-        //If not, copy the last sent again
-        else
-        {
-            sampleNum = m_lastReadSampleNumbers[chan];
-        }
-
-        sampleNumbers.set (chan, sampleNum); // expensive operation?
-        m_lastReadSampleNumbers[chan] = sampleNum + idx.size1 + idx.size2;
     }
 
     // Also find minimum for timestamp streams and read consistently
@@ -418,11 +422,7 @@ void DataQueue::stopRead()
     m_readInProgress = false;
 }
 
-void DataQueue::getSampleNumbersForBlock (int idx, Array<int64>& sampleNumbers) const
+int64 DataQueue::getSampleNumberForBlock (int idx) const
 {
-    sampleNumbers.clear();
-    for (int chan = 0; chan < m_numChans; ++chan)
-    {
-        sampleNumbers.add ((*m_sampleNumbers[chan])[idx]);
-    }
+    return m_sampleNumbers[idx];
 }

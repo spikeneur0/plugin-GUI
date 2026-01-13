@@ -103,6 +103,7 @@ void RecordThread::run()
     int numStreams = recordNode->getNumDataStreams();
     m_perStreamDataIdxs.resize (numStreams);
     m_perStreamTimestampIdxs.resize (numStreams);
+    m_perStreamSampleNumbers.resize (numStreams, 0);
 
     bool closeEarly = true;
 
@@ -131,12 +132,21 @@ void RecordThread::run()
         DataQueue* queue = (*m_dataQueues)[streamIdx];
         if (queue != nullptr)
         {
-            Array<int64> streamSampleNums;
-            queue->getSampleNumbersForBlock (0, streamSampleNums);
-            for (int i = 0; i < streamSampleNums.size(); i++)
+            int64 streamSampleNum = queue->getSampleNumberForBlock (0);
+            m_perStreamSampleNumbers[streamIdx] = streamSampleNum;
+            
+            // Count channels in this stream and set sample numbers for all of them
+            int numChannelsInStream = 0;
+            for (int ch = 0; ch < m_numChannels; ch++)
+            {
+                if (m_timestampBufferChannelArray[ch] == streamIdx)
+                    numChannelsInStream++;
+            }
+            
+            for (int i = 0; i < numChannelsInStream; i++)
             {
                 if (globalChan < m_numChannels)
-                    initSampleNumbers.add (streamSampleNums[i]);
+                    initSampleNumbers.add (streamSampleNum);
                 globalChan++;
             }
         }
@@ -196,21 +206,18 @@ void RecordThread::writeData (int maxSamples,
         m_perStreamDataIdxs[streamIdx].resize (numChannelsInStream);
         m_perStreamTimestampIdxs[streamIdx].resize (1);  // One timestamp stream per queue
 
-        // Create local sample numbers array for this stream
-        Array<int64> streamSampleNumbers;
-        for (int i = 0; i < numChannelsInStream; i++)
-            streamSampleNumbers.add (0);
+        // Get single sample number for this stream
+        int64 streamSampleNumber = 0;
 
-        if (queue->startRead (m_perStreamDataIdxs[streamIdx], m_perStreamTimestampIdxs[streamIdx], streamSampleNumbers, maxSamples))
+        if (queue->startRead (m_perStreamDataIdxs[streamIdx], m_perStreamTimestampIdxs[streamIdx], streamSampleNumber, maxSamples))
         {
-            // Update global sample numbers
-            int localChan = 0;
+            // Update global sample numbers using the stream's sample number
+            m_perStreamSampleNumbers[streamIdx] = streamSampleNumber;
             for (int globalChan = 0; globalChan < m_numChannels; globalChan++)
             {
                 if (m_timestampBufferChannelArray[globalChan] == streamIdx)
                 {
-                    sampleNumbers.set (globalChan, streamSampleNumbers[localChan]);
-                    localChan++;
+                    sampleNumbers.set (globalChan, streamSampleNumber);
                 }
             }
             m_engine->updateLatestSampleNumbers (sampleNumbers);
@@ -271,14 +278,14 @@ void RecordThread::writeData (int maxSamples,
                     int numSamples2 = m_perStreamDataIdxs[streamIdx][0].size2;
                     int bufferIndex2 = m_perStreamDataIdxs[streamIdx][0].index2;
 
-                    // Update sample numbers
-                    localChan = 0;
+                    // Update sample numbers using per-stream value
+                    int64 updatedStreamSampleNumber = m_perStreamSampleNumbers[streamIdx] + numSamples;
+                    m_perStreamSampleNumbers[streamIdx] = updatedStreamSampleNumber;
                     for (int globalChan = 0; globalChan < m_numChannels; globalChan++)
                     {
                         if (m_timestampBufferChannelArray[globalChan] == streamIdx)
                         {
-                            sampleNumbers.set (globalChan, sampleNumbers[globalChan] + numSamples);
-                            localChan++;
+                            sampleNumbers.set (globalChan, updatedStreamSampleNumber);
                         }
                     }
                     m_engine->updateLatestSampleNumbers (sampleNumbers, m_batchWriteChannels[0]);

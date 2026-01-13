@@ -97,6 +97,7 @@ private:
     std::atomic<bool> m_cleanExit;
 
     Array<int64> sampleNumbers;  // Global sample numbers (indexed by global channel)
+    std::vector<int64> m_perStreamSampleNumbers;  // Per-stream sample numbers
     
     // Per-stream buffer index arrays for independent queue reading
     std::vector<std::vector<CircularBufferIndexes>> m_perStreamDataIdxs;
