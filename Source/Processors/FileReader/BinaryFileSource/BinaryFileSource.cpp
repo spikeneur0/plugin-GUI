@@ -131,6 +131,21 @@ void BinaryFileSource::fillRecordInfo()
         }
 
         int numChannels = record[idNumChannels];
+
+        // if numchannels is not equal to the size of channels var, skip this record
+        if (numChannels != channels.size())
+        {
+            LOGE ("Number of channels mismatch in stream: ", streamName);
+            continue;
+        }
+
+        // if numSamples is not a whole number, skip this record
+        if (dataFile.getSize() % (numChannels * sizeof (int16)) != 0)
+        {
+            LOGE ("File size is not consistent with number of channels in stream: ", streamName);
+            continue;
+        }
+
         int64 numSamples = (dataFile.getSize() / numChannels) / sizeof (int16);
 
         info.name = streamName;
