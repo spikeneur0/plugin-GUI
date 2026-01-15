@@ -140,6 +140,9 @@ public:
     /* Called at start of recording; launches the RecordThread*/
     void startRecording() override;
 
+    /** Called by RecordThread after opening files */
+    void notifyRecordThreadFilesOpened();
+
     /* Called at end of recording; stops the RecordThread*/
     void stopRecording() override;
 

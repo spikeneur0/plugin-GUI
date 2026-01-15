@@ -791,7 +791,6 @@ bool RecordNode::stopAcquisition()
 // called by GenericProcessor::setRecording() and CoreServices::setRecordingStatus()
 void RecordNode::startRecording()
 {
-    
     Array<int> chanProcessorMap;
     Array<int> chanOrderinProc;
     OwnedArray<RecordProcessorInfo> procInfo;
@@ -878,7 +877,7 @@ void RecordNode::startRecording()
         {
             DataQueue* queue = new DataQueue (bufferSize, DATA_BUFFER_NBLOCKS);
             queue->setChannelCount (recordedChannelsPerStream[i]);
-            queue->setTimestampStreamCount (1);  // Each queue has one timestamp stream
+            queue->setTimestampStreamCount (1); // Each queue has one timestamp stream
             dataQueues.add (queue);
 
             // Pre-compute source channel array for this stream
@@ -929,8 +928,7 @@ void RecordNode::startRecording()
     }
 
     recordThread->setFileComponents (rootFolder, experimentNumber, recordingNumber);
-    recordThread->startThread(Thread::Priority::highest);
-    isRecording = true;
+    recordThread->startThread (Thread::Priority::highest);
 
     if (settingsNeeded)
     {
@@ -944,6 +942,14 @@ void RecordNode::startRecording()
 
         settingsNeeded = false;
     }
+}
+
+void RecordNode::notifyRecordThreadFilesOpened()
+{
+    MessageManager::callAsync ([this]()
+                               {
+                                   if (recordThread->isThreadRunning())
+                                       isRecording = true; });
 }
 
 // called by GenericProcessor::setRecording() and CoreServices::setRecordingStatus()
@@ -1155,7 +1161,7 @@ void RecordNode::process (AudioBuffer<float>& buffer)
                 dataQueues[streamIndex]->writeSynchronizedTimestamps (
                     first,
                     second - first,
-                    0,  // timestamp stream index within this queue
+                    0, // timestamp stream index within this queue
                     numSamples);
             }
 

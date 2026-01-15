@@ -114,6 +114,9 @@ void RecordThread::run()
 
     m_engine->openFiles (m_rootFolder, m_experimentNumber, m_recordingNumber);
 
+    if (recordNode != nullptr)
+        recordNode->notifyRecordThreadFilesOpened();
+
     //2-Wait until the first block has arrived, so we can align the timestamps
     bool isWaiting = false;
     while (! m_receivedFirstBlock && ! threadShouldExit())
