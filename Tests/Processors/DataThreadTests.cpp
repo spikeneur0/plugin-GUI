@@ -115,11 +115,11 @@ protected:
 
 TEST_F(DataThreadTests, DataIntegrity)
 {
-    tester->startAcquisition(false);
+    processor->startAcquisition();
 
     int numSamples = 100;
     auto inputBuffer = createBuffer(1000.0, 20.0, 5, numSamples);
     writeBlock(inputBuffer);
 
-    tester->stopAcquisition();
+    processor->stopAcquisition();
 }

@@ -1824,6 +1824,14 @@ void ProcessorGraph::setRecordState (bool isRecording)
                 p->startRecording();
             else
                 p->stopRecording();
+
+            if (auto editor = p->getEditor())
+            {
+                if (isRecording)
+                    editor->startRecording();
+                else
+                    editor->stopRecording();
+            }
         }
     }
 }

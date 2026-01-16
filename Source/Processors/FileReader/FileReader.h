@@ -242,6 +242,9 @@ private:
     /** Returns a new FileSource object for a given file source */
     FileSource* createBuiltInFileSource (int index) const;
 
+    /** Shows a warning message asynchronously */
+    void showWarningAsync (const String& title, const String& message) const;
+
     /** Holds a path to the default file */
     File defaultFile;
 

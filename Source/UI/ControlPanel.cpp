@@ -1048,9 +1048,9 @@ void ControlPanel::startRecording()
 
     filenameComponent->setEnabled (false);
 
-    graph->setRecordState (true);
-
     LOGC ("Starting recording");
+
+    graph->setRecordState (true);
 
     repaint();
 }

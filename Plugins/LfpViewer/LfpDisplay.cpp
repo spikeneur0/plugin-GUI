@@ -47,8 +47,10 @@
 
 #define MS_FROM_START Time::highResolutionTicksToSeconds (Time::getHighResolutionTicks() - start) * 1000
 
+#include <cmath>
 #include <math.h>
 #include <numeric>
+#include <vector>
 
 using namespace LfpViewer;
 
@@ -162,8 +164,32 @@ ChannelColourScheme* LfpDisplay::getColourSchemePtr()
 
 void LfpDisplay::updateRange (int i)
 {
-    channels[i]->setRange (range[channels[i]->getType()]);
-    channelInfo[i]->setRange (range[channels[i]->getType()]);
+    // Check if this is an AUX channel with auto-scaling enabled
+    if (channels[i]->getType() == ContinuousChannel::Type::AUX && options->isAuxAutoScaleEnabled())
+    {
+        // Apply individual auto-scaling based on this channel's InputRange
+        float rangeMin = canvasSplit->displayBuffer->channelMetadata[i].inputRangeMin;
+        float rangeMax = canvasSplit->displayBuffer->channelMetadata[i].inputRangeMax;
+        float autoRange = rangeMax - rangeMin;
+
+        if (autoRange > 0.0f)
+        {
+            channels[i]->setRange (autoRange);
+            channelInfo[i]->setRange (autoRange);
+        }
+        else
+        {
+            // Fall back to the default range for this type
+            channels[i]->setRange (range[channels[i]->getType()]);
+            channelInfo[i]->setRange (range[channels[i]->getType()]);
+        }
+    }
+    else
+    {
+        // Use the standard range for the channel type
+        channels[i]->setRange (range[channels[i]->getType()]);
+        channelInfo[i]->setRange (range[channels[i]->getType()]);
+    }
 }
 
 void LfpDisplay::setNumChannels (int newChannelCount)
@@ -234,17 +260,31 @@ void LfpDisplay::setColours()
         {
             if (colourGrouping.equalsIgnoreCase ("By Shank"))
             {
-                /*
-                depth ranges of electrodes for multishank configurations:
-                Shank 1: depth < 10000
-                Shank 2: 10000 ≤ depth < 20000
-                Shank 3: 20000 ≤ depth < 30000
-                Shank 4: depth ≥ 30000
-                */
-                int depth = drawableChannels[i].channel->getDepth();
-                int colourIdx = depth < 10000 ? 0 : depth < 20000 ? 2 : depth < 30000 ? 4 : 6;
-                drawableChannels[i].channel->setColour (getColourSchemePtr()->getColourForIndex (colourIdx));
-                drawableChannels[i].channelInfo->setColour (getColourSchemePtr()->getColourForIndex (colourIdx));
+                auto* channel = drawableChannels[i].channel;
+                auto* info = drawableChannels[i].channelInfo;
+
+                if (channel->hasGroupMetadata())
+                {
+                    const int colourIdx = (channel->getGroup() * 2) % 8;
+                    channel->setColour (getColourSchemePtr()->getColourForIndex (colourIdx));
+                    info->setColour (getColourSchemePtr()->getColourForIndex (colourIdx));
+                }
+                else
+                {
+                    /*
+                    Legacy depth-based shank colouring ranges:
+                    Shank 1: depth < 10000
+                    Shank 2: 10000 ≤ depth < 20000
+                    Shank 3: 20000 ≤ depth < 30000
+                    Shank 4: depth ≥ 30000
+                    */
+                    const int depth = channel->getDepth();
+                    const int colourIdx = depth < 10000 ? 0 : depth < 20000 ? 2
+                                                          : depth < 30000   ? 4
+                                                                            : 6;
+                    channel->setColour (getColourSchemePtr()->getColourForIndex (colourIdx));
+                    info->setColour (getColourSchemePtr()->getColourForIndex (colourIdx));
+                }
             }
             else
             {
@@ -257,10 +297,24 @@ void LfpDisplay::setColours()
     {
         if (colourGrouping.equalsIgnoreCase ("By Shank"))
         {
-            int depth = drawableChannels[0].channel->getDepth();
-            int colourIdx = depth < 10000 ? 0 : depth < 20000 ? 2 : depth < 30000 ? 4 : 6;
-            drawableChannels[0].channel->setColour (getColourSchemePtr()->getColourForIndex (colourIdx));
-            drawableChannels[0].channelInfo->setColour (getColourSchemePtr()->getColourForIndex (colourIdx));
+            auto* channel = drawableChannels[0].channel;
+            auto* info = drawableChannels[0].channelInfo;
+
+            if (channel->hasGroupMetadata())
+            {
+                const int colourIdx = channel->getGroup();
+                channel->setColour (getColourSchemePtr()->getColourForIndex (colourIdx));
+                info->setColour (getColourSchemePtr()->getColourForIndex (colourIdx));
+            }
+            else
+            {
+                const int depth = channel->getDepth();
+                const int colourIdx = depth < 10000 ? 0 : depth < 20000 ? 2
+                                                      : depth < 30000   ? 4
+                                                                        : 6;
+                channel->setColour (getColourSchemePtr()->getColourForIndex (colourIdx));
+                info->setColour (getColourSchemePtr()->getColourForIndex (colourIdx));
+            }
         }
         else
         {
@@ -602,7 +656,10 @@ void LfpDisplay::setRange (float r, ContinuousChannel::Type type)
         for (int i = 0; i < numChans; i++)
         {
             if (channels[i]->getType() == type)
+            {
                 channels[i]->setRange (range[type]);
+                channelInfo[i]->setRange (range[type]);
+            }
         }
 
         if (displayIsPaused)
@@ -612,6 +669,46 @@ void LfpDisplay::setRange (float r, ContinuousChannel::Type type)
 
             refresh();
         }
+    }
+}
+
+void LfpDisplay::setAutoRangeForAuxChannels()
+{
+    if (canvasSplit->displayBuffer == nullptr || channels.size() == 0)
+        return;
+
+    // Apply individual ranges to each AUX channel based on their InputRange
+    for (int i = 0; i < numChans; i++)
+    {
+        if (channels[i]->getType() == ContinuousChannel::Type::AUX)
+        {
+            // Get the InputRange from the channel metadata
+            if (i < canvasSplit->displayBuffer->channelMetadata.size())
+            {
+                float rangeMin = canvasSplit->displayBuffer->channelMetadata[i].inputRangeMin;
+                float rangeMax = canvasSplit->displayBuffer->channelMetadata[i].inputRangeMax;
+                float autoRange = rangeMax - rangeMin;
+
+                if (autoRange > 0.0f)
+                {
+                    channels[i]->setRange (autoRange);
+                    channelInfo[i]->setRange (autoRange);
+                }
+                else
+                {
+                    // Fall back to the default range for this type
+                    channels[i]->setRange (range[ContinuousChannel::Type::AUX]);
+                    channelInfo[i]->setRange (range[ContinuousChannel::Type::AUX]);
+                }
+            }
+        }
+    }
+
+    if (displayIsPaused)
+    {
+        timeOffsetChanged = true;
+        canRefresh = true;
+        refresh();
     }
 }
 
@@ -834,20 +931,25 @@ void LfpDisplay::mouseWheelMove (const MouseEvent& e, const MouseWheelDetails& w
     {
         if (e.mods.isAltDown()) // ALT + scroll wheel -> change channel range (was SHIFT but that clamps wheel.deltaY to 0 on OSX for some reason..)
         {
+            auto chanType = options->getSelectedType();
+
+            if (chanType == ContinuousChannel::AUX && options->isAuxAutoScaleEnabled())
+                return;
+
             int h = getRange();
 
-            int step = options->getRangeStep (options->getSelectedType());
+            int step = options->getRangeStep (chanType);
 
             // std::cout << wheel.deltaY << std::endl;
 
             if (wheel.deltaY > 0)
             {
-                setRange (h + step, options->getSelectedType());
+                setRange (h + step, chanType);
             }
             else
             {
                 if (h > step + 1)
-                    setRange (h - step, options->getSelectedType());
+                    setRange (h - step, chanType);
             }
 
             options->setRangeSelection (h); // update combobox
@@ -1020,23 +1122,43 @@ void LfpDisplay::rebuildDrawableChannelsList()
         const int numChannels = channelsToDraw.size();
 
         std::vector<float> depths (numChannels);
+        std::vector<float> xposValues (numChannels);
+        std::vector<bool> hasYposMetadata (numChannels);
+        std::vector<bool> hasXposMetadata (numChannels);
+        std::vector<int> groups (numChannels);
+        std::vector<bool> hasGroupMetadata (numChannels);
 
         bool allSame = true;
+        bool anyYposMetadata = false;
+        bool anyXposMetadata = false;
+        bool anyGroupMetadata = false;
         float last = channelsToDraw[0].channelInfo->getDepth();
 
         for (int i = 0; i < channelsToDraw.size(); i++)
         {
-            float depth = channelsToDraw[i].channelInfo->getDepth();
+            auto* info = channelsToDraw[i].channelInfo;
+            const float depth = info->getDepth();
 
             if (depth != last)
                 allSame = false;
 
             depths[i] = depth;
+            xposValues[i] = info->getXpos();
+            hasYposMetadata[i] = info->hasYposMetadata();
+            hasXposMetadata[i] = info->hasXposMetadata();
+            groups[i] = info->getGroup();
+            hasGroupMetadata[i] = info->hasGroupMetadata();
 
+            anyYposMetadata = anyYposMetadata || hasYposMetadata[i];
+            anyXposMetadata = anyXposMetadata || hasXposMetadata[i];
+            anyGroupMetadata = anyGroupMetadata || hasGroupMetadata[i];
             last = depth;
         }
 
-        if (allSame)
+        const bool positionMetadataAvailable = anyYposMetadata && anyXposMetadata;
+        const bool groupMetadataAvailable = anyGroupMetadata;
+
+        if (! groupMetadataAvailable && allSame && ! anyYposMetadata)
         {
             LOGD ("No depth info found.");
         }
@@ -1046,7 +1168,21 @@ void LfpDisplay::rebuildDrawableChannelsList()
 
             std::iota (V.begin(), V.end(), 0); //Initializing
             sort (V.begin(), V.end(), [&] (int i, int j)
-                  { return depths[i] <= depths[j]; });
+                  {
+                      const float depthDiff = depths[i] - depths[j];
+                      const float depthEpsilon = 1.0e-3f;
+
+                      if (groupMetadataAvailable && groups[i] != groups[j])
+                          return groups[i] < groups[j];
+
+                      if (std::abs (depthDiff) >= depthEpsilon)
+                          return depths[i] < depths[j];
+
+                      if (positionMetadataAvailable)
+                          return xposValues[i] < xposValues[j];
+
+                      return i < j; // deterministic fallback
+                  });
 
             Array<LfpChannelTrack> orderedDrawableChannels;
 
@@ -1174,6 +1310,7 @@ void LfpDisplay::mouseDown (const MouseEvent& event)
     int dist = 0;
     int mindist = 10000;
     int closest = 5;
+    float chanRange = getRange();
 
     for (int n = 0; n < drawableChannels.size(); n++) // select closest instead of relying on eventComponent
     {
@@ -1188,6 +1325,7 @@ void LfpDisplay::mouseDown (const MouseEvent& event)
         {
             mindist = dist - 1;
             closest = n;
+            chanRange = drawableChannels[n].channel->getRange();
         }
     }
 
@@ -1213,7 +1351,7 @@ void LfpDisplay::mouseDown (const MouseEvent& event)
         {
             drawableChannels[0].channelInfo->updateXY (
                 float (x) / getWidth() * canvasSplit->timebase,
-                (-(float (y) - viewport->getViewPositionY()) / viewport->getViewHeight() * float (getRange())) + float (getRange() / 2));
+                (-(float (y) - viewport->getViewPositionY()) / viewport->getViewHeight() * float (chanRange)) + float (chanRange / 2));
         }
     }
 

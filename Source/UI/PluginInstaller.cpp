@@ -171,6 +171,84 @@ void PluginInstaller::createXmlFile()
     }
 }
 
+int PluginInstaller::checkForPluginUpdates()
+{
+    LOGD ("Checking for plugin updates...");
+
+    File xmlFile = getPluginsDirectory().getChildFile ("installedPlugins.xml");
+
+    XmlDocument doc (xmlFile);
+    std::unique_ptr<XmlElement> xml (doc.getDocumentElement());
+
+    if (xml == 0 || ! xml->hasTagName ("PluginInstaller"))
+    {
+        LOGD ("[PluginInstaller] installedPlugins.xml not found.");
+        return 0;
+    }
+
+    auto child = xml->getFirstChildElement();
+
+    String baseUrl = "https://open-ephys-plugin-gateway.herokuapp.com/";
+    String response = URL (baseUrl).readEntireTextStream();
+
+    if (response.isEmpty())
+    {
+        LOGE ("Unable to fetch plugin updates! Please check your internet connection.");
+        return 0;
+    }
+
+    var gatewayData;
+    Result result = JSON::parse (response, gatewayData);
+    gatewayData = gatewayData.getProperty ("plugins", var());
+
+    updatablePlugins.clear();
+
+    for (auto* e : child->getChildIterator())
+    {
+        String pName = e->getTagName();
+        String latestVer;
+
+        // Get latest compatible version for this plugin
+        for (int i = 0; i < gatewayData.size(); i++)
+        {
+            if (gatewayData[i].getProperty ("name", "NULL").toString().equalsIgnoreCase (pName))
+            {
+                auto allVersions = gatewayData[i].getProperty ("versions", "NULL").getArray();
+                StringArray compatibleVersions;
+
+                for (String depVersion : *allVersions)
+                {
+                    String apiVer = depVersion.substring (depVersion.indexOf ("I") + 1);
+
+                    if (apiVer.equalsIgnoreCase (String (PLUGIN_API_VER)))
+                        compatibleVersions.add (depVersion);
+                }
+
+                if (! compatibleVersions.isEmpty())
+                {
+                    compatibleVersions.sort (false);
+                    latestVer = compatibleVersions[compatibleVersions.size() - 1];
+                }
+                else
+                {
+                    latestVer = "0.0.0-API" + String (PLUGIN_API_VER);
+                }
+
+                break;
+            }
+        }
+
+        if (latestVer.isNotEmpty() && latestVer.compareNatural (e->getAttributeValue (0)) > 0)
+        {
+            updatablePlugins.add (pName);
+            LOGD ("Plugin update available: ", pName);
+        }
+    }
+
+    LOGD ("Found ", updatablePlugins.size(), " plugin(s) with updates available.");
+    return updatablePlugins.size();
+}
+
 void PluginInstaller::installPluginAndDependency (const String& plugin, String version)
 {
     PluginInfoComponent tempInfoComponent;

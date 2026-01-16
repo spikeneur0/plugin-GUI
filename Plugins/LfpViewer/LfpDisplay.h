@@ -92,6 +92,9 @@ public:
     /** Sets the display range for a particular channel type*/
     void setRange (float range, ContinuousChannel::Type type);
 
+    /** Applies auto-scaling to AUX channels based on their individual InputRange values */
+    void setAutoRangeForAuxChannels();
+
     /** Returns the display range for the current channel type*/
     int getRange();
 

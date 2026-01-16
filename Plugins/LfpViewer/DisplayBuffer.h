@@ -61,9 +61,16 @@ public:
                      ContinuousChannel::Type channelType,
                      bool isRecorded,
                      int group = 0,
+                     float xpos = 0.0f,
                      float ypos = 0,
                      String description = "",
-                     String structure = "None");
+                     String structure = "None",
+                     float inputRangeMin = -5000.0f,
+                     float inputRangeMax = +5000.0f,
+                     String units = "",
+                     bool hasGroupMetadata = false,
+                     bool hasYposMetadata = false,
+                     bool hasXposMetadata = false);
 
     /** Initializes the event channel at the start of each buffer */
     void initializeEventChannel (int nSamples);
@@ -86,11 +93,18 @@ public:
     {
         String name = "";
         int group = 0;
+        float xpos = 0.0f;
         float ypos = 0;
         String structure = "None";
         ContinuousChannel::Type type;
         bool isRecorded = false;
         String description = "";
+        float inputRangeMin = -5000.0f;
+        float inputRangeMax = +5000.0f;
+        String units = "";
+        bool hasGroupMetadata = false;
+        bool hasYposMetadata = false;
+        bool hasXposMetadata = false;
     };
 
     Array<ChannelMetadata> channelMetadata;

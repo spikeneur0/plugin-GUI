@@ -79,6 +79,16 @@ void LfpChannelDisplay::setType (ContinuousChannel::Type type_)
     typeStr = options->getTypeName (type);
 }
 
+void LfpChannelDisplay::setUnits (const String& newUnits)
+{
+    units = newUnits;
+}
+
+const String& LfpChannelDisplay::getUnits() const
+{
+    return units;
+}
+
 void LfpChannelDisplay::setEnabledState (bool state)
 {
     /*if (state)
@@ -807,6 +817,18 @@ void LfpChannelDisplay::setDepth (float depth_)
 {
     //std::cout << "Channel " << name << ", depth = " << depth_ << std::endl;
     depth = depth_;
+}
+
+void LfpChannelDisplay::setXpos (float xpos_)
+{
+    xpos = xpos_;
+}
+
+void LfpChannelDisplay::setMetadataPresence (bool hasGroupMetadata_, bool hasYposMetadata_, bool hasXposMetadata_)
+{
+    groupMetadataAvailable = hasGroupMetadata_;
+    yposMetadataAvailable = hasYposMetadata_;
+    xposMetadataAvailable = hasXposMetadata_;
 }
 
 void LfpChannelDisplay::setRecorded (bool recorded_)

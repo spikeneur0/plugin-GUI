@@ -77,7 +77,7 @@ void BinaryFileSource::fillRecordInfo()
     String sampleNumbersFilename;
     String channelStatesFilename;
 
-    int majorVersion = guiVersion.substring(0, 1).getIntValue();
+    int majorVersion = guiVersion.substring (0, 1).getIntValue();
     int minorVersion = guiVersion.substring (2, 3).getIntValue();
 
     if (minorVersion < 6 && majorVersion == 0)
@@ -125,9 +125,27 @@ void BinaryFileSource::fillRecordInfo()
 
         File dataFile = m_rootPath.getChildFile ("continuous").getChildFile (streamName).getChildFile ("continuous.dat");
         if (! dataFile.existsAsFile())
+        {
+            LOGE ("Continuous data file not found: ", dataFile.getFullPathName());
             continue;
+        }
 
         int numChannels = record[idNumChannels];
+
+        // if numchannels is not equal to the size of channels var, skip this record
+        if (numChannels != channels.size())
+        {
+            LOGE ("Number of channels mismatch in stream: ", streamName);
+            continue;
+        }
+
+        // if numSamples is not a whole number, skip this record
+        if (dataFile.getSize() % (numChannels * sizeof (int16)) != 0)
+        {
+            LOGE ("File size is not consistent with number of channels in stream: ", streamName);
+            continue;
+        }
+
         int64 numSamples = (dataFile.getSize() / numChannels) / sizeof (int16);
 
         info.name = streamName;
@@ -157,7 +175,7 @@ void BinaryFileSource::fillRecordInfo()
 
             cInfo.name = chan[idChannelName];
             cInfo.bitVolts = chan[idBitVolts];
-            cInfo.type = static_cast<uint8>(int(chan[idType]));
+            cInfo.type = static_cast<uint8> (int (chan[idType]));
 
             info.channels.add (cInfo);
         }
@@ -196,6 +214,11 @@ void BinaryFileSource::fillRecordInfo()
             streamName = streamName.trimCharactersAtEnd ("/");
 
             File sampleNumbersFile = m_rootPath.getChildFile ("events").getChildFile (streamName).getChildFile (sampleNumbersFilename);
+            if (! sampleNumbersFile.existsAsFile())
+            {
+                LOGE ("Sample numbers file not found: ", sampleNumbersFile.getFullPathName(), ". Unable to load events for this stream.");
+                continue;
+            }
             std::unique_ptr<MemoryMappedFile> sampleNumbersMap (new MemoryMappedFile (sampleNumbersFile, MemoryMappedFile::readOnly));
 
             if (sampleNumbersFile.getSize() == EVENT_HEADER_SIZE_IN_BYTES)
@@ -210,6 +233,12 @@ void BinaryFileSource::fillRecordInfo()
                 LOGD ("TTL found");
 
                 File channelStatesFile = m_rootPath.getChildFile ("events").getChildFile (streamName).getChildFile (channelStatesFilename);
+
+                if (! channelStatesFile.existsAsFile())
+                {
+                    LOGE ("Channel states file not found: ", channelStatesFile.getFullPathName());
+                    continue;
+                }
                 LOGD ("Channel States File: ", channelStatesFile.getFullPathName());
                 std::unique_ptr<MemoryMappedFile> channelStatesFileMap (new MemoryMappedFile (channelStatesFile, MemoryMappedFile::readOnly));
                 jassert (channelStatesFileMap.get() != nullptr);
@@ -233,6 +262,11 @@ void BinaryFileSource::fillRecordInfo()
                 LOGD ("Message found");
 
                 File textFile = m_rootPath.getChildFile ("events").getChildFile (streamName).getChildFile ("text.npy");
+                if (! textFile.existsAsFile())
+                {
+                    LOGE ("MessageCenter text file not found: ", textFile.getFullPathName());
+                    continue;
+                }
 
                 juce::FileInputStream inputStream (textFile);
                 inputStream.skipNextBytes (10); // \x93NUMPY \x01 \x00
@@ -338,7 +372,7 @@ int BinaryFileSource::readData (float* buffer, int nSamples)
     }
 
     m_samplePos += samplesToRead;
-    return int(samplesToRead);
+    return int (samplesToRead);
 }
 
 /* void BinaryFileSource::processChannelData (int16* inBuffer, float* outBuffer, int channel, int64 numSamples)

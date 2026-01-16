@@ -239,8 +239,31 @@ void LfpChannelDisplayInfo::paint (Graphics& g)
 
     if (getChannelTypeStringVisibility())
     {
+        constexpr int textHeight = 14;
+        constexpr int textStartX = 5;
+        const int textY = center + 10;
+
         g.setFont (FontOptions (13.0f));
-        g.drawText (typeStr, 5, center + 10, 50, 14, Justification::centred, false);
+        g.setColour (lineColour);
+        const auto currentFont = g.getCurrentFont();
+
+        const int typeWidth = currentFont.getStringWidth (typeStr);
+        const int typeBoundsWidth = typeWidth + 2;
+        g.drawText (typeStr, textStartX, textY, typeBoundsWidth, textHeight, Justification::centredLeft, false);
+
+        const String& unitsText = getUnits();
+        if (unitsText.isNotEmpty())
+        {
+            const int unitsX = textStartX + typeWidth + 5;
+            const int unitsWidth = getWidth() - unitsX - 4;
+
+            if (unitsWidth > 0)
+            {
+                g.setColour (Colours::grey.withAlpha (0.8f));
+                g.setFont (FontOptions (12.0f));
+                g.drawFittedText (unitsText, unitsX, textY, unitsWidth, textHeight, Justification::centredLeft, 1, 0.8f);
+            }
+        }
     }
 
     if (isSingleChannel)
@@ -325,8 +348,7 @@ bool LfpChannelDisplayInfo::isChannelNumberHidden()
 String LfpChannelDisplayInfo::getTooltip()
 {
     const bool showChannelNumbers = options->getChannelNameState();
-    const String channelString = (isChannelNumberHidden() ? ("--") : showChannelNumbers ? String (getChannelNumber() + 1)
-                                                                                        : getName());
+    const String channelString = showChannelNumbers ? String (getChannelNumber() + 1) : getName();
 
     return channelString;
 }

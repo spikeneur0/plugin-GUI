@@ -857,15 +857,14 @@ void SelectedChannelsParameter::setChannelCount (int newCount)
 
             currentValue = values;
         }
-        else if (channelCount == 0 && currentValue.getArray()->size() == 0) // If the current count is 0, set the selected channels to the first maxSelectableChannels channels
+        else if (channelCount == 0
+                 && currentValue.getArray()->size() == 0
+                 && maxSelectableChannels < std::numeric_limits<int>::max()) // If the current count is 0, set the selected channels to the first maxSelectableChannels channels
         {
-            for (int i = 0; i < maxSelectableChannels; i++)
-            {
-                if (i < newCount)
-                {
-                    values.add (i);
-                }
-            }
+            const int limit = jmin (maxSelectableChannels, newCount);
+            values.ensureStorageAllocated (limit);
+            for (int i = 0; i < limit; ++i)
+                values.add (i);
 
             currentValue = values;
         }

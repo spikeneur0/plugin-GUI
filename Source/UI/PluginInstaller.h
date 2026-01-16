@@ -50,6 +50,10 @@ public:
     /** Access method to install a plugin directly without interacting with the Plugin Installer interface*/
     void installPluginAndDependency (const String& plugin, String version);
 
+    /** Checks for plugin updates in the background and populates updatablePlugins array.
+     *  Returns the number of plugins that have updates available. */
+    static int checkForPluginUpdates();
+
 private:
     WeakReference<PluginInstaller>::Master masterReference;
     friend class WeakReference<PluginInstaller>;

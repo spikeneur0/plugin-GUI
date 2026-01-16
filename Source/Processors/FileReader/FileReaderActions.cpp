@@ -47,8 +47,14 @@ bool SelectFile::perform()
     // Set the new path - this will trigger the linked parameter changes
     pathParam->setNextValue (newPath, false);
 
-    // Load the new file
-    processor->setFile (newPath, false);
+    // Check if the file was loaded successfully
+    if (processor->getFile().isEmpty()
+        || ! processor->getFile().equalsIgnoreCase (newPath.toString()))
+    {
+        // If loading the file failed, revert the path parameter to the original path
+        pathParam->setNextValue (originalPath, false);
+        return false;
+    }
 
     // Set the active stream to the first stream
     processor->setActiveStream (0, true);

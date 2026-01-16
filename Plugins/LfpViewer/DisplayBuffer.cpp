@@ -64,19 +64,33 @@ void DisplayBuffer::addChannel (
     ContinuousChannel::Type type,
     bool isRecorded,
     int group,
+    float xpos,
     float ypos,
     String description,
-    String structure)
+    String structure,
+    float inputRangeMin,
+    float inputRangeMax,
+    String units,
+    bool hasGroupMetadata,
+    bool hasYposMetadata,
+    bool hasXposMetadata)
 {
     ChannelMetadata metadata = ChannelMetadata();
     metadata.name = name;
     metadata.type = type;
     metadata.group = group;
+    metadata.xpos = xpos;
     metadata.ypos = ypos;
     metadata.structure = structure;
     metadata.type = type;
     metadata.isRecorded = isRecorded;
     metadata.description = description;
+    metadata.inputRangeMin = inputRangeMin;
+    metadata.inputRangeMax = inputRangeMax;
+    metadata.units = units;
+    metadata.hasGroupMetadata = hasGroupMetadata;
+    metadata.hasYposMetadata = hasYposMetadata;
+    metadata.hasXposMetadata = hasXposMetadata;
 
     channelMetadata.add (metadata);
     channelMap[channelNum] = numChannels;
