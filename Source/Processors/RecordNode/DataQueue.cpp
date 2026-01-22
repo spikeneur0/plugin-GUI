@@ -300,9 +300,25 @@ const SynchronizedTimestampBuffer& DataQueue::getTimestampBufferReference() cons
     return m_FTSBuffer;
 }
 
+int DataQueue::getNumSamplesReady() const
+{
+    if (m_numChans == 0)
+        return 0;
+
+    int minReady = INT_MAX;
+    for (int chan = 0; chan < m_numChans; ++chan)
+    {
+        int ready = m_fifos.getUnchecked (chan)->getNumReady();
+        if (ready < minReady)
+            minReady = ready;
+    }
+    return (minReady == INT_MAX) ? 0 : minReady;
+}
+
 bool DataQueue::startRead (std::vector<CircularBufferIndexes>& dataBufferIdxs,
                            std::vector<CircularBufferIndexes>& timestampBufferIdxs,
                            int64& sampleNumber,
+                           int nMin,
                            int nMax)
 {
     //This should never happen, but it never hurts to be on the safe side.
@@ -324,8 +340,8 @@ bool DataQueue::startRead (std::vector<CircularBufferIndexes>& dataBufferIdxs,
     // Apply nMax limit to the minimum
     int samplesToRead = ((minSamplesAvailable > nMax) && (nMax > 0)) ? nMax : minSamplesAvailable;
 
-    // If no samples available on any channel, nothing to read
-    if (samplesToRead == 0)
+    // If not enough samples available (below nMin threshold), skip this read
+    if (samplesToRead < nMin)
     {
         // Initialize all indexes to zero
         for (int chan = 0; chan < m_numChans; ++chan)

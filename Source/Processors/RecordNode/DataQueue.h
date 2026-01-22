@@ -80,18 +80,29 @@ public:
      * @param sampleNumber Starting sample number for this block
      * @return Maximum FIFO usage across all channels (0.0 to 1.0)
      */
-    float writeAllChannels (const AudioBuffer<float>& buffer, 
+    float writeAllChannels (const AudioBuffer<float>& buffer,
                             const Array<int>& srcChannels,
-                            int nSamples, 
+                            int nSamples,
                             int64 sampleNumber);
 
     /** Writes an array of timestamps for one stream */
     float writeSynchronizedTimestamps (double start, double step, int destChannel, int nSamples);
 
-    /** Start reading data for all channels in this stream */
+    /** Returns the number of samples available to read (minimum across all channels) */
+    int getNumSamplesReady() const;
+
+    /** Start reading data for all channels in this stream 
+     *  @param dataBufferIdxs Output: indices for reading continuous data
+     *  @param timestampBufferIdxs Output: indices for reading timestamps
+     *  @param sampleNumber Output: sample number for the start of the read
+     *  @param nMin Minimum samples required - returns false if fewer available
+     *  @param nMax Maximum samples to read
+     *  @return true if read was started successfully, false otherwise
+     */
     bool startRead (std::vector<CircularBufferIndexes>& dataBufferIdxs,
                     std::vector<CircularBufferIndexes>& timestampBufferIdxs,
                     int64& sampleNumber,
+                    int nMin,
                     int nMax);
 
     /** Called when data read is finished */
@@ -120,8 +131,8 @@ private:
 
     std::vector<int> m_readSamples;
     std::vector<int> m_readFTSSamples;
-    std::vector<int64> m_sampleNumbers;       // Per-stream sample numbers (one per block)
-    int64 m_lastReadSampleNumber;             // Last sample number read for the stream
+    std::vector<int64> m_sampleNumbers; // Per-stream sample numbers (one per block)
+    int64 m_lastReadSampleNumber; // Last sample number read for the stream
 
     int m_numChans;
     int m_numFTSChans;

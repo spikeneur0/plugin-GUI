@@ -29,8 +29,17 @@
 #include "DataQueue.h"
 #include "EventQueue.h"
 #include <atomic>
+#include <chrono>
+#include <cstdlib>
 
-#define BLOCK_MAX_WRITE_SAMPLES 4096
+// Block write size limits (in samples) - tune these for performance
+// Sample-based thresholds naturally scale with channel count:
+//   - High channel count = large writes (efficient for high data rates)
+//   - Low channel count = small writes (fine for low data rates, keeps latency low)
+//
+
+#define BLOCK_DEFAULT_MIN_WRITE_SAMPLES 8192
+#define BLOCK_DEFAULT_MAX_WRITE_SAMPLES 16384
 #define BLOCK_MAX_WRITE_EVENTS 50000
 #define BLOCK_MAX_WRITE_SPIKES 50000
 
@@ -79,8 +88,15 @@ public:
     RecordNode* recordNode;
 
 private:
-    /** Writes continuous data from all per-stream queues */
-    void writeData (int maxSamples,
+    /** Writes continuous data from all per-stream queues 
+     *  @param minSamples Minimum samples required before writing (0 = write any available)
+     *  @param maxSamples Maximum samples per write batch
+     *  @param maxEvents Maximum events to write
+     *  @param maxSpikes Maximum spikes to write
+     *  @param lastBlock If true, write all remaining data regardless of minSamples
+     */
+    void writeData (int minSamples,
+                    int maxSamples,
                     int maxEvents,
                     int maxSpikes,
                     bool lastBlock = false);
@@ -89,16 +105,16 @@ private:
     Array<int> m_channelArray;
     Array<int> m_timestampBufferChannelArray;
 
-    OwnedArray<DataQueue>* m_dataQueues;  // Array of per-stream queues
+    OwnedArray<DataQueue>* m_dataQueues; // Array of per-stream queues
     EventMsgQueue* m_eventQueue;
     SpikeMsgQueue* m_spikeQueue;
 
     std::atomic<bool> m_receivedFirstBlock;
     std::atomic<bool> m_cleanExit;
 
-    Array<int64> sampleNumbers;  // Global sample numbers (indexed by global channel)
-    std::vector<int64> m_perStreamSampleNumbers;  // Per-stream sample numbers
-    
+    Array<int64> sampleNumbers; // Global sample numbers (indexed by global channel)
+    std::vector<int64> m_perStreamSampleNumbers; // Per-stream sample numbers
+
     // Per-stream buffer index arrays for independent queue reading
     std::vector<std::vector<CircularBufferIndexes>> m_perStreamDataIdxs;
     std::vector<std::vector<CircularBufferIndexes>> m_perStreamTimestampIdxs;
@@ -107,14 +123,18 @@ private:
     int spikesWritten;
 
     // Batch write support - pre-allocated buffers for grouping channels by stream
-    std::vector<int> m_batchWriteChannels;       // Write channel indices for current batch
-    std::vector<int> m_batchRealChannels;        // Real channel indices for current batch
-    std::vector<const float*> m_batchDataPtrs;   // Data buffer pointers for current batch
+    std::vector<int> m_batchWriteChannels; // Write channel indices for current batch
+    std::vector<int> m_batchRealChannels; // Real channel indices for current batch
+    std::vector<const float*> m_batchDataPtrs; // Data buffer pointers for current batch
 
     File m_rootFolder;
     int m_experimentNumber;
     int m_recordingNumber;
     int m_numChannels;
+
+    // Block size limits (in samples)
+    int m_minWriteSamples; // Minimum samples before writing
+    int m_maxWriteSamples; // Maximum samples per write batch
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (RecordThread);
 };

@@ -31,9 +31,18 @@ RecordThread::RecordThread (RecordNode* parentNode, RecordEngine* engine) : Thre
                                                                             m_engine (engine),
                                                                             recordNode (parentNode),
                                                                             m_receivedFirstBlock (false),
-                                                                            m_cleanExit (true)
-//samplesWritten(0)
+                                                                            m_cleanExit (true),
+                                                                            m_minWriteSamples (BLOCK_DEFAULT_MIN_WRITE_SAMPLES),
+                                                                            m_maxWriteSamples (BLOCK_DEFAULT_MAX_WRITE_SAMPLES)
 {
+    // Ensure max >= min to avoid deadlock
+    if (m_maxWriteSamples < m_minWriteSamples)
+    {
+        LOGC ("WARNING: MAX_WRITE_SAMPLES (", m_maxWriteSamples, ") < MIN_WRITE_SAMPLES (", m_minWriteSamples, "), setting MAX = MIN");
+        m_maxWriteSamples = m_minWriteSamples;
+    }
+
+    LOGD ("RecordThread initialized with MIN_WRITE_SAMPLES=", m_minWriteSamples, " MAX_WRITE_SAMPLES=", m_maxWriteSamples);
 }
 
 RecordThread::~RecordThread()
@@ -137,7 +146,7 @@ void RecordThread::run()
         {
             int64 streamSampleNum = queue->getSampleNumberForBlock (0);
             m_perStreamSampleNumbers[streamIdx] = streamSampleNum;
-            
+
             // Count channels in this stream and set sample numbers for all of them
             int numChannelsInStream = 0;
             for (int ch = 0; ch < m_numChannels; ch++)
@@ -145,7 +154,7 @@ void RecordThread::run()
                 if (m_timestampBufferChannelArray[ch] == streamIdx)
                     numChannelsInStream++;
             }
-            
+
             for (int i = 0; i < numChannelsInStream; i++)
             {
                 if (globalChan < m_numChannels)
@@ -158,7 +167,7 @@ void RecordThread::run()
 
     //3-Normal loop
     while (! threadShouldExit())
-        writeData (BLOCK_MAX_WRITE_SAMPLES, BLOCK_MAX_WRITE_EVENTS, BLOCK_MAX_WRITE_SPIKES);
+        writeData (m_minWriteSamples, m_maxWriteSamples, BLOCK_MAX_WRITE_EVENTS, BLOCK_MAX_WRITE_SPIKES);
 
     //LOGD(__FUNCTION__, " Exiting record thread");
     //4-Before closing the thread, try to write the remaining samples
@@ -167,8 +176,8 @@ void RecordThread::run()
 
     if (! closeEarly)
     {
-        // flush the buffers
-        writeData (BLOCK_MAX_WRITE_SAMPLES, BLOCK_MAX_WRITE_EVENTS, BLOCK_MAX_WRITE_SPIKES, true);
+        // flush the buffers - use 0 for minSamples to write all remaining data
+        writeData (0, m_maxWriteSamples, BLOCK_MAX_WRITE_EVENTS, BLOCK_MAX_WRITE_SPIKES, true);
 
         //5-Close files
         m_engine->closeFiles();
@@ -179,13 +188,19 @@ void RecordThread::run()
     //LOGC("RecordThread received ", spikesReceived, " spikes and wrote ", spikesWritten, ".");
 }
 
-void RecordThread::writeData (int maxSamples,
+void RecordThread::writeData (int minSamples,
+                              int maxSamples,
                               int maxEvents,
                               int maxSpikes,
                               bool lastBlock)
 {
     int numStreams = m_dataQueues->size();
     int globalChannelOffset = 0;
+
+    // Use sample-based thresholds directly - they naturally scale with channel count:
+    // High channels = large byte writes (efficient), Low channels = small byte writes (fine)
+    int effectiveMinSamples = lastBlock ? 0 : minSamples;
+    int effectiveMaxSamples = maxSamples;
 
     // Process each stream independently - this avoids race conditions
     // between streams with different sample rates
@@ -207,12 +222,12 @@ void RecordThread::writeData (int maxSamples,
         }
 
         m_perStreamDataIdxs[streamIdx].resize (numChannelsInStream);
-        m_perStreamTimestampIdxs[streamIdx].resize (1);  // One timestamp stream per queue
+        m_perStreamTimestampIdxs[streamIdx].resize (1); // One timestamp stream per queue
 
         // Get single sample number for this stream
         int64 streamSampleNumber = 0;
 
-        if (queue->startRead (m_perStreamDataIdxs[streamIdx], m_perStreamTimestampIdxs[streamIdx], streamSampleNumber, maxSamples))
+        if (queue->startRead (m_perStreamDataIdxs[streamIdx], m_perStreamTimestampIdxs[streamIdx], streamSampleNumber, effectiveMinSamples, effectiveMaxSamples))
         {
             // Update global sample numbers using the stream's sample number
             m_perStreamSampleNumbers[streamIdx] = streamSampleNumber;
