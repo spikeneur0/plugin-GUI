@@ -169,7 +169,8 @@ void AudioMonitor::updateSettings()
         CategoricalParameter* spikeChanParam = (CategoricalParameter*) stream->getParameter ("spike_channel");
         spikeChanParam->setCategories (spikeChannelNames);
 
-        parameterValueChanged (stream->getParameter ("spike_channel"));
+        if (spikeChanParam->getSelectedIndex() > 0)
+            parameterValueChanged (stream->getParameter ("spike_channel"));
     }
 }
 

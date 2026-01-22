@@ -1268,6 +1268,11 @@ void LfpDisplayOptions::comboBoxChanged (ComboBox* cb)
         selectedVoltageRange[selectedChannelType] = cb->getSelectedId();
         selectedVoltageRangeValues[selectedChannelType] = cb->getText();
         canvasSplit->redraw();
+
+        if (selectedChannelType == ContinuousChannel::Type::AUX && isAuxAutoScaleEnabled())
+            rangeSelectionLabel->setText ("Range", dontSendNotification);
+        else
+            rangeSelectionLabel->setText ("Range (" + rangeUnits[selectedChannelType] + ")", dontSendNotification);
     }
     else if (cb == spreadSelection.get())
     {

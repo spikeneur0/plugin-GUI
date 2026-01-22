@@ -286,7 +286,7 @@ bool FileReader::setFile (String fullpath, bool shouldUpdateSignalChain)
     if (isEmptyFile)
     {
         input = nullptr;
-        showWarningAsync ("Failed to open file", "Continuous data file is missing or empty.");
+        showWarningAsync ("Failed to open file", "Continuous data file is missing, empty, or invalid.");
         CoreServices::sendStatusMessage ("Empty file. Ignoring open operation");
 
         return false;
