@@ -262,9 +262,9 @@ void SyncStream::addEvent (int64 sampleNumber, bool state)
 
 double SyncStream::getLatestSyncTime()
 {
-    LOGC ("Getting latest sync time for stream ", streamKey, "...");
-    LOGC ("Time::currentTimeMillis(): ", Time::currentTimeMillis());
-    LOGC ("latestSyncMillis: ", latestSyncMillis);
+    //LOGC ("Getting latest sync time for stream ", streamKey, "...");
+    //LOGC ("Time::currentTimeMillis(): ", Time::currentTimeMillis());
+    //LOGC ("latestSyncMillis: ", latestSyncMillis);
    
 
     if (latestSyncMillis != -1)

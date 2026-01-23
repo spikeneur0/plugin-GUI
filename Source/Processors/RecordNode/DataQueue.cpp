@@ -236,46 +236,54 @@ float DataQueue::writeAllChannels (const AudioBuffer<float>& buffer,
 {
     if (m_numChans == 0 || nSamples == 0)
         return 0.0f;
+    int index1 = 0;
+    int size1 = 0;
+    int index2 = 0;
+    int size2 = 0;
 
-    // Get FIFO indices from first channel - all channels should be in sync
-    int index1, size1, index2, size2;
-    m_fifos[0]->prepareToWrite (nSamples, index1, size1, index2, size2);
-
-    if ((size1 + size2) < nSamples)
     {
-        LOGE (__FUNCTION__, " Recording Data Queue Overflow: sz1: ", size1, " sz2: ", size2, " nSamples: ", nSamples);
-    }
+        // Get FIFO indices from first channel - all channels should be in sync
+        auto fifoScope = m_fifos[0]->write (nSamples);
+        index1 = fifoScope.startIndex1;
+        size1 = fifoScope.blockSize1;
+        index2 = fifoScope.startIndex2;
+        size2 = fifoScope.blockSize2;
 
-    float maxUsage = 0.0f;
+        if ((size1 + size2) < nSamples)
+            LOGE (__FUNCTION__, " Recording Data Queue Overflow: sz1: ", size1, " sz2: ", size2, " nSamples: ", nSamples);
 
-    // Fill sample numbers once for the stream (not per-channel)
-    fillSampleNumbers (index1, size1, sampleNumber);
-    if (size2 > 0)
-    {
-        fillSampleNumbers (index2, size2, sampleNumber + size1);
-    }
-
-    // Batch copy and update all channels
-    for (int destChannel = 0; destChannel < m_numChans; ++destChannel)
-    {
-        int srcChannel = srcChannels[destChannel];
-
-        // Copy first segment
-        m_buffer.copyFrom (destChannel, index1, buffer, srcChannel, 0, size1);
-
-        // Copy second segment (wrap-around) if present
+        // Fill sample numbers once for the stream (not per-channel)
+        fillSampleNumbers (index1, size1, sampleNumber);
         if (size2 > 0)
         {
-            m_buffer.copyFrom (destChannel, index2, buffer, srcChannel, size1, size2);
+            fillSampleNumbers (index2, size2, sampleNumber + size1);
         }
 
-        // Update FIFO state - need to call prepareToWrite for channels > 0
-        if (destChannel > 0)
+        const int* srcChannelPtr = srcChannels.getRawDataPointer();
+
+        // Batch copy and update all channels
+        for (int destChannel = 0; destChannel < m_numChans; ++destChannel)
         {
-            int d1, d2, d3, d4;
-            m_fifos[destChannel]->prepareToWrite (nSamples, d1, d2, d3, d4);
+            const int srcChannel = srcChannelPtr[destChannel];
+            const float* src = buffer.getReadPointer (srcChannel);
+            float* dest = m_buffer.getWritePointer (destChannel);
+
+            // Copy first segment
+            FloatVectorOperations::copy (dest + index1, src, size1);
+
+            // Copy second segment (wrap-around) if present
+            if (size2 > 0)
+            {
+                FloatVectorOperations::copy (dest + index2, src + size1, size2);
+            }
+
+            // Update FIFO state for channels > 0 (indices are aligned with channel 0)
+            if (destChannel > 0)
+            {
+                jassert (m_fifos[destChannel]->getFreeSpace() >= (size1 + size2));
+                m_fifos[destChannel]->finishedWrite (size1 + size2);
+            }
         }
-        m_fifos[destChannel]->finishedWrite (size1 + size2);
     }
 
     // Return usage from last channel (all should be the same)
