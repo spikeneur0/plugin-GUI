@@ -321,16 +321,29 @@ void LfpDisplayNode::process (AudioBuffer<float>& buffer)
     initializeEventChannels();
     checkForEvents();
     finalizeEventChannels();
+    auto isStreamDisplayed = [this] (uint16 streamId)
+    {
+        for (auto split : splitDisplays)
+        {
+            if (split != nullptr && split->isVisible() && split->selectedStreamId == streamId)
+                return true;
+        }
+
+        return false;
+    };
 
     for (int chan = 0; chan < buffer.getNumChannels(); ++chan)
     {
         const uint16 streamId = continuousChannels[chan]->getStreamId();
+        if (! isStreamDisplayed (streamId))
+            continue;
+
+        auto displayBufferIt = displayBufferMap.find (streamId);
+        if (displayBufferIt == displayBufferMap.end() || displayBufferIt->second == nullptr)
+            continue;
 
         const uint32 nSamples = getNumSamplesInBlock (streamId);
-
-        String streamKey = getDataStream (streamId)->getKey();
-
-        displayBufferMap[streamId]->addData (buffer, chan, nSamples);
+        displayBufferIt->second->addData (buffer, chan, nSamples);
     }
 }
 
