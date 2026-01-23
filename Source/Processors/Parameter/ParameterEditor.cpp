@@ -909,14 +909,30 @@ void SyncControlButton::paintButton (Graphics& g, bool isMouseOver, bool isButto
             }
             break;
         }
+        case SyncStatus::HARP_CLOCK:
+        {
+            Colour harpClockColour = Colour (200, 150, 255); // Light purplse
+
+            if (isMouseOver)
+            {
+                g.setColour (harpClockColour);
+            }
+            else
+            {
+                g.setColour (harpClockColour.darker (0.5f));
+            }
+            break;
+        }
     }
 
     g.fillRoundedRectangle (2, 2, getWidth() - 4, getHeight() - 4, 3);
 
+    // Draw text indicators
+    g.setColour (Colour (255, 255, 255));
+    g.setFont (FontOptions ("Inter", "Regular", 12.0f));
+    
     if (node->isMainDataStream (streamKey))
     {
-        g.setColour (Colour (255, 255, 255));
-        g.setFont (FontOptions ("Inter", "Regular", 12.0f));
         g.drawText ("M", getLocalBounds().reduced (3), juce::Justification::centred);
     }
 }

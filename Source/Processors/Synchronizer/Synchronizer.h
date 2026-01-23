@@ -29,11 +29,17 @@
 #include <map>
 #include <math.h>
 #include <memory>
+#include <array>
+#include <vector>
 
 #include "../../../JuceLibraryCode/JuceHeader.h"
 #include "../../Utils/Utils.h"
 
 class Synchronizer;
+class HarpDecoder;
+
+/** Total bits in Harp barcode */
+static constexpr int TOTAL_BITS = 39;
 
 /** 
 
@@ -71,6 +77,96 @@ struct SyncPulse
 };
 
 /**
+
+    Represents a Harp barcode containing encoded timestamp
+
+*/
+struct HarpBarcode
+{
+    /** The decoded 32-bit timestamp in seconds */
+    uint32_t encodedTime = 0;
+    
+    /** Stream time when start bit occurred */
+    double localStartTimestamp = 0.0;
+    
+    /** Sample number when start bit occurred */
+    int64 localStartSample = 0;
+    
+    /** System time when barcode was received */
+    int64 computerTimeMillis = 0;
+    
+    /** Complete Harp timestamp bit sequence */
+    std::array<bool, TOTAL_BITS> bitSequence;
+    
+    /** Whether barcode is complete */
+    bool isComplete = false;
+    
+    /** Whether barcode passed validation */
+    bool isValid = false;
+    
+    /** Measured barcode duration in ms */
+    double actualDuration = 0.0;
+    
+    /** Individual bit durations for validation */
+    std::array<double, 43> bitDurations;
+
+    // Raw event sample numbers and states
+    std::vector<std::pair<int64, bool>> barcodeEvents;
+};
+
+/**
+
+    Harp detection state machine states
+
+*/
+enum class HarpDetectionState
+{
+    IDLE,                    // Waiting for potential start bit
+    START_BIT_DETECTED,      // Found HIGH→LOW transition
+    COLLECTING_BITS,         // Reading barcode bits
+    VALIDATING_BARCODE,      // Checking complete barcode
+    HARP_CONFIRMED,          // Valid Harp stream detected
+    HARP_FAILED             // Invalid/timeout, fallback to pulse sync
+};
+
+/**
+
+    Decodes Harp barcodes from ON/OFF event sequences
+
+*/
+class HarpDecoder
+{
+public:
+
+    /** Expected duration of each bit in milliseconds */
+    static constexpr double EXPECTED_BIT_DURATION_MS = 1.0;
+    
+    /** Timing tolerance for bit detection */
+    static constexpr double BIT_TOLERANCE_MS = 0.2;
+    
+    /** Expected total barcode duration */
+    static constexpr double EXPECTED_BARCODE_DURATION_MS = 43.0;
+    
+    /** Timeout for start bit detection */
+    static constexpr double START_BIT_TIMEOUT_MS = 1100.0;
+    
+    /** Maximum reasonable time difference from system time */
+    static constexpr int MAX_REASONABLE_TIME_DIFF_S = 300; // 5 minutes
+    
+    /** Decodes a barcode from event sequence */
+    bool decodeBarcode(HarpBarcode& barcode, double expectedSampleRate);
+                      
+    /** Extracts 32-bit timestamp from bit sequence */
+    uint32_t extractTimestamp(const std::array<bool, TOTAL_BITS>& bits);
+    
+    /** Validates bit timing */
+    bool validateBitTiming(const HarpBarcode& barcode);
+    
+    /** Validates barcode structure */
+    bool validateBarcodeStructure (const std::array<bool, TOTAL_BITS>& bits);
+};
+
+/**
  *
  * Represents an incoming data stream
  *
@@ -101,6 +197,9 @@ public:
 
     /** Synchronize this stream with another one */
     void syncWith (const SyncStream* mainStream);
+    
+    /** Synchronize this stream with Harp timestamps */
+    void syncWithHarp ();
 
     /** Compares pulses; returns true if a match is found */
     bool comparePulses (const SyncPulse& pulse1, const SyncPulse& pulse2);
@@ -128,8 +227,20 @@ public:
 
     /** true if the synchronizer overrides hardware timestamps */
     bool overrideHardwareTimestamps = false;
+    
+    /** true if this stream is using Harp synchronization */
+    bool isHarpStream = false;
+    
+    /** true if Harp detection is currently active */
+    bool harpDetectionActive = true;
 
-    /** The sync pulses for this stream 
+    /** Number of Harp barcode decoding attempts made */
+    int numDecodingAttempts = 0;
+    
+    /** Baseline matching barcode for Harp synchronization */
+    HarpBarcode baselineMatchingBarcode;
+
+    /** The sync pulses for this stream
     
     The latest pulse is added to the beginning of the vector
     Expired pulses are removed from the end
@@ -159,6 +270,12 @@ public:
 
     /** Threshold of calling intervals equal */
     const double MAX_INTERVAL_DIFFERENCE_MS = 2;
+    
+    /** Minimum valid barcodes needed to confirm Harp mode */
+    static constexpr int MIN_VALID_BARCODES_FOR_HARP = 3;
+
+    /** Attempts to decode current barcode events if sufficient time has elapsed */
+    void attemptBarcodeDecoding();
 
 private:
 
@@ -167,14 +284,40 @@ private:
     int64 latestSyncMillis = -1;
 
     Synchronizer* synchronizer;
+    
+    // Harp detection members
+    HarpDetectionState harpState = HarpDetectionState::IDLE;
+    std::vector<HarpBarcode> completedBarcodes;
+    HarpBarcode currentBarcode;
+    HarpDecoder harpDecoder;
+    
+    int64 barcodeStartTime = -1; // System time when current barcode collection started
+    int64 lastEventSample = -1;
+    bool lastEventState = true; // Default HIGH
+   
+    
+    // Detection state
+    int consecutiveValidBarcodes = 0;
+    int64 expectedNextStartSample = -1;
+    
+    // Harp-specific methods
+    void processHarpEvent(int64 sampleNumber, bool state);
+    void collectBarcodeEvent(int64 sampleNumber, bool state);
+    bool validateBarcodeStructure(const HarpBarcode& barcode);
+    bool validateBarcodeTimestamp(const HarpBarcode& barcode);
+    void predictNextBarcodeStart(const HarpBarcode& barcode);
+    
+
 };
 
 enum PLUGIN_API SyncStatus
 {
     OFF, //Synchronizer is not running
     SYNCING, //Synchronizer is attempting to sync
-    SYNCED, //Signal has been synchronized
-    HARDWARE_SYNCED //Signal has been synchronized by hardware
+    SYNCED, //Stream has been synchronized
+    HARDWARE_SYNCED, //Stream has been synchronized by hardware
+    HARP_DETECTING, //Analyzing for Harp barcodes
+    HARP_CLOCK // Stream is using HARP clock
 };
 
 /**
@@ -244,8 +387,11 @@ public:
 
     /** Returns true if the stream genrates its own timestamps and overriding hardware timestamps is disabled */
     bool streamGeneratesTimestamps (String streamKey);
+    
+    /** Returns true if the stream is using Harp synchronization */
+    bool isHarpStream (String streamKey);
 
-    /** Returns the status (OFF / SYNCING / SYNCED) of a given stream*/
+    /** Returns the status (OFF / SYNCING / SYNCED / HARP_DETECTING / HARP_CLOCK) of a given stream*/
     SyncStatus getStatus (String streamKey);
 
     /** Adds an event for a stream ID / line combination */
