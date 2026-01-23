@@ -928,6 +928,7 @@ void RecordNode::startRecording()
     }
 
     recordThread->setFileComponents (rootFolder, experimentNumber, recordingNumber);
+    recordThread->openFiles();
     recordThread->startThread (Thread::Priority::highest);
 
     if (settingsNeeded)

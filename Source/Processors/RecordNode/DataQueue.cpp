@@ -279,7 +279,18 @@ float DataQueue::writeAllChannels (const AudioBuffer<float>& buffer,
     }
 
     // Return usage from last channel (all should be the same)
-    const float usage = 1.0f - (float) m_fifos[m_numChans - 1]->getFreeSpace() / (float) m_fifos[m_numChans - 1]->getTotalSize();
+    return getFifoUsage();
+}
+
+float DataQueue::getFifoUsage() const
+{
+    const float freeSpace = (float) m_fifos[m_numChans - 1]->getFreeSpace();
+    const float totalSize = (float) m_fifos[m_numChans - 1]->getTotalSize();
+
+    const float usage = 1.0f - (freeSpace / totalSize);
+
+    //LOGC ("DataQueue::getFifoUsage: usage = ", usage, " (free: ", freeSpace, ", total: ", totalSize, ")");
+
     return usage;
 }
 

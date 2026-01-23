@@ -96,11 +96,8 @@ void RecordThread::setFirstBlockFlag (bool state)
     this->notify();
 }
 
-void RecordThread::run()
+void RecordThread::openFiles()
 {
-    spikesReceived = 0;
-    spikesWritten = 0;
-
     // Initialize per-channel sample numbers
     sampleNumbers.clear();
     for (int chan = 0; chan < m_numChannels; ++chan)
@@ -114,17 +111,23 @@ void RecordThread::run()
     m_perStreamTimestampIdxs.resize (numStreams);
     m_perStreamSampleNumbers.resize (numStreams, 0);
 
-    bool closeEarly = true;
-
-    //1-Open Files
-    m_cleanExit = false;
-    closeEarly = false;
-    Array<int64> initSampleNumbers;
-
     m_engine->openFiles (m_rootFolder, m_experimentNumber, m_recordingNumber);
 
     if (recordNode != nullptr)
         recordNode->notifyRecordThreadFilesOpened();
+}
+
+void RecordThread::run()
+{
+    // 1-Initialize counters
+    spikesReceived = 0;
+    spikesWritten = 0;
+
+    bool closeEarly = false;
+    int numStreams = recordNode->getNumDataStreams();
+
+    m_cleanExit = false;
+    Array<int64> initSampleNumbers;
 
     //2-Wait until the first block has arrived, so we can align the timestamps
     bool isWaiting = false;
@@ -137,7 +140,7 @@ void RecordThread::run()
         wait (1);
     }
 
-    // Get initial sample numbers from each stream's queue
+    // 3 - Get initial sample numbers from each stream's queue
     int globalChan = 0;
     for (int streamIdx = 0; streamIdx < numStreams; streamIdx++)
     {
@@ -165,12 +168,12 @@ void RecordThread::run()
     }
     m_engine->updateLatestSampleNumbers (initSampleNumbers);
 
-    //3-Normal loop
+    //4 - Normal loop
     while (! threadShouldExit())
         writeData (m_minWriteSamples, m_maxWriteSamples, BLOCK_MAX_WRITE_EVENTS, BLOCK_MAX_WRITE_SPIKES);
 
     //LOGD(__FUNCTION__, " Exiting record thread");
-    //4-Before closing the thread, try to write the remaining samples
+    //5 - Before closing the thread, try to write the remaining samples
 
     LOGD ("Closing all files");
 

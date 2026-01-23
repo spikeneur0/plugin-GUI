@@ -120,7 +120,7 @@ StreamMonitor::StreamMonitor (RecordNode* rn, uint64 id)
     selectedChannels = 0;
     totalChannels = rn->getDataStream (streamId)->getChannelCount();
 
-    startTimerHz (10);
+    startTimerHz (5);
 }
 
 StreamMonitor::~StreamMonitor() {}
@@ -128,7 +128,23 @@ StreamMonitor::~StreamMonitor() {}
 void StreamMonitor::timerCallback()
 {
     if (((RecordNode*) processor)->recordThread->isThreadRunning())
-        setFillPercentage (((RecordNode*) processor)->fifoUsage[streamId]);
+    {
+        float fifoUsage = ((RecordNode*) processor)->fifoUsage[streamId];
+
+        // Scale the fill percentage to reduce noise from expected low values:
+        // - Values <= 5% are displayed as 0%
+        // - Values between 5% and 10% are scaled to 0-10%
+        // - Values above 10% are displayed linearly
+        float scaledUsage;
+        if (fifoUsage <= 0.05f)
+            scaledUsage = 0.0f;
+        else if (fifoUsage <= 0.10f)
+            scaledUsage = (fifoUsage - 0.05f) * 2.0f;  // Maps 0.05-0.10 to 0.0-0.10
+        else
+            scaledUsage = fifoUsage;
+
+        setFillPercentage (scaledUsage);
+    }
     else
         setFillPercentage (0.0);
 }

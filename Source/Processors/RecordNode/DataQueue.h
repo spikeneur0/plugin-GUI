@@ -121,6 +121,9 @@ private:
     /** Fills the sample number buffer for the stream */
     void fillSampleNumbers (int index, int size, int64 sampleNumber);
 
+    /** Returns the fraction of the FIFO currently in use */
+    float getFifoUsage() const;
+
     int lastIdx;
 
     OwnedArray<AbstractFifo> m_fifos;
