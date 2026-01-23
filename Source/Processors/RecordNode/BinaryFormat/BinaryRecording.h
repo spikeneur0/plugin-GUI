@@ -108,14 +108,12 @@ private:
 
     bool m_saveTTLWords { true };
 
-    HeapBlock<float> m_scaledBuffer;
     HeapBlock<int16> m_intBuffer;
     HeapBlock<int64> m_sampleNumberBuffer;
     int m_bufferSize;
     int m_syncTimestampBufferSize;
 
     // Batch conversion buffers
-    static const int MAX_BATCH_CHANNELS = 512;  // Maximum channels per batch
     std::vector<float> m_batchScaleFactors;
     std::vector<int16*> m_batchIntBufferPtrs;
     HeapBlock<int16> m_batchIntBuffer;  // Separate buffer for batch writes

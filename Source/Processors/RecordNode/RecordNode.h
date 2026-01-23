@@ -41,15 +41,9 @@
 
 #include "DiskMonitor/DiskSpaceChecker.h"
 
-#define WRITE_BLOCK_LENGTH 1024
 #define DATA_BUFFER_NBLOCKS 300
 #define EVENT_BUFFER_NEVENTS 200000
 #define SPIKE_BUFFER_NSPIKES 200000
-
-#define NIDAQ_BIT_VOLTS 0.001221f
-#define NPX_BIT_VOLTS 0.195f
-#define MAX_BUFFER_SIZE 40960
-#define CHANNELS_PER_THREAD 384
 
 /**
 	Class used internally by the RecordNode to count the number of incoming events

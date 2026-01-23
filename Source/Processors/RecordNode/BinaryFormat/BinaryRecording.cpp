@@ -37,7 +37,6 @@
 BinaryRecording::BinaryRecording()
 {
     m_bufferSize = MAX_BUFFER_SIZE;
-    m_scaledBuffer.malloc (MAX_BUFFER_SIZE);
     m_intBuffer.malloc (MAX_BUFFER_SIZE);
     m_sampleNumberBuffer.malloc (MAX_BUFFER_SIZE);
 
@@ -606,7 +605,6 @@ void BinaryRecording::closeFiles()
     m_spikeChannelIndexes.clear();
     m_spikeFileIndexes.clear();
 
-    m_scaledBuffer.malloc (MAX_BUFFER_SIZE);
     m_intBuffer.malloc (MAX_BUFFER_SIZE);
     m_sampleNumberBuffer.malloc (MAX_BUFFER_SIZE);
     m_bufferSize = MAX_BUFFER_SIZE;
@@ -648,7 +646,6 @@ void BinaryRecording::writeContinuousData (int writeChannel,
     if (size > m_bufferSize) //shouldn't happen, but if does, this prevents crash...
     {
         LOGE ("BinaryRecording::writeContinuousData: Write buffer overrun, resizing from: ", m_bufferSize, " to: ", size);
-        m_scaledBuffer.malloc (size);
         m_intBuffer.malloc (size);
         m_sampleNumberBuffer.malloc (size);
         m_bufferSize = size;
@@ -761,7 +758,6 @@ void BinaryRecording::writeSpike (int electrodeIndex, const Spike* spike)
     {
         LOGE ("BinaryRecording::writeSpike: Write buffer overrun, resizing to ", totalSamples);
         m_bufferSize = totalSamples;
-        m_scaledBuffer.malloc (totalSamples);
         m_intBuffer.malloc (totalSamples);
     }
 
@@ -805,7 +801,7 @@ void BinaryRecording::writeContinuousDataBatch (const int* writeChannels,
         int newSamples = jmax (numSamples, m_batchBufferSamples);
         int newChannels = jmax (numChannels, m_batchBufferChannels);
         
-        LOGD ("BinaryRecording::writeContinuousDataBatch: Resizing batch buffer to ", 
+        LOGC ("BinaryRecording::writeContinuousDataBatch: Resizing batch buffer to ", 
               newChannels, " channels x ", newSamples, " samples");
         
         m_batchIntBuffer.malloc (newSamples * newChannels);
