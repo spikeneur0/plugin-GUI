@@ -35,8 +35,8 @@ LfpDisplayNode::LfpDisplayNode()
     for (int displayIndex = 0; displayIndex <= 3; displayIndex++)
     {
         triggerChannels.add (-1);
-        latestTrigger.add (-1);
-        latestCurrentTrigger.add (-1);
+        latestTrigger.add (std::nullopt);
+        latestCurrentTrigger.add (std::nullopt);
     }
 }
 
@@ -263,7 +263,7 @@ void LfpDisplayNode::handleTTLEvent (TTLEventPtr event)
                 if (splitDisplays[i]->selectedStreamId == eventStreamId)
                 {
                     // if an event came in on the trigger channel
-                    //std::cout << "Setting latest current trigger to " << eventTime << std::endl;
+                    //std::cout << "Setting latest current trigger for stream " << eventStreamId << " to " << eventTime << std::endl;
                     latestCurrentTrigger.set (i, eventTime);
                 }
             }
@@ -288,7 +288,7 @@ void LfpDisplayNode::handleTTLEvent (TTLEventPtr event)
 void LfpDisplayNode::initializeEventChannels()
 {
     for (int i = 0; i < 3; i++)
-        latestCurrentTrigger.set (i, -1); // reset to -1
+        latestCurrentTrigger.set (i, std::nullopt); // reset
 
     for (auto displayBuffer : displayBuffers)
     {
@@ -301,9 +301,9 @@ void LfpDisplayNode::finalizeEventChannels()
 {
     for (int i = 0; i < 3; i++)
     {
-        if (latestTrigger[i] == -1 && latestCurrentTrigger[i] > -1) // received a trigger, but not yet acknowledged
+        if (! latestTrigger[i].has_value() && latestCurrentTrigger[i].has_value()) // received a trigger, but not yet acknowledged
         {
-            int triggerSample = latestCurrentTrigger[i] + splitDisplays[i]->displayBuffer->displayBufferIndices.getLast();
+            int triggerSample = int (*latestCurrentTrigger[i]) + splitDisplays[i]->displayBuffer->displayBufferIndices.getLast();
             //std::cout << "Setting latest trigger to " << triggerSample << std::endl;
             latestTrigger.set (i, triggerSample);
         }
@@ -347,12 +347,12 @@ void LfpDisplayNode::process (AudioBuffer<float>& buffer)
     }
 }
 
-int64 LfpDisplayNode::getLatestTriggerTime (int id) const
+std::optional<int64> LfpDisplayNode::getLatestTriggerTime (int id) const
 {
     return latestTrigger[id];
 }
 
 void LfpDisplayNode::acknowledgeTrigger (int id)
 {
-    latestTrigger.set (id, -1);
+    latestTrigger.set (id, std::nullopt);
 }

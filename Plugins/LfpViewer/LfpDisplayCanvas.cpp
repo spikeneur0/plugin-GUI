@@ -1155,9 +1155,11 @@ void LfpDisplaySplitter::updateScreenBuffer()
     {
         // std::cout << "Update screen buffer" << std::endl;
 
-        int triggerTime = triggerChannel >= 0
-                              ? int (processor->getLatestTriggerTime (splitID))
-                              : -1;
+        const auto triggerTimeOpt = triggerChannel >= 0
+                                        ? processor->getLatestTriggerTime (splitID)
+                                        : std::optional<int64>();
+        const bool hasTrigger = triggerTimeOpt.has_value();
+        int triggerTime = hasTrigger ? int (*triggerTimeOpt) : -1;
 
         int maxSamples = screenBufferWidth;
         int displayWidth = lfpDisplay->lfpChannelBitmap.getWidth();
@@ -1167,8 +1169,9 @@ void LfpDisplaySplitter::updateScreenBuffer()
             maxSamples = displayWidth;
         }
 
-        if (triggerTime > 0)
+        if (hasTrigger)
         {
+            //std::cout << "Split display " << splitID << " trigger time : " << triggerTime << std::endl;
             processor->acknowledgeTrigger (splitID);
         }
 
@@ -1212,7 +1215,7 @@ void LfpDisplaySplitter::updateScreenBuffer()
             if (triggerChannel >= 0)
             {
                 // we may need to wait for a trigger
-                if (triggerTime >= 0)
+            if (hasTrigger)
                 {
                     if (sbi == 0 || reachedEnd)
                     {
@@ -1247,7 +1250,7 @@ void LfpDisplaySplitter::updateScreenBuffer()
                             //std::cout << "Rewinding playhead" << std::endl;
                             lfpDisplay->lastBitmapIndex = 0;
 
-                            /*std::cout << "Trial number: " << numTrials << std::endl;
+                            /* std::cout << "Trial number: " << numTrials << std::endl;
                             std::cout << "maxSamples: " << maxSamples << std::endl;
                             std::cout << "ratio: " << ratio << std::endl;
                             std::cout << "dispBufLim: " << dispBufLim << std::endl;

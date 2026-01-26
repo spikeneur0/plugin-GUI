@@ -30,6 +30,7 @@
 #include <ProcessorHeaders.h>
 
 #include <map>
+#include <optional>
 
 class DataViewport;
 
@@ -94,7 +95,7 @@ public:
     void setSplitDisplays (Array<LfpDisplaySplitter*>);
 
     /** Returns the latest sample number that triggered a given split display*/
-    int64 getLatestTriggerTime (int splitId) const;
+    std::optional<int64> getLatestTriggerTime (int splitId) const;
 
     /** Acknowledges receipt of a trigger for a given split display*/
     void acknowledgeTrigger (int splitId);
@@ -116,8 +117,8 @@ private:
     Array<LfpDisplaySplitter*> splitDisplays;
 
     Array<int> triggerChannels;
-    Array<int64> latestTrigger; // overall timestamp
-    Array<int> latestCurrentTrigger; // within current input buffer
+    Array<std::optional<int64>> latestTrigger; // overall timestamp
+    Array<std::optional<int64>> latestCurrentTrigger; // within current input buffer
 
     static uint16 getEventSourceId (const EventChannel* event);
     static uint16 getChannelSourceId (const ChannelInfoObject* chan);
