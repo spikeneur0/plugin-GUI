@@ -1157,6 +1157,7 @@ void RecordNode::process (AudioBuffer<float>& buffer)
                 {
                     first = getFirstTimestampForBlock (streamId);
                     second = first + 1 / stream->getSampleRate();
+                    synchronizer.setHardwareTimestamp (sampleNumber, first, streamKey);
                 }
                 // Each per-stream queue has only 1 timestamp stream (index 0)
                 dataQueues[streamIndex]->writeSynchronizedTimestamps (

@@ -801,7 +801,7 @@ void BinaryRecording::writeContinuousDataBatch (const int* writeChannels,
         int newSamples = jmax (numSamples, m_batchBufferSamples);
         int newChannels = jmax (numChannels, m_batchBufferChannels);
         
-        LOGC ("BinaryRecording::writeContinuousDataBatch: Resizing batch buffer to ", 
+        LOGD ("BinaryRecording::writeContinuousDataBatch: Resizing batch buffer to ", 
               newChannels, " channels x ", newSamples, " samples");
         
         m_batchIntBuffer.malloc (newSamples * newChannels);

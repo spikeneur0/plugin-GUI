@@ -911,7 +911,22 @@ void SyncControlButton::paintButton (Graphics& g, bool isMouseOver, bool isButto
         }
         case SyncStatus::HARP_CLOCK:
         {
-            Colour harpClockColour = Colour (200, 150, 255); // Light purplse
+            Colour harpClockColour = Colour (200, 150, 255); // Light purple
+
+            if (isMouseOver)
+            {
+                g.setColour (harpClockColour);
+            }
+            else
+            {
+                g.setColour (harpClockColour.darker (0.5f));
+            }
+            break;
+        }
+
+        case SyncStatus::HARP_DETECTING:
+        {
+            Colour harpClockColour = Colour (105, 87, 107); // Purple-gray
 
             if (isMouseOver)
             {

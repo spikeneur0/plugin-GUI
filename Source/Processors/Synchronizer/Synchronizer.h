@@ -201,6 +201,9 @@ public:
     /** Synchronize this stream with Harp timestamps */
     void syncWithHarp ();
 
+    /** Sets hardware timestamps (hardware-synced streams only) */
+    void setHardwareTimestamp (int64 sampleNumber, double timestamp);
+
     /** Compares pulses; returns true if a match is found */
     bool comparePulses (const SyncPulse& pulse1, const SyncPulse& pulse2);
 
@@ -396,6 +399,9 @@ public:
 
     /** Adds an event for a stream ID / line combination */
     void addEvent (String streamKey, int ttlLine, int64 sampleNumber, bool state);
+
+    /** Updates the synchronizer for a hardware-synced stream */
+    void setHardwareTimestamp (int64 sampleNumber, double timestamp, String streamKey);
 
     /** Signals start of acquisition */
     void startAcquisition();

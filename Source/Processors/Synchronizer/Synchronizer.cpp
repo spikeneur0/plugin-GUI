@@ -187,7 +187,7 @@ void SyncStream::reset (String mainStreamKey)
     latestSyncSampleNumber = 0;
     latestGlobalSyncTime = 0.0;
     latestSyncMillis = -1;
-    
+
     // Reset Harp detection state
     harpState = HarpDetectionState::IDLE;
     completedBarcodes.clear();
@@ -211,10 +211,21 @@ void SyncStream::reset (String mainStreamKey)
     }
     else
     {
-        actualSampleRate = -1.0;
-        globalStartTime = 0.0;
         overrideHardwareTimestamps = syncLine > -1; // override hardware timestamps for other streams if sync line is set
-        isSynchronized = generatesTimestamps && !overrideHardwareTimestamps; // if the stream generates its own timestamps, it is synchronized unless it overrides hardware timestamps
+
+        if (generatesTimestamps && ! overrideHardwareTimestamps)
+        {
+            // if the stream generates its own timestamps, it is synchronized unless it overrides hardware timestamps
+            actualSampleRate = expectedSampleRate;
+            isSynchronized = true;
+        }
+        else
+        {
+            actualSampleRate = -1.0;
+            isSynchronized = false;
+        }
+
+        globalStartTime = 0.0;
     }
 }
 
@@ -260,6 +271,43 @@ void SyncStream::addEvent (int64 sampleNumber, bool state)
     }
 }
 
+void SyncStream::setHardwareTimestamp (int64 sampleNumber, double timestamp)
+{
+
+    if (generatesTimestamps && ! overrideHardwareTimestamps)
+    {
+        latestSyncSampleNumber = sampleNumber;
+        latestGlobalSyncTime = timestamp;
+
+        if (! baselineMatchingPulse.complete)
+        {
+            baselineMatchingPulse.localSampleNumber = sampleNumber;
+            baselineMatchingPulse.globalTimestamp = timestamp;
+            baselineMatchingPulse.complete = true;
+
+            actualSampleRate = expectedSampleRate; // safe initial
+            globalStartTime = timestamp - (double (sampleNumber) / expectedSampleRate);
+            latestSyncMillis = Time::currentTimeMillis();
+            return;
+        }
+
+        double dt = timestamp - baselineMatchingPulse.globalTimestamp;
+        int64 ds = sampleNumber - baselineMatchingPulse.localSampleNumber;
+
+        if (dt <= 1e-6 || ds <= 0)
+            return;
+
+        double estimated = double (ds) / dt;
+
+        if (std::abs (estimated - expectedSampleRate) / expectedSampleRate < 0.01)
+        {
+            actualSampleRate = estimated;
+            latestSyncMillis = Time::currentTimeMillis();
+        }
+    }
+
+}
+
 double SyncStream::getLatestSyncTime()
 {
     //LOGC ("Getting latest sync time for stream ", streamKey, "...");
@@ -281,16 +329,26 @@ double SyncStream::getLatestSyncTime()
 
 double SyncStream::getSyncAccuracy()
 {
+
+    if (generatesTimestamps && ! overrideHardwareTimestamps)
+        return 0.0; // or compute error vs. expectedSampleRate drift
+
     if (pulses.size() > 0)
     {
 
-        //LOGD ("Sync accuracy for stream ", streamKey);
+        //if (!isMainStream)
+        //{
+            //LOGC ("Sync accuracy for stream ", streamKey);
 
-        //LOGD ("latestSyncSampleNumber: ", latestSyncSampleNumber);
-        //LOGD ("latestGlobalSyncTime: ", latestGlobalSyncTime);
-        //LOGD ("globalStartTime: ", globalStartTime);
-        //LOGD ("actualSampleRate: ", actualSampleRate);
-        //LOGD ("baselineMatchingPulse.globalTimestamp: ", baselineMatchingPulse.globalTimestamp);
+            //LOGC ("latestSyncSampleNumber: ", latestSyncSampleNumber);
+            //LOGC ("latestGlobalSyncTime: ", latestGlobalSyncTime);
+            //LOGC ("globalStartTime: ", globalStartTime);
+            //LOGC ("actualSampleRate: ", actualSampleRate);
+            //LOGC ("baselineMatchingPulse.globalTimestamp: ", baselineMatchingPulse.globalTimestamp);
+            //LOGC ("baselineMatchingPulse.localSampleNumber: ", baselineMatchingPulse.localSampleNumber);
+            //LOGC (" ");
+        //}
+
 
         // NEW CALCULATION:
         double estimatedGlobalTime = double(latestSyncSampleNumber - baselineMatchingPulse.localSampleNumber)
@@ -309,8 +367,8 @@ double SyncStream::getSyncAccuracy()
 
 void SyncStream::syncWith (const SyncStream* mainStream)
 {
-    //LOGD ("Synchronizing ", streamKey, " with ", mainStream->streamKey, "...");
-    //LOGD ("Expected sample rate: ", expectedSampleRate);
+    //LOGC ("Synchronizing ", streamKey, " with ", mainStream->streamKey, "...");
+    //LOGC ("Expected sample rate: ", expectedSampleRate);
 
     if (mainStream->pulses.size() < 2 || pulses.size() < 2)
     {
@@ -333,20 +391,19 @@ void SyncStream::syncWith (const SyncStream* mainStream)
                 {
                     if (comparePulses (pulse, mainPulse)) // putative match
                     {
-                        if (pulses.size() > localIndex + 3 && mainStream->pulses.size() > index + 3)
+                        if (pulses.size() > localIndex + 2 && mainStream->pulses.size() > index + 2)
                         {
-                            // previous three pulses also match
+                            // previous two pulses also match
                             if (comparePulses (pulses[localIndex + 1], mainStream->pulses[index + 1])
-                                && comparePulses (pulses[localIndex + 2], mainStream->pulses[index + 2])
-                                && comparePulses (pulses[localIndex + 3], mainStream->pulses[index + 3]))
+                                && comparePulses (pulses[localIndex + 2], mainStream->pulses[index + 2]))
                             {
                                 pulse.matchingPulseIndex = index;
                                 pulse.globalTimestamp = mainPulse.localTimestamp;
                                 latestSyncSampleNumber = pulse.localSampleNumber;
                                 latestGlobalSyncTime = pulse.globalTimestamp;
                                 latestSyncMillis = pulse.computerTimeMillis;
-                                //LOGD ("Pulse at ", pulse.localTimestamp, " matches with 4 main pulses at ", index);
-                                //LOGD ("latestSyncSampleNumber: ", latestSyncSampleNumber, ", latestGlobalSyncTime: ", latestGlobalSyncTime);
+                                //LOGC ("Pulse at ", pulse.localTimestamp, " matches with 3 main pulses at ", index);
+                                //LOGC ("latestSyncSampleNumber: ", latestSyncSampleNumber, ", latestGlobalSyncTime: ", latestGlobalSyncTime);
 
 
                                 if (baselineMatchingPulse.complete == false)
@@ -456,7 +513,9 @@ void SyncStream::syncWith (const SyncStream* mainStream)
 
                         {
                             globalStartTime = estimatedGlobalStartTime;
+
                             isSynchronized = true;
+
                         }
                     }
                     else
@@ -603,11 +662,15 @@ void SyncStream::attemptBarcodeDecoding()
     // decode last barcode
     if (harpDecoder.decodeBarcode(completedBarcodes.back(), expectedSampleRate))
     {
-       // LOGD ("Successful decoding...setting isHarpStream to true.");
-        isHarpStream = true;
-        isSynchronized = true;
 
-        
+        if (!isHarpStream)
+        {
+            LOGD ("Successful decoding...setting isHarpStream to true.");
+            isHarpStream = true;
+            isSynchronized = false;
+
+        }
+
         // Validate timing
         if (!validateBarcodeTimestamp(completedBarcodes.back()))
         {
@@ -648,12 +711,12 @@ void SyncStream::syncWithHarp()
     
     if (std::abs (estimatedSampleRate - expectedSampleRate) / expectedSampleRate < 0.05)
     {
-        LOGC (streamKey, " total barcodes = ", completedBarcodes.size(), "; estimated sample rate: ", estimatedSampleRate);
+        //LOGC (streamKey, " total barcodes = ", completedBarcodes.size(), "; estimated sample rate: ", estimatedSampleRate);
         actualSampleRate = estimatedSampleRate;
 
         // Calculate global start time
         //LOGD ("Estimated global start time: ", double (firstBarcode.encodedTime) - firstBarcode.localStartTimestamp);
-        globalStartTime = (double (firstBarcode.encodedTime) - firstBarcode.localStartTimestamp) / 1000;
+        globalStartTime = (double (firstBarcode.encodedTime) - firstBarcode.localStartTimestamp) / 1000; // divide by 1000 so that time appears in seconds in the stream info view
         baselineMatchingPulse.globalTimestamp = double (firstBarcode.encodedTime);
         baselineMatchingPulse.localSampleNumber = firstBarcode.localStartSample;
         latestSyncSampleNumber = lastBarcode.barcodeEvents.front().first;
@@ -666,7 +729,7 @@ void SyncStream::syncWithHarp()
     }
     else
     {
-        LOGC (streamKey, " estimated sample rate out of range; clearing Harp barcodes.");
+        LOGD (streamKey, " estimated sample rate out of range; clearing Harp barcodes.");
         isSynchronized = false;
         completedBarcodes.clear();
     }
@@ -796,6 +859,14 @@ void Synchronizer::addEvent (String streamKey,
     }
 }
 
+
+void Synchronizer::setHardwareTimestamp (int64 sampleNumber, double timestamp, String streamKey)
+{
+    const ScopedLock sl (synchronizerLock);
+    streams[streamKey]->setHardwareTimestamp (sampleNumber, timestamp);
+}
+
+
 double Synchronizer::convertSampleNumberToTimestamp (String streamKey, int64 sampleNumber)
 {
     if (streams[streamKey]->isSynchronized)
@@ -889,7 +960,12 @@ SyncStatus Synchronizer::getStatus (String streamKey)
         return SyncStatus::HARDWARE_SYNCED;
     
     if (streams[streamKey]->isHarpStream)
-        return SyncStatus::HARP_CLOCK;
+    {
+        if (isStreamSynced (streamKey))
+            return SyncStatus::HARP_CLOCK;
+        else
+            return SyncStatus::HARP_DETECTING;
+    }
 
     if (isStreamSynced (streamKey))
         return SyncStatus::SYNCED;

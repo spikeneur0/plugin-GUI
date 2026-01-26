@@ -266,9 +266,6 @@ void EventTranslator::handleTTLEvent (TTLEventPtr event)
 
                 int64 firstSampleNumberForBlock = getFirstSampleNumberForBlock (streamId);
 
-                if (newSampleNumber < firstSampleNumberForBlock)
-                    newSampleNumber = firstSampleNumberForBlock;
-
                 //std::cout << "translated sample number (" << streamId << "): " << newSampleNumber - firstSampleNumberForBlock << std::endl;
                 //std::cout << std::endl;
 
@@ -277,6 +274,36 @@ void EventTranslator::handleTTLEvent (TTLEventPtr event)
 
                 addEvent (translatedEvent, newSampleNumber - firstSampleNumberForBlock);
             }
+        }
+    }
+
+    if (synchronizer.getStatus (eventStreamKey) == SyncStatus::HARDWARE_SYNCED)
+    {
+        const bool state = event->getState();
+
+        double timestamp = synchronizer.convertSampleNumberToTimestamp (eventStreamKey, sampleNumber);
+
+        for (auto stream : getDataStreams())
+        {
+            const uint16 streamId = stream->getStreamId();
+            const String streamKey = stream->getKey();
+
+            if (streamKey == eventStreamKey || synchronizer.getStatus (streamKey) != SyncStatus::HARDWARE_SYNCED)
+                continue; // don't translate events to non-hardware-synced streams
+
+            int64 newSampleNumber = synchronizer.convertTimestampToSampleNumber (streamKey, timestamp);
+
+            //std::cout << "new sample number (" << streamKey << "): " << newSampleNumber << std::endl;
+
+            int64 firstSampleNumberForBlock = getFirstSampleNumberForBlock (streamId);
+
+            //std::cout << "translated sample number (" << streamKey << "): " << newSampleNumber - firstSampleNumberForBlock << std::endl;
+            //std::cout << std::endl;
+
+            TTLEventPtr translatedEvent =
+                settings[streamId]->createEvent (newSampleNumber, timestamp, ttlLine, state);
+
+            addEvent (translatedEvent, newSampleNumber - firstSampleNumberForBlock);
         }
     }
 }
