@@ -850,7 +850,13 @@ void LfpDisplaySplitter::beginAnimation()
         eventState = 0;
     }
 
-    startTimer (20);
+    // Adaptive timer: slower refresh for high channel counts to reduce CPU load
+    // Base: 50Hz (20ms), >384 channels: ~30Hz (33ms)
+    int refreshIntervalMs = 20;
+    if (nChans > 384)
+        refreshIntervalMs = 33; // ~30Hz for 256+ channels
+
+    startTimer (refreshIntervalMs);
 
     reachedEnd = true;
 }
@@ -1162,7 +1168,7 @@ void LfpDisplaySplitter::updateScreenBuffer()
         int triggerTime = hasTrigger ? int (*triggerTimeOpt) : -1;
 
         int maxSamples = screenBufferWidth;
-        int displayWidth = lfpDisplay->lfpChannelBitmap.getWidth();
+        const int displayWidth = lfpDisplay->lfpChannelBitmap.getWidth();
 
         if (triggerChannel >= 0)
         {
@@ -1174,6 +1180,14 @@ void LfpDisplaySplitter::updateScreenBuffer()
             //std::cout << "Split display " << splitID << " trigger time : " << triggerTime << std::endl;
             processor->acknowledgeTrigger (splitID);
         }
+
+        // Pre-compute loop invariants
+        const float ratio = sampleRate * timebase / float (displayWidth); // samples / pixel
+        const float invRatio = 1.0f / ratio;
+        const int maxSamplesMinusOne = maxSamples - 1;
+        const bool isPaused = lfpDisplay->isPaused();
+        const bool isTriggeredMode = triggerChannel >= 0;
+        const bool shouldAverage = isTriggeredMode && trialAveraging;
 
         for (int channel = 0; channel <= nChans; channel++) // pull one extra channel for event display
         {
@@ -1196,10 +1210,8 @@ void LfpDisplaySplitter::updateScreenBuffer()
             //if (channel == 0)
             //    std::cout << newSamples << " new samples." << std::endl;
 
-            // this number is crucial -- converting from samples to values (in px) for the screen buffer:
-            float ratio = sampleRate * timebase / float (displayWidth); // samples / pixel
-
-            float pixelsToFill = float (newSamples) / ratio; // M pixels to update
+            // ratio is pre-computed above the channel loop
+            float pixelsToFill = float (newSamples) * invRatio; // M pixels to update
 
             int sbi = screenBufferIndex[channel];
 
@@ -1235,7 +1247,7 @@ void LfpDisplaySplitter::updateScreenBuffer()
                         if (newSamples < 0)
                             newSamples += displayBufferSize;
 
-                        pixelsToFill = newSamples / ratio;
+                        pixelsToFill = newSamples * invRatio;
                         subSampleOffset = 0;
 
                         // rewind screen buffer to the far left
@@ -1306,57 +1318,70 @@ void LfpDisplaySplitter::updateScreenBuffer()
             {
                 float i;
 
+                // Get raw pointers for this channel to avoid repeated getSample() calls
+                const float* displayData = displayBuffer->getReadPointer (channel);
+                float* meanWritePtr = (channel < nChans) ? screenBufferMean->getWritePointer (channel) : nullptr;
+                float* minWritePtr = (channel < nChans) ? screenBufferMin->getWritePointer (channel) : nullptr;
+                float* maxWritePtr = (channel < nChans) ? screenBufferMax->getWritePointer (channel) : nullptr;
+                const float* meanReadPtr = meanWritePtr;
+                const float* minReadPtr = minWritePtr;
+                const float* maxReadPtr = maxWritePtr;
+                float* eventWritePtr = eventDisplayBuffer->getWritePointer (0);
+
+                const bool isEventChannel = (channel == nChans);
+                const bool shouldClearBuffers = ! isTriggeredMode || numTrials == 0 || ! trialAveraging;
+                const float trialGain = (numTrials > 0) ? static_cast<float> (numTrials) : 1.0f;
+
                 for (i = 0; i < pixelsToFill; i++)
                 {
-                    if (! lfpDisplay->isPaused())
+                    if (! isPaused)
                     {
-                        if (channel == nChans)
+                        if (isEventChannel)
                         {
-                            eventDisplayBuffer->clear (0, sbi, 1);
+                            eventWritePtr[sbi] = 0.0f;
                         }
                         else
                         {
-                            if (triggerChannel < 0 || numTrials == 0 || trialAveraging == false)
+                            if (shouldClearBuffers)
                             {
-                                screenBufferMean->clear (channel, sbi, 1);
-                                screenBufferMin->clear (channel, sbi, 1);
-                                screenBufferMax->clear (channel, sbi, 1);
+                                meanWritePtr[sbi] = 0.0f;
+                                minWritePtr[sbi] = 0.0f;
+                                maxWritePtr[sbi] = 0.0f;
                             }
                             else
                             {
-                                screenBufferMean->applyGain (channel, sbi, 1, numTrials);
-                                screenBufferMin->applyGain (channel, sbi, 1, numTrials);
-                                screenBufferMax->applyGain (channel, sbi, 1, numTrials);
+                                meanWritePtr[sbi] *= trialGain;
+                                minWritePtr[sbi] *= trialGain;
+                                maxWritePtr[sbi] *= trialGain;
                             }
                         }
 
-                        if (ratio < 1.0) // less than one sample per pixel
+                        if (ratio < 1.0f) // less than one sample per pixel
                         {
-                            if (channel == nChans)
+                            if (isEventChannel)
                             {
-                                eventDisplayBuffer->setSample (0, sbi, displayBuffer->getSample (channel, dbi));
+                                eventWritePtr[sbi] = displayData[dbi];
                             }
                             else
                             {
-                                float alpha = subSampleOffset;
-                                float invAlpha = 1.0f - alpha;
+                                const float alpha = subSampleOffset;
+                                const float invAlpha = 1.0f - alpha;
 
                                 int lastIndex = dbi - 1;
 
                                 if (lastIndex < 0)
                                 {
-                                    lastIndex = displayBufferSize;
+                                    lastIndex = displayBufferSize - 1;
                                     continue;
                                 }
 
-                                float val0 = displayBuffer->getSample (channel, lastIndex);
-                                float val1 = displayBuffer->getSample (channel, dbi);
+                                const float val0 = displayData[lastIndex];
+                                const float val1 = displayData[dbi];
+                                const float val = invAlpha * val0 + alpha * val1;
 
-                                float val = invAlpha * val0 + alpha * val1;
-
-                                screenBufferMean->addSample (channel, sbi, val);
-                                screenBufferMin->addSample (channel, sbi, val);
-                                screenBufferMax->addSample (channel, sbi, val);
+                                meanWritePtr[sbi] += val;
+                                minWritePtr[sbi] += val;
+                                maxWritePtr[sbi] += val;
                             }
 
                             subSampleOffset += ratio;
@@ -1371,85 +1396,143 @@ void LfpDisplaySplitter::updateScreenBuffer()
                         else
                         { // more than one sample per pixel
 
-                            float sample_min = 10000000;
-                            float sample_max = -10000000;
-                            float sample_sum = 0;
-                            float sampleCount = 0;
+                            float sample_min = 1e10f;
+                            float sample_max = -1e10f;
+                            float sample_sum = 0.0f;
 
                             subSampleOffset += ratio;
 
-                            if (subSampleOffset <= 1.0f)
+                            // Calculate how many samples we need to process for this pixel
+                            int samplesToProcess = static_cast<int> (subSampleOffset);
+                            if (sampleNumber + samplesToProcess > newSamples)
+                                samplesToProcess = newSamples - sampleNumber;
+
+                            if (samplesToProcess <= 0)
                             {
-                                sample_sum = displayBuffer->getSample (channel, dbi);
-                                sample_min = sample_sum;
-                                sample_max = sample_sum;
-                                sampleCount = 1.0f;
-                            }
-
-                            bool foundIt = false;
-
-                            while (subSampleOffset > 1.0f && sampleNumber < newSamples)
-                            {
-                                sampleNumber++;
-
-                                float sample_current = displayBuffer->getSample (channel, dbi);
-
-                                sample_sum = sample_sum + sample_current;
-
-                                if (sample_min >= sample_current)
-                                {
-                                    sample_min = sample_current;
-                                }
-
-                                if (sample_max <= sample_current)
-                                {
-                                    sample_max = sample_current;
-                                }
-
                                 subSampleOffset -= 1.0f;
-
-                                dbi += 1;
-                                dbi %= displayBufferSize;
-
-                                sampleCount += 1.0f;
+                                dbi = (dbi + 1) % displayBufferSize;
+                                sampleNumber++;
+                                continue;
                             }
 
-                            float sample_mean = sample_sum / sampleCount;
+                            // Check if data is contiguous (doesn't wrap around buffer)
+                            const int samplesUntilWrap = displayBufferSize - dbi;
+
+                            if (samplesToProcess >= 4 && samplesToProcess <= samplesUntilWrap)
+                            {
+                                // SIMD path: contiguous data, use vectorized operations
+                                const float* dataPtr = displayData + dbi;
+
+                                // Use JUCE's SIMD-accelerated min/max finder
+                                juce::Range<float> minMax = juce::FloatVectorOperations::findMinAndMax (dataPtr, samplesToProcess);
+                                sample_min = minMax.getStart();
+                                sample_max = minMax.getEnd();
+
+                                // SIMD sum - process 4 floats at a time
+                                int idx = 0;
+                                const int simdWidth = 4;
+                                const int simdIterations = samplesToProcess / simdWidth;
+
+                                if (simdIterations > 0)
+                                {
+                                    float sumAccum[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+
+                                    for (int s = 0; s < simdIterations; s++)
+                                    {
+                                        sumAccum[0] += dataPtr[idx];
+                                        sumAccum[1] += dataPtr[idx + 1];
+                                        sumAccum[2] += dataPtr[idx + 2];
+                                        sumAccum[3] += dataPtr[idx + 3];
+                                        idx += simdWidth;
+                                    }
+
+                                    sample_sum = sumAccum[0] + sumAccum[1] + sumAccum[2] + sumAccum[3];
+                                }
+
+                                // Handle remaining samples
+                                for (; idx < samplesToProcess; idx++)
+                                {
+                                    sample_sum += dataPtr[idx];
+                                }
+
+                                dbi = (dbi + samplesToProcess) % displayBufferSize;
+                                sampleNumber += samplesToProcess;
+                                subSampleOffset -= static_cast<float> (samplesToProcess);
+                            }
+                            else
+                            {
+                                // Scalar path: handle wrap-around or small sample counts
+                                // Process first chunk (up to buffer end)
+                                const int firstChunk = std::min (samplesToProcess, samplesUntilWrap);
+
+                                for (int s = 0; s < firstChunk; s++)
+                                {
+                                    const float sample_current = displayData[dbi + s];
+                                    sample_sum += sample_current;
+
+                                    if (sample_current < sample_min)
+                                        sample_min = sample_current;
+                                    if (sample_current > sample_max)
+                                        sample_max = sample_current;
+                                }
+
+                                // Process second chunk (from buffer start) if wrapped
+                                const int secondChunk = samplesToProcess - firstChunk;
+                                for (int s = 0; s < secondChunk; s++)
+                                {
+                                    const float sample_current = displayData[s];
+                                    sample_sum += sample_current;
+
+                                    if (sample_current < sample_min)
+                                        sample_min = sample_current;
+                                    if (sample_current > sample_max)
+                                        sample_max = sample_current;
+                                }
+
+                                dbi = (dbi + samplesToProcess) % displayBufferSize;
+                                sampleNumber += samplesToProcess;
+                                subSampleOffset -= static_cast<float> (samplesToProcess);
+                            }
+
+                            const float sampleCount = static_cast<float> (samplesToProcess);
+                            const float sample_mean = sample_sum / sampleCount;
 
                             // update event channel
-                            if (channel == nChans)
+                            if (isEventChannel)
                             {
-                                eventDisplayBuffer->setSample (0, sbi, sample_max);
+                                eventWritePtr[sbi] = sample_max;
                             }
                             else
                             {
                                 if (sbi > 0)
                                 {
-                                    if (sample_max < screenBufferMin->getSample (channel, sbi - 1))
-                                        sample_max = screenBufferMin->getSample (channel, sbi - 1);
+                                    const int prevSbi = sbi - 1;
+                                    if (sample_max < minReadPtr[prevSbi])
+                                        sample_max = minReadPtr[prevSbi];
 
-                                    if (sample_min > screenBufferMax->getSample (channel, sbi - 1))
-                                        sample_min = screenBufferMax->getSample (channel, sbi - 1);
+                                    if (sample_min > maxReadPtr[prevSbi])
+                                        sample_min = maxReadPtr[prevSbi];
                                 }
 
-                                screenBufferMean->addSample (channel, sbi, sample_mean);
-                                screenBufferMin->addSample (channel, sbi, sample_min);
-                                screenBufferMax->addSample (channel, sbi, sample_max);
+                                meanWritePtr[sbi] += sample_mean;
+                                minWritePtr[sbi] += sample_min;
+                                maxWritePtr[sbi] += sample_max;
                             }
                         }
 
-                        if (triggerChannel >= 0 && trialAveraging == true && channel != nChans)
+                        if (shouldAverage && ! isEventChannel)
                         {
-                            screenBufferMean->applyGain (channel, sbi, 1, 1 / (numTrials + 1));
-                            screenBufferMin->applyGain (channel, sbi, 1, 1 / (numTrials + 1));
-                            screenBufferMax->applyGain (channel, sbi, 1, 1 / (numTrials + 1));
+                            const float avgGain = 1.0f / (numTrials + 1.0f);
+                            meanWritePtr[sbi] *= avgGain;
+                            minWritePtr[sbi] *= avgGain;
+                            maxWritePtr[sbi] *= avgGain;
                         }
 
                         sbi++;
 
-                        if (triggerChannel >= 0)
+                        if (isTriggeredMode)
                         {
-                            if (sbi == maxSamples - 1)
+                            if (sbi == maxSamplesMinusOne)
                             {
                                 //std::cout << "CH " << channel << " reached end: " << maxSamples << " samples " << std::endl;
 
