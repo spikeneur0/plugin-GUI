@@ -38,8 +38,8 @@
 //   - Low channel count = small writes (fine for low data rates, keeps latency low)
 //
 
-#define BLOCK_DEFAULT_MIN_WRITE_SAMPLES 8192
-#define BLOCK_DEFAULT_MAX_WRITE_SAMPLES 16384
+#define BLOCK_DEFAULT_MIN_WRITE_SAMPLES 512
+#define BLOCK_DEFAULT_MAX_WRITE_SAMPLES 4096
 #define BLOCK_MAX_WRITE_EVENTS 50000
 #define BLOCK_MAX_WRITE_SPIKES 50000
 
