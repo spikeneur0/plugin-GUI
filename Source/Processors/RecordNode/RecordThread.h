@@ -72,9 +72,6 @@ public:
     /** Sets the pointers to the data queues (one per stream), event queue, and spike queue */
     void setQueuePointers (OwnedArray<DataQueue>* dataQueues, EventMsgQueue* events, SpikeMsgQueue* spikes);
 
-    /** Opens files prior to starting recording */
-    void openFiles();
-
     /** Runs the thread */
     void run() override;
 

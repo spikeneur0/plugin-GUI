@@ -96,8 +96,12 @@ void RecordThread::setFirstBlockFlag (bool state)
     this->notify();
 }
 
-void RecordThread::openFiles()
+void RecordThread::run()
 {
+    // Initialize counters
+    spikesReceived = 0;
+    spikesWritten = 0;
+
     // Initialize per-channel sample numbers
     sampleNumbers.clear();
     for (int chan = 0; chan < m_numChannels; ++chan)
@@ -111,23 +115,15 @@ void RecordThread::openFiles()
     m_perStreamTimestampIdxs.resize (numStreams);
     m_perStreamSampleNumbers.resize (numStreams, 0);
 
+    // 1 - Open files
+    bool closeEarly = false;
+    m_cleanExit = false;
+    Array<int64> initSampleNumbers;
+
     m_engine->openFiles (m_rootFolder, m_experimentNumber, m_recordingNumber);
 
     if (recordNode != nullptr)
         recordNode->notifyRecordThreadFilesOpened();
-}
-
-void RecordThread::run()
-{
-    // 1-Initialize counters
-    spikesReceived = 0;
-    spikesWritten = 0;
-
-    bool closeEarly = false;
-    int numStreams = recordNode->getNumDataStreams();
-
-    m_cleanExit = false;
-    Array<int64> initSampleNumbers;
 
     //2-Wait until the first block has arrived, so we can align the timestamps
     bool isWaiting = false;
