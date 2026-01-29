@@ -685,7 +685,7 @@ void BinaryRecording::writeContinuousData (int writeChannel,
         }
 
         /* Generate sequential sample numbers using SIMD-optimized fill */
-        SIMDConverter::fillSequentialInt64 (m_sampleNumberBuffer.getData(), baseSampleNumber, size);
+        SIMDConverter::fillSequentialInt64 (reinterpret_cast<int64_t*> (m_sampleNumberBuffer.getData()), baseSampleNumber, size);
 
         /* Write int timestamps to disc */
         m_dataTimestampFiles[fileIndex]->writeData (m_sampleNumberBuffer, size * sizeof (int64));
@@ -785,12 +785,12 @@ void BinaryRecording::writeSpike (int electrodeIndex, const Spike* spike)
 }
 
 void BinaryRecording::writeContinuousDataBatch (const int* writeChannels,
-                                                 const int* realChannels,
-                                                 const float* const* dataBuffers,
-                                                 const double* timestampBuffer,
-                                                 int numChannels,
-                                                 int numSamples,
-                                                 int fileIndex)
+                                                const int* realChannels,
+                                                const float* const* dataBuffers,
+                                                const double* timestampBuffer,
+                                                int numChannels,
+                                                int numSamples,
+                                                int fileIndex)
 {
     if (numSamples == 0 || numChannels == 0)
         return;
@@ -800,10 +800,13 @@ void BinaryRecording::writeContinuousDataBatch (const int* writeChannels,
     {
         int newSamples = jmax (numSamples, m_batchBufferSamples);
         int newChannels = jmax (numChannels, m_batchBufferChannels);
-        
-        LOGD ("BinaryRecording::writeContinuousDataBatch: Resizing batch buffer to ", 
-              newChannels, " channels x ", newSamples, " samples");
-        
+
+        LOGD ("BinaryRecording::writeContinuousDataBatch: Resizing batch buffer to ",
+              newChannels,
+              " channels x ",
+              newSamples,
+              " samples");
+
         m_batchIntBuffer.malloc (newSamples * newChannels);
         m_batchBufferSamples = newSamples;
         m_batchBufferChannels = newChannels;
@@ -851,13 +854,8 @@ void BinaryRecording::writeContinuousDataBatch (const int* writeChannels,
     // Try batch interleaving if we have all channels for this file
     // The file's channel count is determined by the stream's channel count
     // If we have a partial batch, fall back to per-channel writes
-    bool useBatchWrite = m_continuousFiles[fileIndex] != nullptr && 
-                          m_continuousFiles[fileIndex]->writeChannelBatch (
-                              startPos,
-                              m_batchIntBufferPtrs.data(),
-                              numChannels,
-                              numSamples);
-    
+    bool useBatchWrite = m_continuousFiles[fileIndex] != nullptr && m_continuousFiles[fileIndex]->writeChannelBatch (startPos, m_batchIntBufferPtrs.data(), numChannels, numSamples);
+
     if (! useBatchWrite)
     {
         // Fall back to per-channel writes for partial batches
@@ -866,9 +864,9 @@ void BinaryRecording::writeContinuousDataBatch (const int* writeChannels,
             int writeChannel = writeChannels[i];
             int channelIdx = m_channelIndexes[writeChannel];
             m_continuousFiles[fileIndex]->writeChannel (
-                startPos, 
-                channelIdx, 
-                m_batchIntBufferPtrs[i], 
+                startPos,
+                channelIdx,
+                m_batchIntBufferPtrs[i],
                 numSamples);
         }
     }
@@ -895,7 +893,7 @@ void BinaryRecording::writeContinuousDataBatch (const int* writeChannels,
             }
 
             /* Generate sequential sample numbers using SIMD-optimized fill */
-            SIMDConverter::fillSequentialInt64 (m_sampleNumberBuffer, baseSampleNumber, numSamples);
+            SIMDConverter::fillSequentialInt64 (reinterpret_cast<int64_t*> (m_sampleNumberBuffer.getData()), baseSampleNumber, numSamples);
 
             m_dataTimestampFiles[fileIndex]->writeData (m_sampleNumberBuffer, numSamples * sizeof (int64));
             m_dataTimestampFiles[fileIndex]->increaseRecordCount (numSamples);
