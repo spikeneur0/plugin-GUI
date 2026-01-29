@@ -22,6 +22,7 @@
 */
 
 #include "DataQueue.h"
+#include <climits>
 
 DataQueue::DataQueue (int blockSize, int nBlocks) : m_buffer (0, blockSize * nBlocks),
                                                     m_numChans (0),

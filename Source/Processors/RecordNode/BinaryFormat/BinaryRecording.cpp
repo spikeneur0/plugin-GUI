@@ -685,7 +685,7 @@ void BinaryRecording::writeContinuousData (int writeChannel,
         }
 
         /* Generate sequential sample numbers using SIMD-optimized fill */
-        SIMDConverter::fillSequentialInt64 (m_sampleNumberBuffer, baseSampleNumber, size);
+        SIMDConverter::fillSequentialInt64 (m_sampleNumberBuffer.getData(), baseSampleNumber, size);
 
         /* Write int timestamps to disc */
         m_dataTimestampFiles[fileIndex]->writeData (m_sampleNumberBuffer, size * sizeof (int64));
