@@ -829,13 +829,15 @@ void Synchronizer::startAcquisition()
     reset();
 
     acquisitionIsActive = true;
-
+    firstSyncTimerCallbackPending = true;
+    startTimer (3000);
     startTimer (1000);
 }
 
 void Synchronizer::stopAcquisition()
 {
     acquisitionIsActive = false;
+    firstSyncTimerCallbackPending = false;
 
     stopTimer();
 }
@@ -979,6 +981,12 @@ void Synchronizer::hiResTimerCallback()
         return;
 
     const ScopedLock sl (synchronizerLock);
+
+    if (firstSyncTimerCallbackPending)
+    {
+        firstSyncTimerCallbackPending = false;
+        startTimer (1000);
+    }
     
     // First, attempt to decode any pending Harp barcodes
     for (auto [key, stream] : streams)

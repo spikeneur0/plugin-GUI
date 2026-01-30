@@ -418,6 +418,7 @@ public:
 private:
     int eventCount = 0;
     bool acquisitionIsActive = false;
+    bool firstSyncTimerCallbackPending = false;
 
     void hiResTimerCallback();
 
