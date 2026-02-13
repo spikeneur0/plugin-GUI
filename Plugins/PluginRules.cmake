@@ -48,7 +48,7 @@ if(MSVC)
     target_link_libraries(${PLUGIN_NAME}
                           $<TARGET_FILE_DIR:open-ephys>/open-ephys.lib)
   endif()
-  target_compile_options(${PLUGIN_NAME} PRIVATE /sdl- /W0)
+  target_compile_options(${PLUGIN_NAME} PRIVATE /sdl- /W0 /arch:AVX)
 elseif(LINUX)
   target_link_libraries(
     ${PLUGIN_NAME}
