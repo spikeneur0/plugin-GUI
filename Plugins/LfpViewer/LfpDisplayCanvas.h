@@ -35,6 +35,7 @@
 #include "LfpDisplayOptions.h"
 #include "LfpTimescale.h"
 #include "LfpViewport.h"
+#include "LfpViewerProcessing.h"
 
 namespace LfpViewer
 {
@@ -361,6 +362,15 @@ public:
 
     String getStreamKey();
 
+    /** Returns the viewer processing object for this split */
+    LfpViewerProcessing* getViewerProcessing() { return viewerProcessing.get(); }
+
+    /** Sets the high-pass filter state */
+    void setHighPassFilterEnabled (bool enabled);
+
+    /** Sets the CAR state */
+    void setCAREnabled (bool enabled);
+
 private:
     void refreshLeftMargin();
 
@@ -396,12 +406,28 @@ private:
 
     void updateScreenBuffer();
 
+    /** Preprocesses new samples from displayBuffer through filter/CAR
+        into the processedDisplayBuffer */
+    void preprocessNewSamples();
+
     Array<int> displayBufferIndex;
     int displayBufferSize;
 
     int scrollBarThickness;
 
     Array<int> filteredChannels = Array<int>();
+
+    /** Owned processing pipeline for this split view */
+    std::unique_ptr<LfpViewerProcessing> viewerProcessing;
+
+    /** Shadow circular buffer holding filtered/CAR'd data */
+    std::unique_ptr<AudioBuffer<float>> processedDisplayBuffer;
+
+    /** Tracks the last-processed index per channel in the circular buffer */
+    Array<int> processedBufferIndex;
+
+    /** Reusable temporary buffer for contiguous sample processing */
+    AudioBuffer<float> tempProcessingBuffer;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (LfpDisplaySplitter);
 };

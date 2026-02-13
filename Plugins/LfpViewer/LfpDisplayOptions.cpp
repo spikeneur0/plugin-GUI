@@ -473,6 +473,34 @@ LfpDisplayOptions::LfpDisplayOptions (LfpDisplayCanvas* canvas_, LfpDisplaySplit
     medianOffsetPlottingLabel->setFont (labelFont);
     extendedOptions->addAndMakeVisible (medianOffsetPlottingLabel.get());
 
+    // High-pass filter button
+    highPassCutoffButton = std::make_unique<UtilityButton> ("OFF");
+    highPassCutoffButton->setRadius (5.0f);
+    highPassCutoffButton->setEnabledState (true);
+    highPassCutoffButton->setCorners (true, true, true, true);
+    highPassCutoffButton->addListener (this);
+    highPassCutoffButton->setClickingTogglesState (true);
+    highPassCutoffButton->setToggleState (false, sendNotification);
+    extendedOptions->addAndMakeVisible (highPassCutoffButton.get());
+
+    highPassCutoffLabel = std::make_unique<Label> ("HighPassCutoffLabel", "High-pass (300 Hz):");
+    highPassCutoffLabel->setFont (labelFont);
+    extendedOptions->addAndMakeVisible (highPassCutoffLabel.get());
+
+    // CAR button
+    carButton = std::make_unique<UtilityButton> ("OFF");
+    carButton->setRadius (5.0f);
+    carButton->setEnabledState (true);
+    carButton->setCorners (true, true, true, true);
+    carButton->addListener (this);
+    carButton->setClickingTogglesState (true);
+    carButton->setToggleState (false, sendNotification);
+    extendedOptions->addAndMakeVisible (carButton.get());
+
+    carLabel = std::make_unique<Label> ("CARLabel", "CAR:");
+    carLabel->setFont (labelFont);
+    extendedOptions->addAndMakeVisible (carLabel.get());
+
     // TRIGGERED DISPLAY
     sectionTitles.add ("TRIGGERED DISPLAY");
     triggeredDisplayGroup = std::make_unique<GroupComponent> ("Triggered Display");
@@ -759,6 +787,26 @@ void LfpDisplayOptions::resized()
                                           120,
                                           height);
 
+    highPassCutoffButton->setBounds (xLimit - 45,
+                                        startHeight + verticalSpacing * 2,
+                                        35,
+                                        height);
+
+    highPassCutoffLabel->setBounds (xOffset + 10,
+                                    startHeight + verticalSpacing * 2,
+                                    120,
+                                    height);
+
+    carButton->setBounds (xLimit - 45,
+                          startHeight + verticalSpacing * 3,
+                          35,
+                          height);
+
+    carLabel->setBounds (xOffset + 10,
+                         startHeight + verticalSpacing * 3,
+                         120,
+                         height);
+
     //TRIGGERED DISPLAY
     xOffset = extendedOptionsBox.items[3].currentBounds.getX();
     xLimit = extendedOptionsBox.items[3].currentBounds.getRight();
@@ -937,6 +985,51 @@ void LfpDisplayOptions::setMedianOffset (bool state)
     }
 }
 
+void LfpDisplayOptions::setHighPassFilterEnabled (bool enabled)
+{
+    canvasSplit->setHighPassFilterEnabled (enabled);
+    highPassCutoffButton->setToggleState (enabled, dontSendNotification);
+
+    if (enabled)
+    {
+        highPassCutoffButton->setLabel ("ON");
+    }
+    else
+    {
+        highPassCutoffButton->setLabel ("OFF");
+    }
+}
+
+void LfpDisplayOptions::setCAREnabled (bool state)
+{
+    canvasSplit->setCAREnabled (state);
+    carButton->setToggleState (state, dontSendNotification);
+
+    if (state)
+    {
+        carButton->setLabel ("ON");
+    }
+    else
+    {
+        carButton->setLabel ("OFF");
+    }
+
+    updateCARLabel();
+}
+
+void LfpDisplayOptions::updateCARLabel()
+{
+    if (canvasSplit->getViewerProcessing() != nullptr
+        && canvasSplit->getViewerProcessing()->isNeuropixelsMode())
+    {
+        carLabel->setText ("NP-CAR:", dontSendNotification);
+    }
+    else
+    {
+        carLabel->setText ("CAR:", dontSendNotification);
+    }
+}
+
 void LfpDisplayOptions::setAveraging (bool state)
 {
     canvasSplit->setAveraging (state);
@@ -1016,6 +1109,18 @@ void LfpDisplayOptions::buttonClicked (Button* b)
     if (b == medianOffsetPlottingButton.get())
     {
         setMedianOffset (b->getToggleState());
+        return;
+    }
+
+    if (b == highPassCutoffButton.get())
+    {
+        setHighPassFilterEnabled (b->getToggleState());
+        return;
+    }
+
+    if (b == carButton.get())
+    {
+        setCAREnabled (b->getToggleState());
         return;
     }
 
@@ -1508,6 +1613,9 @@ void LfpDisplayOptions::saveParameters (XmlElement* xml)
 
     xmlNode->setAttribute ("isInverted", invertInputButton->getToggleState());
 
+    xmlNode->setAttribute ("highPassEnabled", highPassCutoffButton->getToggleState());
+    xmlNode->setAttribute ("carEnabled", carButton->getToggleState());
+
     xmlNode->setAttribute ("triggerSource", triggerSourceSelection->getSelectedId());
     xmlNode->setAttribute ("trialAvg", averageSignalButton->getToggleState());
 
@@ -1691,6 +1799,12 @@ void LfpDisplayOptions::loadParameters (XmlElement* xml)
 
             //LOGD("    --> setMedianOffset: ", MS_FROM_START, " milliseconds");
             start = Time::getHighResolutionTicks();
+
+            // HIGH-PASS FILTER
+            setHighPassFilterEnabled (xmlNode->getBoolAttribute ("highPassEnabled", false));
+
+            // CAR
+            setCAREnabled (xmlNode->getBoolAttribute ("carEnabled", false));
 
             // CHANNEL SKIP
             channelDisplaySkipSelection->setSelectedId (xmlNode->getIntAttribute ("channelSkip"), dontSendNotification);

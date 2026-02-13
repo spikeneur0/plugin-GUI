@@ -33,6 +33,8 @@ add_sources(
   LfpTimescale.h
   LfpViewport.cpp
   LfpViewport.h
+  LfpViewerProcessing.cpp
+  LfpViewerProcessing.h
   PerPixelBitmapPlotter.cpp
   PerPixelBitmapPlotter.h
   ShowHideOptionsButton.cpp

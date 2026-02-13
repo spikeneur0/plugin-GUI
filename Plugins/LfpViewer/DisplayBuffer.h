@@ -126,6 +126,9 @@ public:
 
     float sampleRate;
 
+    /** Number of Neuropixels ADCs (0 if not a Neuropixels probe) */
+    int numAdcs = 0;
+
     uint64 ttlState;
 
     int triggerChannel;

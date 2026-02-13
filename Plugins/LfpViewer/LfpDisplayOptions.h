@@ -127,6 +127,15 @@ public:
     /** Sets whether the median of each channel should be subtracted */
     void setMedianOffset (bool);
 
+    /** Sets the high-pass filter state */
+    void setHighPassFilterEnabled (bool);
+
+    /** Sets the CAR state */
+    void setCAREnabled (bool);
+
+    /** Updates the CAR button label to show NP-CAR when applicable */
+    void updateCARLabel();
+
     /** Sets whether to use averaging in triggered display*/
     void setAveraging (bool);
 
@@ -252,6 +261,12 @@ private:
 
     std::unique_ptr<UtilityButton> medianOffsetPlottingButton;
     std::unique_ptr<Label> medianOffsetPlottingLabel;
+
+    std::unique_ptr<UtilityButton> highPassCutoffButton;
+    std::unique_ptr<Label> highPassCutoffLabel;
+
+    std::unique_ptr<UtilityButton> carButton;
+    std::unique_ptr<Label> carLabel;
 
     std::unique_ptr<UtilityButton> invertInputButton;
     std::unique_ptr<Label> invertInputLabel;

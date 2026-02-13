@@ -123,6 +123,34 @@ void LfpDisplayNode::updateSettings()
 
     Array<DisplayBuffer*> toDelete;
 
+    // Detect Neuropixels probes and store ADC count for each display buffer
+    for (auto stream : getDataStreams())
+    {
+        uint16 streamId = stream->getStreamId();
+        if (displayBufferMap.count (streamId) > 0)
+        {
+            int adcCount = 0;
+
+            if (stream->device != nullptr)
+            {
+                int adcMetadataIndex = stream->device->findMetadata (
+                    MetadataDescriptor::MetadataType::UINT16,
+                    1,
+                    "neuropixels.adcs");
+
+                if (adcMetadataIndex > -1)
+                {
+                    const MetadataValue* value = stream->device->getMetadataValue (adcMetadataIndex);
+                    uint16 numAdcs;
+                    value->getValue (&numAdcs);
+                    adcCount = int (numAdcs);
+                }
+            }
+
+            displayBufferMap[streamId]->numAdcs = adcCount;
+        }
+    }
+
     for (auto displayBuffer : displayBuffers)
     {
         if (displayBuffer->isNeeded)
