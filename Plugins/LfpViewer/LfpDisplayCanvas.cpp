@@ -697,7 +697,6 @@ void LfpDisplayCanvas::loadCustomParametersFromXml (XmlElement* xml)
     //LOGD("    Resized in ", MS_FROM_START, " milliseconds");
 }
 
-static int frameCounter = 0;
 
 LfpDisplaySplitter::LfpDisplaySplitter (LfpDisplayNode* node,
                                         LfpDisplayCanvas* canvas_,
@@ -869,6 +868,9 @@ void LfpDisplaySplitter::beginAnimation()
 void LfpDisplaySplitter::endAnimation()
 {
     stopTimer();
+
+    if (viewerProcessing != nullptr)
+        viewerProcessing->reset();
 }
 
 void LfpDisplaySplitter::timerCallback()
@@ -1116,7 +1118,6 @@ void LfpDisplaySplitter::refreshScreenBuffer()
         screenBufferMin->setSize (nChans, screenBufferWidth);
         screenBufferMean->setSize (nChans, screenBufferWidth);
         screenBufferMax->setSize (nChans, screenBufferWidth);
-        frameCounter = 0;
     }
 
     //std::cout << "Display " << splitID  << " setting screen buffer width to " << screenBufferWidth << std::endl;
@@ -1194,14 +1195,7 @@ void LfpDisplaySplitter::updateScreenBuffer()
 {
     if (isVisible() && displayBuffer != nullptr && ! isUpdating)
     {
-        // Performance timing (log every 100 frames when filtering is active)
-        const int64 startTime = Time::getHighResolutionTicks();
-        int64 preprocessTime = 0;
-
-        // Preprocess new samples through filter/CAR if active
-        const int64 preprocessStart = Time::getHighResolutionTicks();
         preprocessNewSamples();
-        preprocessTime = Time::getHighResolutionTicks() - preprocessStart;
 
         // Determine whether to read from the processed shadow buffer or the raw display buffer
         const bool useProcessedBuffer = viewerProcessing != nullptr
@@ -1638,26 +1632,6 @@ void LfpDisplaySplitter::updateScreenBuffer()
             }
         }
 
-        // // Performance logging (every 100 frames when processing is active)
-        // if (++frameCounter >= 100)
-        // {
-        //     frameCounter = 0;
-        //     const int64 totalTime = Time::getHighResolutionTicks() - startTime;
-        //     const double preprocessMs = Time::highResolutionTicksToSeconds (preprocessTime) * 1000.0;
-        //     const double totalMs = Time::highResolutionTicksToSeconds (totalTime) * 1000.0;
-        //     const double renderMs = totalMs - preprocessMs;
-            
-        //     std::cout << "[LFP Performance] Split " << splitID 
-        //               << ": Total=" << String (totalMs, 2) << "ms"
-        //               << " | Preprocess=" << String (preprocessMs, 2) << "ms (" 
-        //               << String (preprocessMs / totalMs * 100.0, 1) << "%)"
-        //               << " | Render=" << String (renderMs, 2) << "ms ("
-        //               << String (renderMs / totalMs * 100.0, 1) << "%)"
-        //               << " | Channels=" << nChans
-        //               << " | HP=" << (viewerProcessing->isHighPassEnabled() ? "ON" : "OFF")
-        //               << " | CAR=" << (viewerProcessing->isCAREnabled() ? "ON" : "OFF")
-        //               << std::endl;
-        // }
     }
 }
 
@@ -1702,58 +1676,38 @@ void LfpDisplaySplitter::preprocessNewSamples()
     if (newSamples > displayBufferSize)
         newSamples = displayBufferSize;
 
-    // Resize temp buffer if needed (reuses memory between calls)
-    if (tempProcessingBuffer.getNumChannels() != nChans
-        || tempProcessingBuffer.getNumSamples() < newSamples)
+    // Copy new samples directly into processedDisplayBuffer,
+    // then filter/CAR in-place on contiguous chunk views (avoids temp copy-back).
+    const int firstChunk = jmin (newSamples, displayBufferSize - oldIdx);
+    const int secondChunk = newSamples - firstChunk;
+
+    auto copyAndProcessChunk = [&] (int chunkStart, int chunkSize)
     {
-        tempProcessingBuffer.setSize (nChans, newSamples, false, false, true);
-    }
+        if (chunkSize <= 0)
+            return;
 
-    // Copy new samples from circular displayBuffer into the contiguous temp buffer
-    for (int ch = 0; ch < nChans; ch++)
-    {
-        const float* src = displayBuffer->getReadPointer (ch);
-        float* dst = tempProcessingBuffer.getWritePointer (ch);
-
-        int srcStart = oldIdx;
-        int firstChunk = jmin (newSamples, displayBufferSize - srcStart);
-
-        std::memcpy (dst, src + srcStart, firstChunk * sizeof (float));
-
-        if (firstChunk < newSamples)
+        for (int ch = 0; ch < nChans; ch++)
         {
-            std::memcpy (dst + firstChunk, src, (newSamples - firstChunk) * sizeof (float));
+            const float* src = displayBuffer->getReadPointer (ch);
+            float* dst = processedDisplayBuffer->getWritePointer (ch);
+            std::memcpy (dst + chunkStart, src + chunkStart, chunkSize * sizeof (float));
         }
-    }
 
-    // Apply high-pass filter (per channel, in-place on temp buffer)
-    if (viewerProcessing->isHighPassEnabled())
-    {
-        viewerProcessing->applyHighPass (tempProcessingBuffer, newSamples, nChans);
-    }
+        HeapBlock<float*> channelPtrs (nChans);
+        for (int ch = 0; ch < nChans; ch++)
+            channelPtrs[ch] = processedDisplayBuffer->getWritePointer (ch, chunkStart);
 
-    // Apply CAR (across channels, in-place on temp buffer)
-    if (viewerProcessing->isCAREnabled())
-    {
-        viewerProcessing->applyCAR (tempProcessingBuffer, newSamples, nChans);
-    }
+        AudioBuffer<float> processingView (channelPtrs.getData(), nChans, chunkSize);
 
-    // Write processed data back to the shadow circular buffer
-    for (int ch = 0; ch < nChans; ch++)
-    {
-        const float* src = tempProcessingBuffer.getReadPointer (ch);
-        float* dst = processedDisplayBuffer->getWritePointer (ch);
+        if (viewerProcessing->isHighPassEnabled())
+            viewerProcessing->applyHighPass (processingView, chunkSize, nChans);
 
-        int dstStart = oldIdx;
-        int firstChunk = jmin (newSamples, displayBufferSize - dstStart);
+        if (viewerProcessing->isCAREnabled())
+            viewerProcessing->applyCAR (processingView, chunkSize, nChans);
+    };
 
-        std::memcpy (dst + dstStart, src, firstChunk * sizeof (float));
-
-        if (firstChunk < newSamples)
-        {
-            std::memcpy (dst, src + firstChunk, (newSamples - firstChunk) * sizeof (float));
-        }
-    }
+    copyAndProcessChunk (oldIdx, firstChunk);
+    copyAndProcessChunk (0, secondChunk);
 
     // Copy event channel directly (no processing applied)
     {
@@ -1998,7 +1952,6 @@ void LfpDisplaySplitter::visibleAreaChanged()
 
 void LfpDisplaySplitter::refresh()
 {
-    const int64 startTime = Time::getHighResolutionTicks();
     updateScreenBuffer();
 
     if (shouldRebuildChannelList)
@@ -2009,15 +1962,6 @@ void LfpDisplaySplitter::refresh()
     else
     {
         lfpDisplay->refresh(); // redraws only the new part of the screen buffer, unless fullredraw is set to true
-    }
-
-    if (frameCounter++ >= 100)
-    {
-        frameCounter = 0;
-        const int64 totalTime = Time::getHighResolutionTicks() - startTime;
-        const double totalMs = Time::highResolutionTicksToSeconds (totalTime) * 1000.0;
-
-        std::cout << "LFP Display Split " << splitID << " refresh time: " << String (totalMs, 2) << "ms" << std::endl;
     }
 }
 

@@ -426,9 +426,6 @@ private:
     /** Tracks the last-processed index per channel in the circular buffer */
     Array<int> processedBufferIndex;
 
-    /** Reusable temporary buffer for contiguous sample processing */
-    AudioBuffer<float> tempProcessingBuffer;
-
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (LfpDisplaySplitter);
 };
 
