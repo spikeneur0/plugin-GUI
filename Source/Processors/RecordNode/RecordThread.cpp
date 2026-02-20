@@ -354,7 +354,10 @@ void RecordThread::writeData (int minSamples,
         if (SystemEvent::getBaseType (event) == EventBase::Type::SYSTEM_EVENT)
         {
             String syncText = SystemEvent::getSyncText (event);
-            m_engine->writeTimestampSyncText (SystemEvent::getStreamId (event), SystemEvent::getSampleNumber (event), 0.0f, SystemEvent::getSyncText (event));
+            m_engine->writeTimestampSyncText (SystemEvent::getStreamId (event),
+                                              SystemEvent::getSampleNumber (event),
+                                              0.0f,
+                                              SystemEvent::getSyncText (event));
         }
         else
         {

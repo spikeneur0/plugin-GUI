@@ -141,9 +141,6 @@ private:
     int m_experimentNum;
     Array<int64> m_samplesWritten;
 
-    std::map<uint64, int64> firstSampleNumber;
-    std::map<uint64, bool> wroteFirstSampleNumber;
-
     const int samplesPerBlock { 8192 };  // Larger blocks reduce memory block operations
 };
 #endif

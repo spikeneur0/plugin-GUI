@@ -97,8 +97,6 @@ void BinaryRecording::openFiles (File rootFolder, int experimentNumber, int reco
 
         if (streamId != lastStreamId)
         {
-            wroteFirstSampleNumber[streamId] = false;
-
             firstChannels.add (channelInfo);
             streamIndex++;
 
@@ -112,8 +110,11 @@ void BinaryRecording::openFiles (File rootFolder, int experimentNumber, int reco
             singleStreamJSON.clear();
         }
 
+        LOGD ("Recording channel: ", channelInfo->getName(), " from stream ", streamId, " with global index ", globalIndex, " and local index ", indexWithinStream);
+
         m_fileIndexes.set (ch, streamIndex);
         m_channelIndexes.set (ch, indexWithinStream++);
+
 
         DynamicObject::Ptr singleChannelJSON = new DynamicObject();
 
@@ -678,12 +679,6 @@ void BinaryRecording::writeContinuousData (int writeChannel,
 
         uint32 streamId = getContinuousChannel (realChannel)->getStreamId();
 
-        if (! wroteFirstSampleNumber[streamId])
-        {
-            firstSampleNumber[streamId] = baseSampleNumber;
-            wroteFirstSampleNumber[streamId] = true;
-        }
-
         /* Generate sequential sample numbers using SIMD-optimized fill */
         SIMDConverter::fillSequentialInt64 (reinterpret_cast<int64_t*> (m_sampleNumberBuffer.getData()), baseSampleNumber, size);
 
@@ -886,12 +881,6 @@ void BinaryRecording::writeContinuousDataBatch (const int* writeChannels,
             int64 baseSampleNumber = getLatestSampleNumber (writeChannels[i]);
             uint32 streamId = getContinuousChannel (realChannels[i])->getStreamId();
 
-            if (! wroteFirstSampleNumber[streamId])
-            {
-                firstSampleNumber[streamId] = baseSampleNumber;
-                wroteFirstSampleNumber[streamId] = true;
-            }
-
             /* Generate sequential sample numbers using SIMD-optimized fill */
             SIMDConverter::fillSequentialInt64 (reinterpret_cast<int64_t*> (m_sampleNumberBuffer.getData()), baseSampleNumber, numSamples);
 
@@ -913,13 +902,7 @@ void BinaryRecording::writeTimestampSyncText (uint64 streamId, int64 sampleNumbe
     String syncString = text + ": " + String (sampleNumber);
     LOGD (syncString);
 
-    int64 fsn = firstSampleNumber[streamId];
-
-    if (streamId > 0)
-        jassert (fsn == sampleNumber);
-
     m_syncTextFile->writeText (syncString + "\r\n", false, false, nullptr);
-    // Note: flush removed - file will be flushed on close or by OS buffering
 }
 
 RecordEngineManager* BinaryRecording::getEngineManager()
