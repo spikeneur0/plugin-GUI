@@ -110,11 +110,8 @@ void BinaryRecording::openFiles (File rootFolder, int experimentNumber, int reco
             singleStreamJSON.clear();
         }
 
-        LOGD ("Recording channel: ", channelInfo->getName(), " from stream ", streamId, " with global index ", globalIndex, " and local index ", indexWithinStream);
-
         m_fileIndexes.set (ch, streamIndex);
         m_channelIndexes.set (ch, indexWithinStream++);
-
 
         DynamicObject::Ptr singleChannelJSON = new DynamicObject();
 
@@ -787,6 +784,7 @@ void BinaryRecording::writeContinuousDataBatch (const int* writeChannels,
                                                 int numSamples,
                                                 int fileIndex)
 {
+    ignoreUnused (fileIndex);
     if (numSamples == 0 || numChannels == 0)
         return;
 
@@ -821,8 +819,12 @@ void BinaryRecording::writeContinuousDataBatch (const int* writeChannels,
         m_batchIntBufferPtrs.resize (numChannels);
     }
 
+    // Resolve the file index from recorded channel mapping.
+    // This is robust even when some source streams have zero recorded channels.
+    const int resolvedFileIndex = m_fileIndexes[writeChannels[0]];
+
     // Get file and validate
-    if (fileIndex < 0 || fileIndex >= m_continuousFiles.size() || ! m_continuousFiles[fileIndex])
+    if (resolvedFileIndex < 0 || resolvedFileIndex >= m_continuousFiles.size() || ! m_continuousFiles[resolvedFileIndex])
         return;
 
     // Setup scale factors and output buffer pointers for each channel
@@ -844,12 +846,12 @@ void BinaryRecording::writeContinuousDataBatch (const int* writeChannels,
     // Get starting sample position (all channels in a stream have same position)
     uint64 startPos = m_samplesWritten[writeChannels[0]];
 
-    //LOGD("BinaryRecording::writeContinuousDataBatch: Writing ", numSamples, " samples for ", numChannels, " channels at position ", startPos, " to file index ", fileIndex);
+    //LOGD("BinaryRecording::writeContinuousDataBatch: Writing ", numSamples, " samples for ", numChannels, " channels at position ", startPos, " to file index ", resolvedFileIndex);
 
     // Try batch interleaving if we have all channels for this file
     // The file's channel count is determined by the stream's channel count
     // If we have a partial batch, fall back to per-channel writes
-    bool useBatchWrite = m_continuousFiles[fileIndex] != nullptr && m_continuousFiles[fileIndex]->writeChannelBatch (startPos, m_batchIntBufferPtrs.data(), numChannels, numSamples);
+    bool useBatchWrite = m_continuousFiles[resolvedFileIndex] != nullptr && m_continuousFiles[resolvedFileIndex]->writeChannelBatch (startPos, m_batchIntBufferPtrs.data(), numChannels, numSamples);
 
     if (! useBatchWrite)
     {
@@ -858,7 +860,7 @@ void BinaryRecording::writeContinuousDataBatch (const int* writeChannels,
         {
             int writeChannel = writeChannels[i];
             int channelIdx = m_channelIndexes[writeChannel];
-            m_continuousFiles[fileIndex]->writeChannel (
+            m_continuousFiles[resolvedFileIndex]->writeChannel (
                 startPos,
                 channelIdx,
                 m_batchIntBufferPtrs[i],
@@ -884,11 +886,11 @@ void BinaryRecording::writeContinuousDataBatch (const int* writeChannels,
             /* Generate sequential sample numbers using SIMD-optimized fill */
             SIMDConverter::fillSequentialInt64 (reinterpret_cast<int64_t*> (m_sampleNumberBuffer.getData()), baseSampleNumber, numSamples);
 
-            m_dataTimestampFiles[fileIndex]->writeData (m_sampleNumberBuffer, numSamples * sizeof (int64));
-            m_dataTimestampFiles[fileIndex]->increaseRecordCount (numSamples);
+            m_dataTimestampFiles[resolvedFileIndex]->writeData (m_sampleNumberBuffer, numSamples * sizeof (int64));
+            m_dataTimestampFiles[resolvedFileIndex]->increaseRecordCount (numSamples);
 
-            m_dataSyncTimestampFiles[fileIndex]->writeData (timestampBuffer, numSamples * sizeof (double));
-            m_dataSyncTimestampFiles[fileIndex]->increaseRecordCount (numSamples);
+            m_dataSyncTimestampFiles[resolvedFileIndex]->writeData (timestampBuffer, numSamples * sizeof (double));
+            m_dataSyncTimestampFiles[resolvedFileIndex]->increaseRecordCount (numSamples);
             break;
         }
     }
