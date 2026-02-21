@@ -66,6 +66,7 @@ public:
     void processEventData (EventInfo& info, int64 fromSampleNumber, int64 toSampleNumber) override;
 
 private:
+    CriticalSection m_readLock;
     int numActiveChannels;
     Array<float> bitVolts;
 
