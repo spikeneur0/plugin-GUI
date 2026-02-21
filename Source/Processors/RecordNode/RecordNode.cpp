@@ -1284,6 +1284,41 @@ void RecordNode::saveCustomParametersToXml (XmlElement* xml)
         RecordNodeEditor* recordNodeEditor = (RecordNodeEditor*) getEditor();
         xml->setAttribute ("fifoMonitorsVisible", recordNodeEditor->fifoDrawerButton->getToggleState());
     }
+
+    for (auto stream : dataStreams)
+    {
+        auto* streamSyncStatusNode = xml->createNewChildElement ("SYNC_STATUS");
+        const String streamKey = stream->getKey();
+        streamSyncStatusNode->setAttribute ("streamKey", streamKey);
+
+        String statusString = "OFF";
+        switch (synchronizer.getStatus (streamKey))
+        {
+            case SyncStatus::OFF:
+                statusString = "OFF";
+                break;
+            case SyncStatus::SYNCING:
+                statusString = "NOT_SYNCED";
+                break;
+            case SyncStatus::SYNCED:
+                statusString = "SYNCED_TO_MAIN";
+                break;
+            case SyncStatus::HARDWARE_SYNCED:
+                statusString = "HARDWARE_SYNCED";
+                break;
+            case SyncStatus::HARP_DETECTING:
+                statusString = "HARP_DETECTING";
+                break;
+            case SyncStatus::HARP_CLOCK:
+                statusString = "HARP_SYNCED";
+                break;
+            default:
+                statusString = "NONE";
+                break;
+        }
+
+        streamSyncStatusNode->setAttribute ("status", statusString);
+    }
 }
 
 void RecordNode::loadCustomParametersFromXml (XmlElement* xml)

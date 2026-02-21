@@ -46,6 +46,7 @@ FileReader::FileReader() : GenericProcessor ("File Reader"),
                            startSample (0),
                            stopSample (0),
                            bufferCacheWindow (0),
+                           needsBufferReset (false),
                            m_shouldFillBackBuffer (false),
                            m_bufferSize (1024),
                            m_sysSampleRate (44100),
@@ -381,6 +382,8 @@ void FileReader::setActiveStream (int index, bool reset)
         channelInfo.add (input->getChannelInfo (index, i));
 
     input->seekTo (startSample);
+    firstProcess = false;
+    needsBufferReset.set (false);
 
     updateSettings();
     CoreServices::updateSignalChain (this);
@@ -421,6 +424,15 @@ bool FileReader::startAcquisition()
 
     checkAudioDevice();
 
+    {
+        const ScopedLock sl(bufferLock);
+        readAndFillBufferCache (bufferA);
+        readBuffer = &bufferA;
+        bufferCacheWindow = 0;
+        needsBufferReset.set (false);
+        m_shouldFillBackBuffer.set (true);
+    }
+
     /* Start asynchronous file reading thread */
     startThread();
 
@@ -449,8 +461,10 @@ int64 FileReader::getCurrentSample()
 
 void FileReader::setCurrentSample(int64 sampleNumber)
 {
+    const bool wasThreadRunning = isThreadRunning();
     // Stop background thread before modifying shared state
-    stopThread(100);
+    if (wasThreadRunning)
+        stopThread(100);
 
     const ScopedLock sl(bufferLock);
 
@@ -460,22 +474,34 @@ void FileReader::setCurrentSample(int64 sampleNumber)
     // Reset file position
     input->seekTo(sampleNumber);
 
-    // Get the current back buffer without switching
-    HeapBlock<float>* backBuffer = getBackBuffer();
+    if (wasThreadRunning)
+    {
+        // Get the current back buffer without switching
+        HeapBlock<float>* backBuffer = getBackBuffer();
+        readAndFillBufferCache(*backBuffer);
+    }
 
-    // Fill only the back buffer first
-    readAndFillBufferCache(*backBuffer);
+    if (wasThreadRunning)
+    {
+        // Signal that we want to switch buffers on next process() call
+        bufferCacheWindow.set(BUFFER_WINDOW_CACHE_SIZE - 1); // Force buffer switch on next process
+        needsBufferReset.set(true);
 
-    // Signal that we want to switch buffers on next process() call
-    bufferCacheWindow.set(BUFFER_WINDOW_CACHE_SIZE - 1); // Force buffer switch on next process
-    needsBufferReset.set(true);
-
-    // The process() thread will handle the buffer switch and trigger
-    // the background thread to fill the new back buffer
-    m_shouldFillBackBuffer.set(false);
+        // The process() thread will handle the buffer switch and trigger
+        // the background thread to fill the new back buffer
+        m_shouldFillBackBuffer.set(false);
+    }
+    else
+    {
+        bufferCacheWindow.set(0);
+        needsBufferReset.set(false);
+        readBuffer = &bufferA;
+        m_shouldFillBackBuffer.set(false);
+    }
 
     // Restart background thread
-    startThread();
+    if (wasThreadRunning)
+        startThread();
 }
 
 void FileReader::setPlaybackStart (int64 startSample)
@@ -626,14 +652,9 @@ void FileReader::updateSettings()
     input->seekTo (startSample);
     currentSample = startSample;
 
-    /* Pre-fills the front buffer with a blocking read */
-    readAndFillBufferCache (bufferA);
-
-    readBuffer = &bufferB;
+    readBuffer = &bufferA;
     bufferCacheWindow = 0;
     m_shouldFillBackBuffer.set (false);
-    if (firstProcess)
-        switchBuffer();
 
     LOGD ("File Reader finished updating custom settings.");
 }
@@ -660,11 +681,9 @@ void FileReader::checkAudioDevice()
         input->seekTo (startSample);
         currentSample = startSample;
 
-        /* Pre-fills the front buffer with a blocking read */
-        readAndFillBufferCache (bufferA);
-
-        readBuffer = &bufferB;
+        readBuffer = &bufferA;
         bufferCacheWindow = 0;
+        needsBufferReset.set (false);
         m_shouldFillBackBuffer.set (false);
     }
 }
@@ -846,6 +865,8 @@ void FileReader::readAndFillBufferCache (HeapBlock<float>& cacheBuffer)
 {
     const int samplesNeededPerBuffer = m_samplesPerBuffer.get();
     const int samplesNeeded = samplesNeededPerBuffer * BUFFER_WINDOW_CACHE_SIZE;
+    if (samplesNeeded <= 0 || stopSample <= startSample)
+        return;
 
     int samplesRead = 0;
 
@@ -853,13 +874,16 @@ void FileReader::readAndFillBufferCache (HeapBlock<float>& cacheBuffer)
     while (samplesRead < samplesNeeded)
     {
         int samplesToRead = samplesNeeded - samplesRead;
+        int samplesJustRead = 0;
+
+        const bool wrapsAtEnd = (currentSample + samplesToRead) > stopSample;
 
         // if reached end of file stream
-        if ((currentSample + samplesToRead) > stopSample)
+        if (wrapsAtEnd)
         {
             samplesToRead = int (stopSample - currentSample);
             if (samplesToRead > 0)
-                input->readData (cacheBuffer + samplesRead * currentNumChannels, samplesToRead);
+                samplesJustRead = input->readData (cacheBuffer + samplesRead * currentNumChannels, samplesToRead);
 
             // reset stream to beginning
             input->seekTo (startSample);
@@ -867,16 +891,17 @@ void FileReader::readAndFillBufferCache (HeapBlock<float>& cacheBuffer)
         }
         else // else read the block needed
         {
-            input->readData (cacheBuffer + samplesRead * currentNumChannels, samplesToRead);
-
-            currentSample += samplesToRead;
+            samplesJustRead = input->readData (cacheBuffer + samplesRead * currentNumChannels, samplesToRead);
+            currentSample += samplesJustRead;
         }
 
-        samplesRead += samplesToRead;
+        samplesRead += samplesJustRead;
 
         //LOGD("CURRENT SAMPLE: ", currentSample, " samplesRead: ", samplesRead, " samplesNeeded: ", samplesNeeded);
-
         if (samplesRead < 0)
+            return;
+
+        if (samplesJustRead <= 0 && ! wrapsAtEnd)
             return;
     }
 }

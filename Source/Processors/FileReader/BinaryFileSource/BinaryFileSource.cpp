@@ -306,6 +306,7 @@ void BinaryFileSource::fillRecordInfo()
 
 void BinaryFileSource::processEventData (EventInfo& eventInfo, int64 start, int64 stop)
 {
+    const ScopedLock sl (m_readLock);
     int64 local_start = start % getActiveNumSamples();
     int64 local_stop = stop % getActiveNumSamples();
 
@@ -333,6 +334,7 @@ void BinaryFileSource::processEventData (EventInfo& eventInfo, int64 start, int6
 
 void BinaryFileSource::updateActiveRecord (int index)
 {
+    const ScopedLock sl (m_readLock);
     m_dataFile.reset();
     m_dataFile = std::make_unique<MemoryMappedFile> (m_dataFileArray[index], MemoryMappedFile::readOnly);
     m_samplePos = 0;
@@ -348,11 +350,16 @@ void BinaryFileSource::updateActiveRecord (int index)
 
 void BinaryFileSource::seekTo (int64 sample)
 {
+    const ScopedLock sl (m_readLock);
     m_samplePos = sample % getActiveNumSamples();
 }
 
 int BinaryFileSource::readData (float* buffer, int nSamples)
 {
+    const ScopedLock sl (m_readLock);
+
+    if (m_dataFile == nullptr || buffer == nullptr || nSamples <= 0 || numActiveChannels <= 0)
+        return 0;
     int64 samplesToRead;
 
     if (m_samplePos + nSamples > getActiveNumSamples())
@@ -365,6 +372,9 @@ int BinaryFileSource::readData (float* buffer, int nSamples)
     }
 
     int16* data = static_cast<int16*> (m_dataFile->getData()) + (m_samplePos * numActiveChannels);
+
+    if (samplesToRead <= 0)
+        return 0;
 
     for (int i = 0; i < samplesToRead * numActiveChannels; i++)
     {

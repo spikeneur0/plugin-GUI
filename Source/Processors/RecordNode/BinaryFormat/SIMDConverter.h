@@ -31,6 +31,7 @@
 
 #include <cstdint>
 #include <string>
+#include "../../../TestableExport.h"
 
 /**
  * SIMD-optimized float-to-int16 conversion utilities.
@@ -47,7 +48,7 @@
  * (FloatVectorOperations::copyWithMultiply + AudioDataConverters::convertFloatToInt16LE)
  * into a single pass, eliminating the intermediate buffer and improving cache utilization.
  */
-class SIMDConverter
+class TESTABLE SIMDConverter
 {
 public:
     /**

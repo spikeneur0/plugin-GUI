@@ -820,6 +820,97 @@ TEST_F(RecordNodeTests, WriteContinuousDataBatch_EmptyBatch_ZeroSamples_NoDataWr
     ASSERT_EQ(persistedData.size(), 0u);
 }
 
+class MultiStream_RecordNodeTests : public testing::Test {
+protected:
+    void SetUp() override {
+        tester = std::make_unique<ProcessorTester>(TestSourceNodeBuilder
+                                                   (FakeSourceNodeParams{
+            4,      // channels per stream
+            30000,  // sample rate
+            1.0f,   // bitVolts
+            3       // streams
+        }));
+
+        parentRecordingDir = std::filesystem::temp_directory_path() / "record_node_multi_stream_tests";
+        if (std::filesystem::exists(parentRecordingDir)) {
+            std::filesystem::remove_all(parentRecordingDir);
+        }
+        std::filesystem::create_directory(parentRecordingDir);
+
+        tester->setRecordingParentDirectory(parentRecordingDir.string());
+        processor = tester->createProcessor<RecordNode>(Plugin::Processor::RECORD_NODE);
+    }
+
+    void TearDown() override {
+        std::error_code ec;
+        std::filesystem::remove_all(parentRecordingDir, ec);
+    }
+
+    bool getRecordingPath(std::filesystem::path* outPath) const {
+        auto dirIter = std::filesystem::directory_iterator(parentRecordingDir);
+        if (dirIter == std::filesystem::directory_iterator()) {
+            return false;
+        }
+
+        auto recordingDir = dirIter->path();
+        std::stringstream ss;
+        ss << "Record Node " << processor->getNodeId();
+        *outPath = recordingDir / ss.str() / "experiment1" / "recording1";
+        return true;
+    }
+
+    std::unique_ptr<ProcessorTester> tester;
+    RecordNode* processor = nullptr;
+    std::filesystem::path parentRecordingDir;
+};
+
+TEST_F(MultiStream_RecordNodeTests, DisabledMiddleStream_DoesNotBlockSubsequentStreamWrites) {
+    // Disable all channels on middle stream; keep streams 0 and 2 enabled.
+    auto streams = processor->getDataStreams();
+    ASSERT_EQ(streams.size(), 3);
+
+    Array<var> noChannelsSelected;
+    auto* middleStreamMask = static_cast<MaskChannelsParameter*>(streams[1]->getParameter("channels"));
+    ASSERT_NE(middleStreamMask, nullptr);
+    middleStreamMask->setNextValue(noChannelsSelected, false);
+    processor->updateSettings();
+
+    tester->startAcquisition(true);
+
+    AudioBuffer<float> inputBuffer(12, 256); // 3 streams * 4 channels/stream
+    for (int ch = 0; ch < inputBuffer.getNumChannels(); ch++) {
+        for (int s = 0; s < inputBuffer.getNumSamples(); s++) {
+            inputBuffer.setSample(ch, s, static_cast<float>(ch * 1000 + s));
+        }
+    }
+
+    for (int i = 0; i < 5; i++) {
+        tester->processBlock(processor, inputBuffer);
+    }
+
+    tester->stopAcquisition();
+
+    std::filesystem::path recordingPath;
+    ASSERT_TRUE(getRecordingPath(&recordingPath));
+    auto continuousPath = recordingPath / "continuous";
+    ASSERT_TRUE(std::filesystem::exists(continuousPath));
+
+    std::vector<std::filesystem::path> continuousDatFiles;
+    for (const auto& entry : std::filesystem::recursive_directory_iterator(continuousPath)) {
+        if (entry.is_regular_file() && entry.path().filename() == "continuous.dat") {
+            continuousDatFiles.push_back(entry.path());
+        }
+    }
+
+    // Only streams with recorded channels should have files: stream 0 and stream 2.
+    ASSERT_EQ(continuousDatFiles.size(), 2u);
+
+    for (const auto& datFile : continuousDatFiles) {
+        ASSERT_GT(std::filesystem::file_size(datFile), 0u)
+            << "Expected non-empty data file for recorded stream: " << datFile.string();
+    }
+}
+
 /**
  * Test that writeContinuousDataBatch correctly resizes internal buffers.
  * This tests the buffer reallocation logic by writing progressively larger blocks.
