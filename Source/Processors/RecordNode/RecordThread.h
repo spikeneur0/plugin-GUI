@@ -136,6 +136,8 @@ private:
     int m_minWriteSamples; // Minimum samples before writing
     int m_maxWriteSamples; // Maximum samples per write batch
 
+    bool useBatchWrites { true }; // Whether to use batch writes for continuous data
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (RecordThread);
 };
 

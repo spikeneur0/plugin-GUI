@@ -42,6 +42,12 @@ RecordThread::RecordThread (RecordNode* parentNode, RecordEngine* engine) : Thre
         m_maxWriteSamples = m_minWriteSamples;
     }
 
+    if (m_engine == nullptr || ! m_engine->getEngineId().equalsIgnoreCase ("BINARY"))
+    {
+        useBatchWrites = false;
+        LOGD ("[RecordThread] Batch writes disabled - using single-sample writes for compatibility with engines other than BINARY");
+    }
+
     LOGD ("RecordThread initialized with MIN_WRITE_SAMPLES=", m_minWriteSamples, " MAX_WRITE_SAMPLES=", m_maxWriteSamples);
 }
 
@@ -52,6 +58,17 @@ RecordThread::~RecordThread()
 void RecordThread::setEngine (RecordEngine* engine)
 {
     m_engine = engine;
+
+    if (m_engine == nullptr || ! m_engine->getEngineId().equalsIgnoreCase ("BINARY"))
+    {
+        useBatchWrites = false;
+        LOGD ("[RecordThread] Batch writes disabled - using single-sample writes for compatibility with engines other than BINARY");
+    }
+    else
+    {
+        useBatchWrites = true;
+        LOGD ("[RecordThread] Batch writes enabled for engine: ", m_engine->getEngineId());
+    }
 }
 
 void RecordThread::setFileComponents (File rootFolder, int experimentNumber, int recordingNumber)
@@ -268,7 +285,7 @@ void RecordThread::writeData (int minSamples,
                 const double* timestamps = timestampBuffer.getReadPointer (0, bufferIndex);
 
                 // Use batch write if we have multiple channels, otherwise use single-channel write
-                if (batchSize > 1)
+                if (batchSize > 1 && useBatchWrites)
                 {
                     m_engine->writeContinuousDataBatch (
                         m_batchWriteChannels.data(),
@@ -279,14 +296,17 @@ void RecordThread::writeData (int minSamples,
                         numSamples,
                         streamIdx);
                 }
-                else if (batchSize == 1)
+                else
                 {
-                    m_engine->writeContinuousData (
-                        m_batchWriteChannels[0],
-                        m_batchRealChannels[0],
-                        m_batchDataPtrs[0],
-                        timestamps,
-                        numSamples);
+                    for (int i = 0; i < batchSize; ++i)
+                    {
+                        m_engine->writeContinuousData (
+                            m_batchWriteChannels[i],
+                            m_batchRealChannels[i],
+                            m_batchDataPtrs[i],
+                            timestamps,
+                            numSamples);
+                    }
                 }
 
                 // Handle wrap-around (size2) if present
@@ -317,7 +337,7 @@ void RecordThread::writeData (int minSamples,
 
                     const double* timestamps2 = timestampBuffer.getReadPointer (0, bufferIndex2);
 
-                    if (batchSize > 1)
+                    if (batchSize > 1 && useBatchWrites)
                     {
                         m_engine->writeContinuousDataBatch (
                             m_batchWriteChannels.data(),
@@ -328,14 +348,17 @@ void RecordThread::writeData (int minSamples,
                             numSamples2,
                             streamIdx);
                     }
-                    else if (batchSize == 1)
+                    else
                     {
-                        m_engine->writeContinuousData (
-                            m_batchWriteChannels[0],
-                            m_batchRealChannels[0],
-                            m_batchDataPtrs[0],
-                            timestamps2,
-                            numSamples2);
+                        for (int i = 0; i < batchSize; ++i)
+                        {
+                            m_engine->writeContinuousData (
+                                m_batchWriteChannels[i],
+                                m_batchRealChannels[i],
+                                m_batchDataPtrs[i],
+                                timestamps2,
+                                numSamples2);
+                        }
                     }
                 }
             }
