@@ -717,6 +717,8 @@ bool RecordNode::isSynchronized()
     {
         SyncStatus status = synchronizer.getStatus (stream->getKey());
 
+        LOGD (stream->getKey(), " sync status: ", status);
+
         if (status != SYNCED && status != HARDWARE_SYNCED && status != HARP_CLOCK)
             return false;
     }

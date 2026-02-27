@@ -954,13 +954,13 @@ bool Synchronizer::isHarpStream (String streamKey)
 
 SyncStatus Synchronizer::getStatus (String streamKey)
 {
+
+    if (streamGeneratesTimestamps (streamKey))
+        return SyncStatus::HARDWARE_SYNCED;
    
     if (streams.count (streamKey) == 0 || ! streamKey.length() || ! acquisitionIsActive)
         return SyncStatus::OFF;
 
-    if (streamGeneratesTimestamps (streamKey))
-        return SyncStatus::HARDWARE_SYNCED;
-    
     if (streams[streamKey]->isHarpStream)
     {
         if (isStreamSynced (streamKey))
