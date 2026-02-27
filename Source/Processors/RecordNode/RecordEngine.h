@@ -98,6 +98,23 @@ public:
                                       const double* timestampBuffer,
                                       int size) = 0;
 
+    /** Write a single event to disk (TTL or TEXT) */
+    virtual void writeEvent (int eventChannel, const EventPacket& event) = 0;
+
+    /** Write a spike to disk */
+    virtual void writeSpike (int electrodeIndex, const Spike* spike) = 0;
+
+    /** Handle the timestamp sync text messages*/
+    virtual void writeTimestampSyncText (uint64 streamId, int64 timestamp, float sourceSampleRate, String text) = 0;
+
+    // ------------------------------------------------------------
+    //                   VIRTUAL METHODS
+    //       (can optionally be overridden by sub-classes)
+    // ------------------------------------------------------------
+
+    /** Called by configureEngine() */
+    virtual void setParameter (EngineParameter& parameter) {}
+
     /** 
      * Write continuous data for all channels of a stream in a single batch operation.
      * This is more efficient than calling writeContinuousData() for each channel.
@@ -117,23 +134,6 @@ public:
                                            int numChannels,
                                            int numSamples,
                                            int fileIndex);
-
-    /** Write a single event to disk (TTL or TEXT) */
-    virtual void writeEvent (int eventChannel, const EventPacket& event) = 0;
-
-    /** Write a spike to disk */
-    virtual void writeSpike (int electrodeIndex, const Spike* spike) = 0;
-
-    /** Handle the timestamp sync text messages*/
-    virtual void writeTimestampSyncText (uint64 streamId, int64 timestamp, float sourceSampleRate, String text) = 0;
-
-    // ------------------------------------------------------------
-    //                   VIRTUAL METHODS
-    //       (can optionally be overridden by sub-classes)
-    // ------------------------------------------------------------
-
-    /** Called by configureEngine() */
-    virtual void setParameter (EngineParameter& parameter) {}
 
     // ------------------------------------------------------------
     //                    OTHER METHODS
