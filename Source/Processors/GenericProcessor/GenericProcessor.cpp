@@ -1509,11 +1509,40 @@ void GenericProcessor::addSpike (const Spike* spike)
                   + spike->spikeChannel->getTotalEventMetadataSize()
                   + spike->spikeChannel->getNumChannels() * sizeof (float);
 
-    HeapBlock<char> buffer (size);
+    // Reuse a function-local persistent buffer, growing only when needed.
+    // This avoids a per-spike HeapBlock allocation.
+    // Safe because addSpike is only called from the real-time audio thread.
+    static HeapBlock<char> serializeBuffer;
+    static size_t serializeBufferSize = 0;
 
-    spike->serialize (buffer, size);
+    if (size > serializeBufferSize)
+    {
+        serializeBuffer.realloc (size);
+        serializeBufferSize = size;
+    }
 
-    m_currentMidiBuffer->addEvent (buffer, int (size), 0);
+    spike->serialize (serializeBuffer, size);
+
+    // Directly append to MidiBuffer's data array, bypassing addEvent()'s
+    // internal findEventAfter() which performs an O(n) scan of existing events
+    // for each insertion — resulting in O(n²) total cost for n spikes per callback.
+    //
+    // This is safe because downstream event consumers (processEventBuffer,
+    // checkForEvents) dispatch events by their raw serialized type byte,
+    // not by the MidiBuffer sample position.
+    auto& bufferData = m_currentMidiBuffer->data;
+    int offset = bufferData.size();
+    int newItemSize = (int) (size + sizeof (int32) + sizeof (uint16));
+    bufferData.insertMultiple (offset, 0, newItemSize);
+
+    uint8* d = bufferData.begin() + offset;
+    int32 samplePos = 0;
+    memcpy (d, &samplePos, sizeof (int32));
+    d += sizeof (int32);
+    uint16 dataLen = static_cast<uint16> (size);
+    memcpy (d, &dataLen, sizeof (uint16));
+    d += sizeof (uint16);
+    memcpy (d, static_cast<const char*> (serializeBuffer), size);
 }
 
 void GenericProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& eventBuffer)
