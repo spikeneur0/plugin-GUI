@@ -12,6 +12,10 @@ add_sources(
   BroadcastPayload.cpp
   PluginManifest.h
   PluginManifest.cpp
+  ProbeInterfaceReader.h
+  ProbeInterfaceReader.cpp
+  ProbeManager.h
+  ProbeManager.cpp
   Utils.h
   Utils.cpp
 )

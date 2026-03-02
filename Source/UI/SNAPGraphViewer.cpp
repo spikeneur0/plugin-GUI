@@ -27,6 +27,7 @@
 #include "../Processors/Splitter/SplitterEditor.h"
 #include "../Utils/Utils.h"
 #include "../Utils/PluginManifest.h"
+#include "../Utils/ProbeManager.h"
 
 #include "../Processors/Settings/DataStream.h"
 #include "../Processors/Settings/InfoObject.h"
@@ -301,6 +302,9 @@ void SNAPGraphViewer::mouseDown (const MouseEvent& e)
         menu.addItem (1, "Add Note");
         menu.addSeparator();
         menu.addItem (2, "View Plugin Manifest");
+        menu.addSeparator();
+        menu.addItem (3, "Load Probe Definition...");
+        menu.addItem (4, "View Loaded Probes");
 
         menu.showMenuAsync (PopupMenu::Options().withTargetScreenArea (
             { e.getScreenX(), e.getScreenY(), 1, 1 }),
@@ -310,6 +314,26 @@ void SNAPGraphViewer::mouseDown (const MouseEvent& e)
                     addAnnotation (pos.x, pos.y);
                 else if (result == 2)
                     PluginManifest::showManifestViewer();
+                else if (result == 3)
+                {
+                    FileChooser chooser ("Load ProbeInterface JSON",
+                                         File::getSpecialLocation (File::userHomeDirectory),
+                                         "*.json");
+
+                    if (chooser.browseForFileToOpen())
+                    {
+                        String error;
+                        int idx = ProbeManager::getInstance().loadProbeFromFile (chooser.getResult(), error);
+
+                        if (idx >= 0)
+                            ProbeManager::showProbeSummary (ProbeManager::getInstance().getProbe (idx));
+                        else
+                            AlertWindow::showMessageBoxAsync (AlertWindow::WarningIcon,
+                                                              "Probe Load Error", error);
+                    }
+                }
+                else if (result == 4)
+                    ProbeManager::getInstance().showProbeViewer();
             });
     }
 }

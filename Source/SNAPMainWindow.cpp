@@ -28,6 +28,7 @@
 #include "UI/SNAPUIComponent.h"
 #include "Utils/OpenEphysHttpServer.h"
 #include "Utils/PluginManifest.h"
+#include "Utils/ProbeManager.h"
 #include <stdio.h>
 
 MainDocumentWindow::MainDocumentWindow()
@@ -421,6 +422,9 @@ void SNAPMainWindow::saveProcessorGraph (const File& file)
     // Add plugin manifest to the saved configuration
     PluginManifest::generate (xml.get());
 
+    // Save loaded probe definitions
+    ProbeManager::getInstance().saveStateToXml (xml.get());
+
     String message;
 
     if (! xml->writeTo (file))
@@ -454,6 +458,9 @@ void SNAPMainWindow::loadProcessorGraph (const File& file)
             return;
         }
     }
+
+    // Restore loaded probe definitions
+    ProbeManager::getInstance().loadStateFromXml (xml.get());
 
     processorGraph->loadFromXml (xml.get());
 }
