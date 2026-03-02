@@ -231,7 +231,7 @@ public:
         svr_->Get ("/api/cpu", [this] (const httplib::Request&, httplib::Response& res)
                    {
             json ret;
-            ret["usage"] = AccessClass::getAudioComponent()->deviceManager.getCpuUsage();
+            ret["usage"] = AccessClass::getSNAPAudioComponent()->deviceManager.getCpuUsage();
             res.set_content(ret.dump(), "application/json"); });
 
         svr_->Get ("/api/latency", [this] (const httplib::Request&, httplib::Response& res)
@@ -285,7 +285,7 @@ public:
                     std::string device_type = request_json["device_type"];
                     LOGD("Found 'device_type': ", device_type);
                     const MessageManagerLock mml;
-                    AccessClass::getAudioComponent()->setDeviceType(String(device_type));
+                    AccessClass::getSNAPAudioComponent()->setDeviceType(String(device_type));
                 }
                 catch (json::exception& e) {
                     LOGD("'device_type' not specified'");
@@ -295,7 +295,7 @@ public:
                     std::string device_name = request_json["device_name"];
                     LOGD("Found 'device_name': ", device_name);
                     const MessageManagerLock mml;
-                    AccessClass::getAudioComponent()->setDeviceName(String(device_name));
+                    AccessClass::getSNAPAudioComponent()->setDeviceName(String(device_name));
                 }
                 catch (json::exception& e) {
                     LOGD("'device_name' not specified'");
@@ -305,7 +305,7 @@ public:
                     int sample_rate = request_json["sample_rate"];
                     LOGD("Found 'sample_rate': ", sample_rate);
                     const MessageManagerLock mml;
-                    AccessClass::getAudioComponent()->setSampleRate(sample_rate);
+                    AccessClass::getSNAPAudioComponent()->setSampleRate(sample_rate);
                 }
                 catch (json::exception& e) {
                     LOGD("'sample_rate' not specified'");
@@ -315,7 +315,7 @@ public:
                     int buffer_size = request_json["buffer_size"];
                     LOGD("Found 'buffer_size': ", buffer_size);
                     const MessageManagerLock mml;
-                    AccessClass::getAudioComponent()->setBufferSize(buffer_size);
+                    AccessClass::getSNAPAudioComponent()->setBufferSize(buffer_size);
                     graph_->updateBufferSize();
                 }
                 catch (json::exception& e) {
@@ -1328,7 +1328,7 @@ private:
     {
         json devices_json;
 
-        const OwnedArray<AudioIODeviceType>& types = AccessClass::getAudioComponent()->deviceManager.getAvailableDeviceTypes();
+        const OwnedArray<AudioIODeviceType>& types = AccessClass::getSNAPAudioComponent()->deviceManager.getAvailableDeviceTypes();
 
         for (int i = 0; i < types.size(); i++)
         {
@@ -1348,20 +1348,20 @@ private:
 
     inline static void audio_device_info_to_json (json* ret)
     {
-        (*ret)["device_type"] = AccessClass::getAudioComponent()->getDeviceType().toStdString();
+        (*ret)["device_type"] = AccessClass::getSNAPAudioComponent()->getDeviceType().toStdString();
 
-        (*ret)["device_name"] = AccessClass::getAudioComponent()->getDeviceName().toStdString();
+        (*ret)["device_name"] = AccessClass::getSNAPAudioComponent()->getDeviceName().toStdString();
 
-        (*ret)["sample_rate"] = AccessClass::getAudioComponent()->getSampleRate();
+        (*ret)["sample_rate"] = AccessClass::getSNAPAudioComponent()->getSampleRate();
 
-        (*ret)["buffer_size"] = AccessClass::getAudioComponent()->getBufferSize();
+        (*ret)["buffer_size"] = AccessClass::getSNAPAudioComponent()->getBufferSize();
 
         json sample_rates_json;
-        sample_rates_to_json (AccessClass::getAudioComponent()->getAvailableSampleRates(), &sample_rates_json);
+        sample_rates_to_json (AccessClass::getSNAPAudioComponent()->getAvailableSampleRates(), &sample_rates_json);
         (*ret)["available_sample_rates"] = sample_rates_json;
 
         json buffer_sizes_json;
-        buffer_sizes_to_json (AccessClass::getAudioComponent()->getAvailableBufferSizes(), &buffer_sizes_json);
+        buffer_sizes_to_json (AccessClass::getSNAPAudioComponent()->getAvailableBufferSizes(), &buffer_sizes_json);
         (*ret)["available_buffer_sizes"] = buffer_sizes_json;
     }
 

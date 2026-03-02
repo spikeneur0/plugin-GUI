@@ -314,7 +314,7 @@ SNAPMainWindow::~SNAPMainWindow()
     {
         saveWindowBounds();
         SNAPUIComponent* ui = static_cast<SNAPUIComponent*> (documentWindow->getContentComponent());
-        ui->disableDataViewport();
+        ui->disableSNAPDataViewport();
 
         documentWindow->setLookAndFeel (nullptr);
         documentWindow->removeKeyListener (commandManager.getKeyMappings());

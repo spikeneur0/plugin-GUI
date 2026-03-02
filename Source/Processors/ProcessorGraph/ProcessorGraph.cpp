@@ -1991,7 +1991,7 @@ void ProcessorGraph::saveToXml (XmlElement* xml)
     {
         AccessClass::getSNAPEditorViewport()->saveSNAPEditorViewportSettingsToXml (xml);
         AccessClass::getSNAPGraphViewer()->saveStateToXml (xml); // save the graph viewer settings
-        AccessClass::getDataViewport()->saveStateToXml (xml); // save the data viewport settings
+        AccessClass::getSNAPDataViewport()->saveStateToXml (xml); // save the data viewport settings
         AccessClass::getSNAPProcessorList()->saveStateToXml (xml);
         AccessClass::getSNAPUIComponent()->saveStateToXml (xml); // save the UI settings
     }
@@ -2147,7 +2147,7 @@ void ProcessorGraph::loadFromXml (XmlElement* xml)
             AccessClass::getSNAPEditorViewport()->loadSNAPEditorViewportSettingsFromXml (editorViewportXml);
 
         refreshColours(); // refresh editor colours
-        AccessClass::getDataViewport()->loadStateFromXml (xml);
+        AccessClass::getSNAPDataViewport()->loadStateFromXml (xml);
 
         // load the graph viewer settings
         auto graphViewerXml = xml->getChildByName ("GRAPHVIEWER");
@@ -2165,7 +2165,7 @@ Plugin::Description ProcessorGraph::getDescriptionFromXml (XmlElement* settings,
 {
     Plugin::Description description;
 
-    description.fromSNAPProcessorList = false;
+    description.fromProcessorList = false;
     description.name = settings->getStringAttribute ("pluginName");
     description.type = (Plugin::Type) settings->getIntAttribute ("type");
     description.processorType = (Plugin::Processor::Type) settings->getIntAttribute ("processorType");

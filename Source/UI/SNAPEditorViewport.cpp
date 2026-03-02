@@ -1653,7 +1653,7 @@ const String SNAPEditorViewport::loadState (File fileToLoad)
 
     CoreServices::sendStatusMessage ("Loaded " + fileToLoad.getFileName());
 
-    AccessClass::getControlPanel()->createNewRecordingDirectory();
+    AccessClass::getSNAPControlPanel()->createNewRecordingDirectory();
 
     return "Loaded signal chain.";
 }

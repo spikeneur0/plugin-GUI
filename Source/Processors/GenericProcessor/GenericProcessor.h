@@ -554,7 +554,7 @@ public:
 
     static Plugin::Processor::Type typeFromString (String typeName);
 
-    String getDisplayName() { return m_name; }
+    String getDisplayName() { return getName(); }
 
     void updateDisplayName (String name);
 
@@ -608,7 +608,7 @@ public:
         IDLE,           // Gray - not acquiring
         CONFIGURING,    // Yellow - updateSettings in progress
         ACTIVE,         // Green - processing data normally
-        ERROR,          // Red - error condition
+        ERRORED,        // Red - error condition (avoid Windows ERROR macro)
         DISABLED        // Dark gray - user disabled
     };
 

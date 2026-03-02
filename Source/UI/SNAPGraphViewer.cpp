@@ -1367,7 +1367,7 @@ void GraphNode::paintOverChildren (Graphics& g)
             case GenericProcessor::ProcessorState::IDLE:        stateColour = Colour (160, 160, 160); break;
             case GenericProcessor::ProcessorState::CONFIGURING: stateColour = Colour (255, 200, 0);   break;
             case GenericProcessor::ProcessorState::ACTIVE:      stateColour = Colour (0, 200, 80);    break;
-            case GenericProcessor::ProcessorState::ERROR:       stateColour = Colour (220, 50, 50);   break;
+            case GenericProcessor::ProcessorState::ERRORED:       stateColour = Colour (220, 50, 50);   break;
             case GenericProcessor::ProcessorState::DISABLED:    stateColour = Colour (80, 80, 80);    break;
         }
 
