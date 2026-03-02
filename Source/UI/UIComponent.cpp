@@ -442,7 +442,7 @@ void UIComponent::openConsoleWindow()
 {
     if (consoleWindow == nullptr)
     {
-        consoleWindow = std::make_unique<DataWindow> (nullptr, "Open Ephys GUI Console");
+        consoleWindow = std::make_unique<DataWindow> (nullptr, "SNAP Console");
         consoleWindow->addListener (this);
         consoleWindow->setLookAndFeel (customLookAndFeel);
         consoleWindow->setBackgroundColour (findColour (ThemeColours::windowBackground));

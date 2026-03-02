@@ -98,7 +98,7 @@ MainWindow::MainWindow (const File& fileToLoad, bool isConsoleApp_, OpenEphysSpl
     std::cout << "\tSession Start Time: " << Time::getCurrentTime().toString (true, true, true, true) << std::endl;
     std::cout << "------------------------------------------------" << std::endl;
     std::cout << std::endl;
-    LOGC ("Open Ephys GUI v", JUCEApplication::getInstance()->getApplicationVersion(), " (Plugin API v", PLUGIN_API_VER, ")");
+    LOGC ("SNAP v", JUCEApplication::getInstance()->getApplicationVersion(), " (Plugin API v", PLUGIN_API_VER, ")");
     LOGC (SystemStats::getJUCEVersion());
     LOGC ("Operating System: ", SystemStats::getOperatingSystemName());
     LOGC ("CPU: ", SystemStats::getCpuModel(), " (", SystemStats::getNumCpus(), " core)");
@@ -404,8 +404,8 @@ void MainWindow::handleCrash (void* input)
     String recoveryFileLocation = crashLogDir.getChildFile ("recoveryConfig.xml").getFullPathName();
 
     AlertWindow::showMessageBox (AlertWindow::NoIcon,
-                                 "Open Ephys has stopped working",
-                                 "To help fix the problem, please email the following files to gui@open-ephys.org: \n\n"
+                                 "SNAP has stopped working",
+                                 "To help fix the problem, please email the following files to support@spikeneuro.com: \n\n"
                                      + recoveryFileLocation
                                      + "\n\n"
                                      + crashLog.getFullPathName());

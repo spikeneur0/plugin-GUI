@@ -451,11 +451,11 @@ namespace RecordNode
 File getDefaultUserSaveDirectory()
 {
 #if defined(__APPLE__)
-    const File dir = File::getSpecialLocation (File::userDocumentsDirectory).getChildFile ("Open Ephys");
+    const File dir = File::getSpecialLocation (File::userDocumentsDirectory).getChildFile ("SNAP");
 #elif _WIN32
-    const File dir = File::getSpecialLocation (File::userDocumentsDirectory).getChildFile ("Open Ephys");
+    const File dir = File::getSpecialLocation (File::userDocumentsDirectory).getChildFile ("SNAP");
 #else
-    const File dir = File::getSpecialLocation (File::userHomeDirectory).getChildFile ("open-ephys");
+    const File dir = File::getSpecialLocation (File::userHomeDirectory).getChildFile ("snap");
 #endif
     if (! dir.isDirectory())
     {
@@ -467,21 +467,21 @@ File getDefaultUserSaveDirectory()
 File getSavedStateDirectory()
 {
 #if defined(__APPLE__)
-    File dir = File::getSpecialLocation (File::userApplicationDataDirectory).getChildFile ("Application Support/open-ephys");
+    File dir = File::getSpecialLocation (File::userApplicationDataDirectory).getChildFile ("Application Support/snap");
 #elif _WIN32
     String appDir = File::getSpecialLocation (File::currentApplicationFile).getFullPathName();
     File dir;
     if (appDir.contains ("plugin-GUI\\Build\\"))
         dir = File::getSpecialLocation (File::currentApplicationFile).getParentDirectory();
     else
-        dir = File::getSpecialLocation (File::windowsLocalAppData).getChildFile ("Open Ephys");
+        dir = File::getSpecialLocation (File::windowsLocalAppData).getChildFile ("SNAP");
 #else
     String appDir = File::getSpecialLocation (File::currentApplicationFile).getFullPathName();
     File dir;
     if (appDir.contains ("plugin-GUI/Build/"))
         dir = File::getSpecialLocation (File::currentApplicationFile).getParentDirectory();
     else
-        dir = File::getSpecialLocation (File::userApplicationDataDirectory).getChildFile ("open-ephys");
+        dir = File::getSpecialLocation (File::userApplicationDataDirectory).getChildFile ("snap");
 #endif
     if (! dir.isDirectory())
     {

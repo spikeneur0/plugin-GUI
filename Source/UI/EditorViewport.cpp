@@ -1628,7 +1628,7 @@ const String EditorViewport::loadState (File fileToLoad)
                 {
                     bool userResponse = AlertWindow::showOkCancelBox (AlertWindow::WarningIcon,
                                                                       "Legacy Configuration File Detected",
-                                                                      "This configuration file was created using a version of Open Ephys GUI older than "
+                                                                      "This configuration file was created using a version of SNAP older than "
                                                                           + minimumVersion + ". Some settings and parmeters may not load correctly.\n\n"
                                                                                              "Would you like to proceed with loading the configuration file?",
                                                                       "Yes",

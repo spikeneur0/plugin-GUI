@@ -60,9 +60,9 @@ void LatestVersionCheckerAndUpdater::run()
 
     std::unique_ptr<InputStream> inStream (latestVersionURL.createInputStream (URL::InputStreamOptions (URL::ParameterHandling::inAddress)
                                                                                    .withConnectionTimeoutMs (5000)));
-    const String commErr = "Failed to communicate with the Open Ephys update server.\n"
+    const String commErr = "Failed to communicate with the SNAP update server.\n"
                            "Please try again in a few minutes.\n\n"
-                           "If this problem persists you can download the latest version of Open Ephys GUI from open-ephys.org/gui";
+                           "If this problem persists you can download the latest version of SNAP from spikeneuro.com";
 
     if (inStream == nullptr)
     {
@@ -130,7 +130,7 @@ void LatestVersionCheckerAndUpdater::run()
             {
                 AlertWindow::showMessageBoxAsync (AlertWindow::InfoIcon,
                                                 "No Newer Version Available",
-                                                "You are running the latest available version of the Open Ephys GUI."); 
+                                                "You are running the latest available version of SNAP."); 
             });
         }
         return;
@@ -201,12 +201,12 @@ class UpdateDialog : public Component
 public:
     UpdateDialog (const String& newVersion, const String& releaseNotes, bool automaticVerCheck)
     {
-        titleLabel.setText ("Open Ephys GUI version " + newVersion, dontSendNotification);
+        titleLabel.setText ("SNAP version " + newVersion, dontSendNotification);
         titleLabel.setFont (FontOptions ("Inter", "Semi Bold", 18.0f));
         titleLabel.setJustificationType (Justification::centred);
         addAndMakeVisible (titleLabel);
 
-        contentLabel.setText ("A newer version of Open Ephys GUI is available - would you like to download it?", dontSendNotification);
+        contentLabel.setText ("A newer version of SNAP is available - would you like to download it?", dontSendNotification);
         contentLabel.setFont (FontOptions ("Inter", "Regular", 16.0f));
         contentLabel.setJustificationType (Justification::centredTop);
         contentLabel.setMinimumHorizontalScale (1.0);
@@ -279,7 +279,7 @@ public:
     {
         DialogWindow::LaunchOptions options;
 
-        options.dialogTitle = "Download Open Ephys GUI version " + newVersionString + "?";
+        options.dialogTitle = "Download SNAP version " + newVersionString + "?";
         options.resizable = false;
 
         auto* content = new UpdateDialog (newVersionString, releaseNotes, automaticVerCheck);
@@ -455,7 +455,7 @@ private:
 static void runInstaller (const File& targetFile)
 {
     bool runInstaller = AlertWindow::showOkCancelBox (AlertWindow::WarningIcon,
-                                                      "Quit Open Ephys GUI?",
+                                                      "Quit SNAP?",
                                                       "To run the installer, the current instance of GUI needs to be closed."
                                                       "\nAre you sure you want to continue?",
                                                       "Yes",

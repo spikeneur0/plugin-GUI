@@ -84,9 +84,9 @@ public:
 
 #ifdef _WIN32
 
-        SetConsoleTitleA ("Open Ephys GUI Launcher");
+        SetConsoleTitleA ("SNAP Launcher");
 
-        std::cout << "Initializing Open Ephys GUI... DO NOT CLOSE THIS WINDOW" << std::endl;
+        std::cout << "Initializing SNAP... DO NOT CLOSE THIS WINDOW" << std::endl;
 
         SetConsoleCtrlHandler (ConsoleHandler, TRUE);
 
@@ -187,7 +187,7 @@ public:
 
     const String getApplicationName()
     {
-        return "Open Ephys GUI";
+        return "Spike Neuro Acquisition Platform";
     }
 
     const String getApplicationVersion()

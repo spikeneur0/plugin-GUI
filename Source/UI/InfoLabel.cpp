@@ -225,7 +225,7 @@ void InfoLabel::mouseUp (const MouseEvent& originalEvent)
 void InfoLabel::setAboutText()
 {
     String infoString =
-        "The Open Ephys GUI is free, collaboratively "
+        "SNAP is free, collaboratively "
         "developed, open-source software for scientific research. It includes "
         "many features designed to make extracellular electrophysiology data "
         "easier to acquire; however, it is not guaranteed to work as "
@@ -239,12 +239,12 @@ void InfoLabel::setAboutText()
 
     aboutText.clear();
 
-    aboutText.append ("Welcome to the Open Ephys GUI!\n\n", FontOptions { "Inter", "Regular", 20.0f });
+    aboutText.append ("Welcome to the Spike Neuro Acquisition Platform!\n\n", FontOptions { "Inter", "Regular", 20.0f });
 
     aboutText.append (infoString, FontOptions { "Inter", "Regular", 16.0f });
 
     aboutText.append ("Documentation\n\n", FontOptions { "Inter", "Regular", 20.0f });
-    aboutText.append ("The Open Ephys GUI User Manual can be found at: ", FontOptions { "Inter", "Regular", 16.0f });
+    aboutText.append ("The SNAP User Manual can be found at: ", FontOptions { "Inter", "Regular", 16.0f });
 
     aboutText.append ("open-ephys.github.io/gui-docs\n\n\n", FontOptions { "Fira Code", "Regular", 16.0f });
 
@@ -267,7 +267,7 @@ void InfoLabel::setAboutText()
     aboutText.append ("Contact\n\n", FontOptions { "Inter", "Regular", 20.0f });
     aboutText.append ("For questions, email ", FontOptions { "Inter", "Regular", 16.0f });
 
-    aboutText.append ("gui@open-ephys.org", FontOptions { "Fira Code", "Regular", 16.0f });
+    aboutText.append ("support@spikeneuro.com", FontOptions { "Fira Code", "Regular", 16.0f });
 
     aboutText.append (" or post an issue at ", FontOptions { "Inter", "Regular", 16.0f });
     aboutText.append ("github.com/open-ephys/plugin-gui/Issues", FontOptions { "Fira Code", "Regular", 16.0f });
@@ -1123,7 +1123,7 @@ void InfoLabel::createHyperlinks()
 
     if (tabButtons.getFirst()->getToggleState())
     {
-        hyperlink.url = "https://open-ephys.org/gui";
+        hyperlink.url = "https://spikeneuro.com";
         hyperlink.positionX = Range<int> (45, 345);
         hyperlink.positionY = Range<int> (40, 200);
 

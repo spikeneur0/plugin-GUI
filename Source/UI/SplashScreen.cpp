@@ -138,7 +138,7 @@ void OpenEphysSplashScreen::paint (Graphics& g)
 
     g.setColour (Colour (230, 230, 230).withAlpha (opacity));
     g.setFont (FontOptions (24.0f, Font::bold));
-    g.drawText ("Open Ephys",
+    g.drawText ("SNAP",
                 bounds.withY (textY).withHeight (32.0f),
                 Justification::centred, false);
 
