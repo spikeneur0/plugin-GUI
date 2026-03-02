@@ -19,6 +19,8 @@ add_sources(snap-gui
 	SNAPEditorViewport.h
 	FilenameConfigWindow.cpp
 	FilenameConfigWindow.h
+	CanvasAnnotation.cpp
+	CanvasAnnotation.h
 	SNAPGraphViewer.cpp
 	SNAPGraphViewer.h
 	InfoLabel.cpp

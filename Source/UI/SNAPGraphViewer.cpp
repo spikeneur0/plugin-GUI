@@ -26,6 +26,7 @@
 #include "../Processors/Splitter/Splitter.h"
 #include "../Processors/Splitter/SplitterEditor.h"
 #include "../Utils/Utils.h"
+#include "../Utils/PluginManifest.h"
 
 #include "../Processors/Settings/DataStream.h"
 #include "../Processors/Settings/InfoObject.h"
@@ -287,8 +288,49 @@ void SNAPGraphViewer::removeNode (GenericProcessor* p)
 void SNAPGraphViewer::removeAllNodes()
 {
     availableNodes.clear();
+    removeAllAnnotations();
     updateBoundaries();
     repaint();
+}
+
+void SNAPGraphViewer::mouseDown (const MouseEvent& e)
+{
+    if (e.mods.isRightButtonDown())
+    {
+        PopupMenu menu;
+        menu.addItem (1, "Add Note");
+        menu.addSeparator();
+        menu.addItem (2, "View Plugin Manifest");
+
+        menu.showMenuAsync (PopupMenu::Options().withTargetScreenArea (
+            { e.getScreenX(), e.getScreenY(), 1, 1 }),
+            [this, pos = e.getPosition()] (int result)
+            {
+                if (result == 1)
+                    addAnnotation (pos.x, pos.y);
+                else if (result == 2)
+                    PluginManifest::showManifestViewer();
+            });
+    }
+}
+
+void SNAPGraphViewer::addAnnotation (int x, int y)
+{
+    auto* note = new CanvasAnnotation();
+    note->graphViewer = this;
+    note->setTopLeftPosition (x, y);
+    addAndMakeVisible (note);
+    annotations.add (note);
+}
+
+void SNAPGraphViewer::removeAnnotation (CanvasAnnotation* annotation)
+{
+    annotations.removeObject (annotation, true);
+}
+
+void SNAPGraphViewer::removeAllAnnotations()
+{
+    annotations.clear();
 }
 
 int SNAPGraphViewer::getIndexOfEditor (GenericEditor* editor) const
@@ -476,33 +518,56 @@ void SNAPGraphViewer::saveStateToXml (XmlElement* xml)
         graphNodeStates->addChildElement (nodeXml);
     }
 
+    // Save annotations inside the GRAPHVIEWER element
+    XmlElement* annotationsXml = graphNodeStates->createNewChildElement ("ANNOTATIONS");
+    for (auto* note : annotations)
+        note->saveToXml (annotationsXml);
+
     xml->addChildElement (graphNodeStates);
 }
 
 void SNAPGraphViewer::loadStateFromXml (XmlElement* xml)
 {
-    for (auto* nodeXml : xml->getChildIterator())
+    for (auto* childXml : xml->getChildIterator())
     {
-        for (auto node : availableNodes)
+        if (childXml->hasTagName ("NODE"))
         {
-            if (node->getProcessor()->getNodeId() == nodeXml->getIntAttribute ("id"))
+            for (auto node : availableNodes)
             {
-                if (node->getProcessor()->numParameters() > 0)
-                    node->processorInfoVisible = nodeXml->getBoolAttribute ("isProcessorInfoVisible");
-
-                for (auto streamXml : nodeXml->getChildIterator())
+                if (node->getProcessor()->getNodeId() == childXml->getIntAttribute ("id"))
                 {
-                    String streamKey = streamXml->getStringAttribute ("key");
-                    if (streamKey.isNotEmpty() && node->streamInfoVisible.count (streamKey) > 0)
+                    if (node->getProcessor()->numParameters() > 0)
+                        node->processorInfoVisible = childXml->getBoolAttribute ("isProcessorInfoVisible");
+
+                    for (auto streamXml : childXml->getChildIterator())
                     {
-                        node->streamInfoVisible[streamKey] = streamXml->getBoolAttribute ("isStreamVisible");
-                        node->streamParamsVisible[streamKey] = streamXml->getBoolAttribute ("isParamsVisible");
+                        String streamKey = streamXml->getStringAttribute ("key");
+                        if (streamKey.isNotEmpty() && node->streamInfoVisible.count (streamKey) > 0)
+                        {
+                            node->streamInfoVisible[streamKey] = streamXml->getBoolAttribute ("isStreamVisible");
+                            node->streamParamsVisible[streamKey] = streamXml->getBoolAttribute ("isParamsVisible");
+                        }
                     }
+
+                    node->restorePanels();
+
+                    break;
                 }
+            }
+        }
+        else if (childXml->hasTagName ("ANNOTATIONS"))
+        {
+            removeAllAnnotations();
 
-                node->restorePanels();
-
-                break;
+            for (auto* noteXml : childXml->getChildIterator())
+            {
+                if (noteXml->hasTagName ("NOTE"))
+                {
+                    auto* note = CanvasAnnotation::loadFromXml (noteXml);
+                    note->graphViewer = this;
+                    addAndMakeVisible (note);
+                    annotations.add (note);
+                }
             }
         }
     }

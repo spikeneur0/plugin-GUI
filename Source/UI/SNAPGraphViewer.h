@@ -28,6 +28,7 @@
 #include "../Processors/Editors/GenericEditor.h"
 #include "../Processors/Visualization/Visualizer.h"
 #include "SNAPEditorViewport.h"
+#include "CanvasAnnotation.h"
 
 #include "../../JuceLibraryCode/JuceHeader.h"
 
@@ -389,10 +390,23 @@ public:
     /** Load settings. */
     void loadStateFromXml (XmlElement*);
 
+    /** Handle right-click to add annotations */
+    void mouseDown (const MouseEvent& e) override;
+
+    /** Add a new annotation at the given position */
+    void addAnnotation (int x, int y);
+
+    /** Remove an annotation */
+    void removeAnnotation (CanvasAnnotation* annotation);
+
+    /** Remove all annotations */
+    void removeAllAnnotations();
+
 private:
     void connectNodes (int, int, Graphics&);
 
     OwnedArray<GraphNode> availableNodes;
+    OwnedArray<CanvasAnnotation> annotations;
 
     Array<GenericProcessor*> rootProcessors;
 
