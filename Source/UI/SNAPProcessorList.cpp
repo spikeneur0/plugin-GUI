@@ -126,10 +126,6 @@ bool SNAPProcessorList::keyPressed (const KeyPress& key)
     return false;
 }
 
-void SNAPProcessorList::lookAndFeelChanged()
-{
-}
-
 bool SNAPProcessorList::isOpen()
 {
     return baseItem->isOpen();
@@ -612,7 +608,7 @@ void SNAPProcessorList::mouseDrag (const MouseEvent& e)
                         juce::Point<int> imageOffset (20, 10);
 
                         Array<var> dragData;
-                        dragData.add (true); // fromSNAPProcessorList
+                        dragData.add (true); // fromProcessorList
                         dragData.add (listItem->getName()); // pluginName
                         dragData.add (listItem->index); // processorIndex
                         dragData.add (listItem->pluginType); // pluginType
@@ -865,7 +861,7 @@ Plugin::Description SNAPProcessorList::getItemDescriptionfromList (const String&
         {
             if (name.equalsIgnoreCase (subItem->getSubItem (j)->getName()))
             {
-                description.fromSNAPProcessorList = true;
+                description.fromProcessorList = true;
                 description.index = subItem->getSubItem (j)->index;
                 description.name = subItem->getSubItem (j)->getName();
                 description.type = subItem->getSubItem (j)->pluginType;

@@ -10,6 +10,8 @@ add_sources(
   BroadcastParser.cpp
   BroadcastPayload.h
   BroadcastPayload.cpp
+  PluginManifest.h
+  PluginManifest.cpp
   Utils.h
   Utils.cpp
 )

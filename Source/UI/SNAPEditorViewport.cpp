@@ -218,7 +218,7 @@ void SNAPEditorViewport::itemDropped (const SourceDetails& dragSourceDetails)
 
         Plugin::Description description;
 
-        description.fromSNAPProcessorList = descr->getUnchecked (0);
+        description.fromProcessorList = descr->getUnchecked (0);
         description.name = descr->getUnchecked (1);
         description.index = descr->getUnchecked (2);
         description.type = (Plugin::Type) int (descr->getUnchecked (3));

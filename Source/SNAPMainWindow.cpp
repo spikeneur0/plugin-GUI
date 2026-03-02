@@ -27,6 +27,7 @@
 #include "UI/SNAPEditorViewport.h"
 #include "UI/SNAPUIComponent.h"
 #include "Utils/OpenEphysHttpServer.h"
+#include "Utils/PluginManifest.h"
 #include <stdio.h>
 
 MainDocumentWindow::MainDocumentWindow()
@@ -417,6 +418,9 @@ void SNAPMainWindow::saveProcessorGraph (const File& file)
 
     processorGraph->saveToXml (xml.get());
 
+    // Add plugin manifest to the saved configuration
+    PluginManifest::generate (xml.get());
+
     String message;
 
     if (! xml->writeTo (file))
@@ -438,6 +442,17 @@ void SNAPMainWindow::loadProcessorGraph (const File& file)
     {
         LOGC ("Not a valid configuration file.");
         return;
+    }
+
+    // Validate plugin manifest before loading
+    auto manifestEntries = PluginManifest::validate (xml.get());
+    if (manifestEntries.size() > 0)
+    {
+        if (! PluginManifest::showValidationDialog (manifestEntries))
+        {
+            LOGC ("Load cancelled by user due to plugin manifest mismatch.");
+            return;
+        }
     }
 
     processorGraph->loadFromXml (xml.get());
