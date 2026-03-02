@@ -1765,6 +1765,8 @@ void ProcessorGraph::startAcquisition()
         if (node->nodeID != NodeID (OUTPUT_NODE_ID))
         {
             GenericProcessor* p = (GenericProcessor*) node->getProcessor();
+            p->setProcessorState (GenericProcessor::ProcessorState::ACTIVE);
+            p->setStatusMessage ("Acquiring data");
             p->startAcquisition();
 
             if (p->getEditor() != nullptr)
@@ -1796,6 +1798,8 @@ void ProcessorGraph::stopAcquisition()
             }
 
             allClear = p->stopAcquisition();
+            p->setProcessorState (GenericProcessor::ProcessorState::IDLE);
+            p->setStatusMessage ("");
 
             // Reset line states of all event channels
             for (auto& eventChan : p->eventChannels)

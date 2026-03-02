@@ -37,6 +37,8 @@
 
 #include "../Merger/Merger.h"
 
+#include "../../UI/SNAPGraphViewer.h"
+
 #include "../Events/Event.h"
 #include "../Events/Spike.h"
 
@@ -893,6 +895,9 @@ void GenericProcessor::update()
 {
     LOGD ("Updating settings for ", getName(), " (", getNodeId(), ")");
 
+    setProcessorState (ProcessorState::CONFIGURING);
+    setStatusMessage ("Updating settings...");
+
     int64 start = Time::getHighResolutionTicks();
 
     clearSettings();
@@ -1170,6 +1175,9 @@ void GenericProcessor::update()
         editor->update (isEnabled); // allow the editor to update its settings
 
     LOGG ("    TOTAL TIME: ", MS_FROM_START, " milliseconds");
+
+    setProcessorState (ProcessorState::IDLE);
+    setStatusMessage ("");
 }
 
 void GenericProcessor::updateChannelIndexMaps()
@@ -2106,6 +2114,23 @@ void GenericProcessor::setSplitterDestNode (GenericProcessor* dn) {}
 
 bool GenericProcessor::startAcquisition() { return true; }
 bool GenericProcessor::stopAcquisition() { return true; }
+
+void GenericProcessor::setProcessorState (ProcessorState state)
+{
+    processorState = state;
+
+    if (! headlessMode)
+    {
+        auto* gv = AccessClass::getSNAPGraphViewer();
+        if (gv != nullptr)
+            gv->repaint();
+    }
+}
+
+void GenericProcessor::setStatusMessage (const String& message)
+{
+    statusMessage = message;
+}
 
 GenericProcessor::DefaultEventInfo::DefaultEventInfo (EventChannel::Type t, unsigned int c, unsigned int l, float s)
     : type (t),

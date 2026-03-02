@@ -598,6 +598,32 @@ public:
     /** Returns the plugin specific recording directory derived from the global recording path */
     File getPluginRecordingDirectory();
 
+    // --------------------------------------------
+    //     PROCESSOR STATE (visual status indicator)
+    // --------------------------------------------
+
+    /** Represents the visual state of a processor node in the graph viewer. */
+    enum class ProcessorState
+    {
+        IDLE,           // Gray - not acquiring
+        CONFIGURING,    // Yellow - updateSettings in progress
+        ACTIVE,         // Green - processing data normally
+        ERROR,          // Red - error condition
+        DISABLED        // Dark gray - user disabled
+    };
+
+    /** Returns the current processor state. */
+    ProcessorState getProcessorState() const { return processorState; }
+
+    /** Sets the processor state and triggers a graph viewer repaint. */
+    void setProcessorState (ProcessorState state);
+
+    /** Returns a human-readable status message. */
+    String getStatusMessage() const { return statusMessage; }
+
+    /** Sets the status message shown in the tooltip. */
+    void setStatusMessage (const String& message);
+
 protected:
     static std::map<int, std::vector<ProcessorAction*>> undoableActions;
 
@@ -744,6 +770,12 @@ protected:
 
     /** Set to true if GUI is running in headless mode*/
     bool headlessMode;
+
+    /** Current visual state of this processor (for graph node status indicator) */
+    ProcessorState processorState = ProcessorState::IDLE;
+
+    /** Human-readable status message (shown as tooltip on status indicator) */
+    String statusMessage;
 
 private:
     /** Clears the settings arrays.*/

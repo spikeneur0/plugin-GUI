@@ -151,7 +151,8 @@ private:
 */
 
 class GraphNode : public Component,
-                  public Button::Listener
+                  public Button::Listener,
+                  public SettableTooltipClient
 {
 public:
     /** Constructor */

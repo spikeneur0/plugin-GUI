@@ -1266,6 +1266,35 @@ void GraphNode::paintOverChildren (Graphics& g)
     g.setColour (findColour (ThemeColours::componentParentBackground));
     g.fillPath (fakeRoundedCorners);
 
+    // Draw processor state indicator circle (8px diameter, top-right corner)
+    {
+        const float indicatorSize = 8.0f;
+        const float indicatorX = getWidth() - indicatorSize - 4.0f;
+        const float indicatorY = 6.0f;
+
+        Colour stateColour;
+        switch (processor->getProcessorState())
+        {
+            case GenericProcessor::ProcessorState::IDLE:        stateColour = Colour (160, 160, 160); break;
+            case GenericProcessor::ProcessorState::CONFIGURING: stateColour = Colour (255, 200, 0);   break;
+            case GenericProcessor::ProcessorState::ACTIVE:      stateColour = Colour (0, 200, 80);    break;
+            case GenericProcessor::ProcessorState::ERROR:       stateColour = Colour (220, 50, 50);   break;
+            case GenericProcessor::ProcessorState::DISABLED:    stateColour = Colour (80, 80, 80);    break;
+        }
+
+        g.setColour (stateColour);
+        g.fillEllipse (indicatorX, indicatorY, indicatorSize, indicatorSize);
+        g.setColour (Colours::black.withAlpha (0.3f));
+        g.drawEllipse (indicatorX, indicatorY, indicatorSize, indicatorSize, 0.5f);
+
+        // Update tooltip with status message
+        String statusMsg = processor->getStatusMessage();
+        if (statusMsg.isNotEmpty())
+            setTooltip (getName() + ": " + statusMsg);
+        else
+            setTooltip (getName());
+    }
+
     if (isMouseOver)
     {
         g.setColour (findColour (ThemeColours::highlightedFill).withAlpha (0.8f));
