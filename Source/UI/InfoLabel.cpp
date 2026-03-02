@@ -224,53 +224,71 @@ void InfoLabel::mouseUp (const MouseEvent& originalEvent)
 
 void InfoLabel::setAboutText()
 {
-    String infoString =
-        "SNAP is free, collaboratively "
-        "developed, open-source software for scientific research. It includes "
-        "many features designed to make extracellular electrophysiology data "
-        "easier to acquire; however, it is not guaranteed to work as "
-        "advertised. Before you use it for your own experiments, you should "
-        "test any capabilities you plan to use. The use of a plugin-based "
-        "architecture provides the flexibility to customize your signal "
-        "chain, but it also makes it difficult to test every possible "
-        "combination of processors in advance. Whenever you download or "
-        "upgrade the GUI, be sure to test your desired configuration in a "
-        "safe environment before using it to collect real data.\n\n\n";
-
     aboutText.clear();
 
-    aboutText.append ("Welcome to the Spike Neuro Acquisition Platform!\n\n", FontOptions { "Inter", "Regular", 20.0f });
+    // Title and version
+    aboutText.append ("SNAP \u2014 Spike Neuro Acquisition Platform\n", FontOptions { "Inter", "Regular", 22.0f });
+    aboutText.append ("Version " + String (ProjectInfo::versionString) + "\n\n", FontOptions { "Inter", "Regular", 16.0f });
 
-    aboutText.append (infoString, FontOptions { "Inter", "Regular", 16.0f });
-
-    aboutText.append ("Documentation\n\n", FontOptions { "Inter", "Regular", 20.0f });
-    aboutText.append ("The SNAP User Manual can be found at: ", FontOptions { "Inter", "Regular", 16.0f });
-
-    aboutText.append ("open-ephys.github.io/gui-docs\n\n\n", FontOptions { "Fira Code", "Regular", 16.0f });
-
-    aboutText.append ("Source Code\n\n", FontOptions { "Inter", "Regular", 20.0f });
-    aboutText.append ("GitHub repository: ", FontOptions { "Inter", "Regular", 16.0f });
-
-    aboutText.append ("github.com/open-ephys/plugin-gui\n\n\n", FontOptions { "Fira Code", "Regular", 16.0f });
-
-    aboutText.append ("Publications\n\n", FontOptions { "Inter", "Regular", 20.0f });
-    aboutText.append ("Any publications based on data collected with this software should "
-                      "cite the following article: \n\n"
-                      "   Open Ephys : an open-source, plugin-based platform for "
-                      "multichannel electrophysiology.\n\n"
-
-                      "Citations remain essential for measuring the impact of scientific "
-                      "software, so be sure to include references to any open-source tools "
-                      "that you use in your research! \n\n\n",
+    // Open Ephys attribution (required by GPL)
+    aboutText.append ("Built Upon Open Ephys\n\n", FontOptions { "Inter", "Regular", 20.0f });
+    aboutText.append ("SNAP is built upon the Open Ephys GUI, originally developed by "
+                      "Josh Siegle, Jakob Voigts, and contributors at MIT, Brown University, "
+                      "and the Allen Institute.\n\n",
                       FontOptions { "Inter", "Regular", 16.0f });
 
+    aboutText.append ("Original source: ", FontOptions { "Inter", "Regular", 16.0f });
+    aboutText.append ("github.com/open-ephys/plugin-GUI\n\n\n", FontOptions { "Fira Code", "Regular", 16.0f });
+
+    // License
+    aboutText.append ("License\n\n", FontOptions { "Inter", "Regular", 20.0f });
+    aboutText.append ("This software is free software under the GNU General Public License v3.0. "
+                      "You are free to redistribute and modify it under the terms of the GPL. "
+                      "See the License tab for the full text.\n\n\n",
+                      FontOptions { "Inter", "Regular", 16.0f });
+
+    // Source code
+    aboutText.append ("Source Code\n\n", FontOptions { "Inter", "Regular", 20.0f });
+    aboutText.append ("SNAP: ", FontOptions { "Inter", "Regular", 16.0f });
+    aboutText.append ("github.com/spikeneuro/snap\n", FontOptions { "Fira Code", "Regular", 16.0f });
+    aboutText.append ("Open Ephys: ", FontOptions { "Inter", "Regular", 16.0f });
+    aboutText.append ("github.com/open-ephys/plugin-GUI\n\n\n", FontOptions { "Fira Code", "Regular", 16.0f });
+
+    // About SNAP
+    aboutText.append ("About\n\n", FontOptions { "Inter", "Regular", 20.0f });
+    aboutText.append ("SNAP is free, collaboratively "
+                      "developed, open-source software for scientific research. It includes "
+                      "many features designed to make extracellular electrophysiology data "
+                      "easier to acquire; however, it is not guaranteed to work as "
+                      "advertised. Before you use it for your own experiments, you should "
+                      "test any capabilities you plan to use. The use of a plugin-based "
+                      "architecture provides the flexibility to customize your signal "
+                      "chain, but it also makes it difficult to test every possible "
+                      "combination of processors in advance. Whenever you download or "
+                      "upgrade the application, be sure to test your desired configuration in a "
+                      "safe environment before using it to collect real data.\n\n\n",
+                      FontOptions { "Inter", "Regular", 16.0f });
+
+    // Publication citation (required attribution)
+    aboutText.append ("Publications\n\n", FontOptions { "Inter", "Regular", 20.0f });
+    aboutText.append ("Any publications based on data collected with this software should "
+                      "cite the following article:\n\n"
+                      "   Open Ephys: an open-source, plugin-based platform for "
+                      "multichannel electrophysiology.\n\n"
+                      "Citations remain essential for measuring the impact of scientific "
+                      "software, so be sure to include references to any open-source tools "
+                      "that you use in your research!\n\n\n",
+                      FontOptions { "Inter", "Regular", 16.0f });
+
+    // Contact
     aboutText.append ("Contact\n\n", FontOptions { "Inter", "Regular", 20.0f });
     aboutText.append ("For questions, email ", FontOptions { "Inter", "Regular", 16.0f });
-
     aboutText.append ("support@spikeneuro.com", FontOptions { "Fira Code", "Regular", 16.0f });
-
     aboutText.append (" or post an issue at ", FontOptions { "Inter", "Regular", 16.0f });
-    aboutText.append ("github.com/open-ephys/plugin-gui/Issues", FontOptions { "Fira Code", "Regular", 16.0f });
+    aboutText.append ("github.com/spikeneuro/snap/issues\n\n", FontOptions { "Fira Code", "Regular", 16.0f });
+
+    // Copyright
+    aboutText.append ("\u00A9 2026 Spike Neuro\n", FontOptions { "Inter", "Regular", 14.0f });
 }
 
 void InfoLabel::setAuthorsText()
