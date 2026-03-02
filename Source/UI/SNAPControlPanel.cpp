@@ -998,16 +998,20 @@ void SNAPControlPanel::resized()
         int topBound = getHeight() - h + 10 - 5;
 
         /* Record engine selector */
-        recordSelector->setBounds ((w - 435) > 40 ? 35 : w - 450, topBound, 125, h - 10);
+        int selectorX = juce::jmax (5, (w - 435) > 40 ? 35 : w - 450);
+        recordSelector->setBounds (selectorX, topBound, 125, h - 10);
         recordSelector->setVisible (true);
 
         /* Shows the default root recording directory for new RecordNodes */
-        filenameComponent->setBounds (165, topBound, w - 510, h - 10);
-        filenameComponent->setVisible (true);
+        int fileCompWidth = juce::jmax (0, w - 510);
+        filenameComponent->setBounds (165, topBound, fileCompWidth, h - 10);
+        filenameComponent->setVisible (fileCompWidth > 0);
 
         /* Shows the file name / format to be used for the next recording */
-        filenameText->setBounds (165 + w - 504, topBound, 280, h - 10);
-        filenameText->setVisible (true);
+        int fileTextX = juce::jmax (165, 165 + w - 504);
+        int fileTextW = juce::jmin (280, juce::jmax (0, w - fileTextX - 60));
+        filenameText->setBounds (fileTextX, topBound, fileTextW, h - 10);
+        filenameText->setVisible (fileTextW > 0);
 
         /* Toggle state determines whether a new root directory will be created for the next recording */
         newDirectoryButton->setBounds (w - h - 22, topBound, h - 10, h - 10);

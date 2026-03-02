@@ -332,9 +332,12 @@ void SNAPUIComponent::resized()
 
         width = w - left - 5;
 
+        height = juce::jmax (height, 0);
+        width = juce::jmax (width, 0);
+
         dataViewport->setBounds (left, top, width, height);
 
-        if (h < 200)
+        if (h < 200 || height < 20)
             dataViewport->setVisible (false);
         else
             dataViewport->setVisible (true);

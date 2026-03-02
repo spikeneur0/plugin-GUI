@@ -93,10 +93,6 @@ SNAPProcessorList::SNAPProcessorList (Viewport* v) : viewport (v),
     {
         searchField->setText ("");
     };
-    searchField->onFocusLost = [this]
-    {
-        searchField->setText ("");
-    };
     addAndMakeVisible (searchField.get());
 }
 
