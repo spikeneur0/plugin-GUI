@@ -24,7 +24,7 @@
 #include "Splitter.h"
 #include "SplitterEditor.h"
 
-#include "../../UI/EditorViewport.h"
+#include "../../UI/SNAPEditorViewport.h"
 
 #include "../Settings/ConfigurationObject.h"
 #include "../Settings/DataStream.h"

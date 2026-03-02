@@ -33,19 +33,19 @@
 #include "LookAndFeel/CustomLookAndFeel.h"
 #include "MessageCenterButton.h"
 #include "MessageWindow.h"
-#include "PluginInstaller.h"
+#include "SNAPPluginInstaller.h"
 
-class MainWindow;
-class ProcessorList;
-class ControlPanel;
+class SNAPMainWindow;
+class SNAPProcessorList;
+class SNAPControlPanel;
 class ShowHideEditorViewportButton;
 class ProcessorGraph;
-class AudioComponent;
-class GraphViewer;
+class SNAPAudioComponent;
+class SNAPGraphViewer;
 class InfoLabel;
 class ConsoleViewer;
-class DataViewport;
-class EditorViewport;
+class SNAPDataViewport;
+class SNAPEditorViewport;
 class SignalChainTabComponent;
 class DefaultConfigWindow;
 class PopupManager;
@@ -55,15 +55,15 @@ class DataWindow;
 
   Creates objects for user interaction.
 
-  The UIComponent is responsible for the layout of the user interface and
+  The SNAPUIComponent is responsible for the layout of the user interface and
   for creating the application's menu bar.
 
-  @see ControlPanel, ProcessorList, EditorViewport, DataViewport,
+  @see SNAPControlPanel, SNAPProcessorList, SNAPEditorViewport, SNAPDataViewport,
        MessageCenter
 
 */
 
-class UIComponent : public Component,
+class SNAPUIComponent : public Component,
                     public ActionBroadcaster,
                     public MenuBarModel,
                     public ApplicationCommandTarget,
@@ -74,42 +74,42 @@ class UIComponent : public Component,
 {
 public:
     /** Constructor */
-    UIComponent (MainWindow* mainWindow_,
+    SNAPUIComponent (SNAPMainWindow* mainWindow_,
                  ProcessorGraph* pgraph,
-                 AudioComponent* audio,
-                 ControlPanel* controlPanel,
+                 SNAPAudioComponent* audio,
+                 SNAPControlPanel* controlPanel,
                  ConsoleViewer* consoleViewer,
                  CustomLookAndFeel* customLookAndFeel);
 
     /** Destructor */
-    ~UIComponent();
+    ~SNAPUIComponent();
 
-    /** Returns a pointer to the EditorViewport. */
-    EditorViewport* getEditorViewport();
+    /** Returns a pointer to the SNAPEditorViewport. */
+    SNAPEditorViewport* getSNAPEditorViewport();
 
-    /** Returns a pointer to the ProcessorList. */
-    ProcessorList* getProcessorList();
+    /** Returns a pointer to the SNAPProcessorList. */
+    SNAPProcessorList* getSNAPProcessorList();
 
-    /** Returns a pointer to the DataViewport. */
-    DataViewport* getDataViewport();
+    /** Returns a pointer to the SNAPDataViewport. */
+    SNAPDataViewport* getSNAPDataViewport();
 
     /** Returns a pointer to the ProcessorGraph. */
     ProcessorGraph* getProcessorGraph();
 
-    /** Returns a pointer to the GraphViewer. */
-    GraphViewer* getGraphViewer();
+    /** Returns a pointer to the SNAPGraphViewer. */
+    SNAPGraphViewer* getSNAPGraphViewer();
 
-    /** Returns a pointer to the ControlPanel. */
-    ControlPanel* getControlPanel();
+    /** Returns a pointer to the SNAPControlPanel. */
+    SNAPControlPanel* getSNAPControlPanel();
 
-    /** Returns a pointer to the UIComponent. */
-    UIComponent* getUIComponent();
+    /** Returns a pointer to the SNAPUIComponent. */
+    SNAPUIComponent* getSNAPUIComponent();
 
-    /** Returns a pointer to the AudioComponent. */
-    AudioComponent* getAudioComponent();
+    /** Returns a pointer to the SNAPAudioComponent. */
+    SNAPAudioComponent* getSNAPAudioComponent();
 
     /** Returns a pointer to the Plugin Installer (UI) */
-    PluginInstaller* getPluginInstaller();
+    SNAPPluginInstaller* getSNAPPluginInstaller();
 
     /** Returns a pointer to the Popup Manager */
     PopupManager* getPopupManager();
@@ -120,12 +120,12 @@ public:
     /** Stops the callbacks to the ProcessorGraph which drive data acquisition. */
     void disableCallbacks();
 
-    /** Disables the connection between the DataViewport and the EditorViewport. */
-    void disableDataViewport();
+    /** Disables the connection between the SNAPDataViewport and the SNAPEditorViewport. */
+    void disableSNAPDataViewport();
 
     /**
     Called whenever a major change takes place within a child component, in order
-    to make sure the UIComponent's other children get resized appropriately. */
+    to make sure the SNAPUIComponent's other children get resized appropriately. */
     void childComponentChanged();
 
     /** Returns the names of all the requested menubar drop-down lists (e.g., "File", "Edit", "Help", etc.). */
@@ -167,20 +167,20 @@ public:
     /** Set list of recently used recording directories */
     void setRecentlyUsedFilenames (const Array<String>& filenames);
 
-    // Adds the info tab to the DataViewport if it is not already open
+    // Adds the info tab to the SNAPDataViewport if it is not already open
     void addInfoTab();
 
-    // Adds the graph tab to the DataViewport if it is not already open
+    // Adds the graph tab to the SNAPDataViewport if it is not already open
     void addGraphTab();
 
-    // Adds the console viewer to the DataViewport if it is not already open
+    // Adds the console viewer to the SNAPDataViewport if it is not already open
     void addConsoleTab();
 
     // Opens the console viewer in a separate window
     void openConsoleWindow();
 
     /** Notifies the UI component when the graph viewer is closed */
-    void closeGraphViewer() { graphViewerIsOpen = false; }
+    void closeSNAPGraphViewer() { graphViewerIsOpen = false; }
 
     /** Notifies the UI component when the info tab is closed */
     void closeInfoTab() { infoTabIsOpen = false; }
@@ -200,26 +200,26 @@ public:
     /** Finds a child component based on a unique component ID */
     Component* findComponentByIDRecursive (Component* parent, const String& id);
 
-    /** Resizes all of components inside the UIComponent to fit the new boundaries
-    of the MainWindow, or to account for opening/closing events.*/
+    /** Resizes all of components inside the SNAPUIComponent to fit the new boundaries
+    of the SNAPMainWindow, or to account for opening/closing events.*/
     void resized();
 
-    /** Paints the an overlay on the UIComponent to show busy state */
+    /** Paints the an overlay on the SNAPUIComponent to show busy state */
     void paintOverChildren (Graphics& g) override;
 
-    /** Sets the busy state of the UIComponent */
+    /** Sets the busy state of the SNAPUIComponent */
     void setUIBusy (bool busy);
 
     /** Checks for plugin updates and shows a bubble message if any are available */
     void checkForPluginUpdates();
 
 private:
-    std::unique_ptr<DataViewport> dataViewport;
+    std::unique_ptr<SNAPDataViewport> dataViewport;
     std::unique_ptr<SignalChainTabComponent> signalChainTabComponent;
-    std::unique_ptr<ShowHideEditorViewportButton> showHideEditorViewportButton;
-    std::unique_ptr<ProcessorList> processorList;
+    std::unique_ptr<ShowHideEditorViewportButton> showHideSNAPEditorViewportButton;
+    std::unique_ptr<SNAPProcessorList> processorList;
     std::unique_ptr<InfoLabel> infoLabel;
-    std::unique_ptr<GraphViewer> graphViewer;
+    std::unique_ptr<SNAPGraphViewer> graphViewer;
     std::unique_ptr<ConsoleViewer> consoleViewer;
     std::unique_ptr<DataWindow> consoleWindow;
 
@@ -228,11 +228,11 @@ private:
     bool consoleOpenInTab = false;
     bool consoleOpenInWindow = false;
 
-    EditorViewport* editorViewport;
+    SNAPEditorViewport* editorViewport;
 
     MessageCenterButton messageCenterButton;
 
-    WeakReference<PluginInstaller> pluginInstaller;
+    WeakReference<SNAPPluginInstaller> pluginInstaller;
 
     std::unique_ptr<DefaultConfigWindow> defaultConfigWindow;
     std::unique_ptr<MessageWindow> messageWindow;
@@ -243,21 +243,21 @@ private:
 
     Viewport processorListViewport;
 
-    /** Pointer to the GUI's MainWindow, which owns the UIComponent. */
-    MainWindow* mainWindow;
+    /** Pointer to the GUI's SNAPMainWindow, which owns the SNAPUIComponent. */
+    SNAPMainWindow* mainWindow;
 
     /** Allows the application to use tooltips, which are messages
     that appear when the mouse hovers over particular components. */
     TooltipWindow tooltipWindow;
 
-    /** Pointer to the GUI's ProcessorGraph. Owned by the MainWindow. */
+    /** Pointer to the GUI's ProcessorGraph. Owned by the SNAPMainWindow. */
     ProcessorGraph* processorGraph;
 
-    /** Pointer to the GUI's AudioComponent. Owned by the MainWindow. */
-    AudioComponent* audio;
+    /** Pointer to the GUI's SNAPAudioComponent. Owned by the SNAPMainWindow. */
+    SNAPAudioComponent* audio;
 
-    /** Pointer to the GUI's ControlPanel. Owned by the MainWindow. */
-    ControlPanel* controlPanel;
+    /** Pointer to the GUI's SNAPControlPanel. Owned by the SNAPMainWindow. */
+    SNAPControlPanel* controlPanel;
 
     /** Pointer to the GUI's MessageCenterEditor. Owned by the MessageCenter. */
     MessageCenterEditor* messageCenterEditor;
@@ -272,11 +272,11 @@ private:
         copySignalChain = 0x2005,
         pasteSignalChain = 0x2006,
         clearSignalChain = 0x2007,
-        toggleProcessorList = 0x2008,
+        toggleSNAPProcessorList = 0x2008,
         toggleSignalChain = 0x2009,
         toggleFileInfo = 0x2010,
         toggleInfoTab = 0x2011,
-        toggleGraphViewer = 0x2012,
+        toggleSNAPGraphViewer = 0x2012,
         toggleConsoleViewer = 0x2013,
         showMessageWindow = 0x2014,
         setClockModeDefault = 0x2111,
@@ -289,7 +289,7 @@ private:
         resizeWindow = 0x2212,
         reloadOnStartup = 0x2213,
         saveSignalChainAs = 0x2214,
-        openPluginInstaller = 0x2216,
+        openSNAPPluginInstaller = 0x2216,
         openDefaultConfigWindow = 0x2217,
         loadPluginSettings = 0x3001,
         savePluginSettings = 0x3002,
@@ -313,14 +313,14 @@ private:
     /** Set the rendering engine to use on Windows - Software (CPU) or Direct2D (GPU))*/
     void setRenderingEngine (int engineIndex);
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (UIComponent);
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SNAPUIComponent);
 };
 
 /**
 
-  A button used to show/hide the EditorViewport.
+  A button used to show/hide the SNAPEditorViewport.
 
-  @see UIComponent, EditorViewport
+  @see SNAPUIComponent, SNAPEditorViewport
 
 */
 

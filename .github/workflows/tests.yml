@@ -107,18 +107,18 @@ jobs:
       - name: Run Tests
         shell: powershell
         run: |
-          New-Item -Path 'C:\open-ephys\data' -ItemType Directory
+          New-Item -Path 'C:\snap\data' -ItemType Directory
           git clone --branch main https://github.com/open-ephys/open-ephys-test-suite.git C:\test-suite
           cd C:\test-suite
-          $process = Start-Process -FilePath "Build\Release\open-ephys.exe" -ArgumentList "Build\Release\configs\file_reader_config.xml" -NoNewWindow -PassThru
-          Write-Host "Started open-ephys process with ID: $($process.Id)"
+          $process = Start-Process -FilePath "Build\Release\SNAP.exe" -ArgumentList "Build\Release\configs\file_reader_config.xml" -NoNewWindow -PassThru
+          Write-Host "Started SNAP process with ID: $($process.Id)"
           Start-Sleep -Seconds 10
           Write-Host "Starting Python script..."
           python run_all.py 2>&1 | Tee-Object -FilePath "python_output.log"
           Write-Host "Python script completed. Output saved to python_output.log"
           Stop-Process -Id $process.Id -Force
         env:
-          OE_WINDOWS_GITHUB_RECORD_PATH: C:\open-ephys\data
+          OE_WINDOWS_GITHUB_RECORD_PATH: C:\snap\data
       - name: Set timestamp
         shell: powershell
         id: timestamp

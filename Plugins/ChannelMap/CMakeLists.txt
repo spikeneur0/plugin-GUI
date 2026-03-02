@@ -18,7 +18,7 @@ add_sources(
 if(APPLE)
   set_target_properties(
     ${PLUGIN_NAME} PROPERTIES XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER
-                              "org.open-ephys.plugin.ChannelMap")
+                              "com.spikeneuro.plugin.ChannelMap")
 endif()
 
 if(BUILD_TESTS)

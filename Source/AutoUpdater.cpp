@@ -24,7 +24,7 @@
 
 #include "AutoUpdater.h"
 #include "CoreServices.h"
-#include "MainWindow.h"
+#include "SNAPMainWindow.h"
 #ifdef _WIN32
 #include <shellapi.h>
 #include <windows.h>
@@ -42,7 +42,7 @@ LatestVersionCheckerAndUpdater::~LatestVersionCheckerAndUpdater()
     clearSingletonInstance();
 }
 
-void LatestVersionCheckerAndUpdater::checkForNewVersion (bool background, MainWindow* mw)
+void LatestVersionCheckerAndUpdater::checkForNewVersion (bool background, SNAPMainWindow* mw)
 {
     if (! isThreadRunning())
     {

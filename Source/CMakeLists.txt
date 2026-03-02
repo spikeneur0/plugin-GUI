@@ -1,7 +1,7 @@
-#Open Ephys GUI directory-specific file
+#SNAP directory-specific file
 
 #add files in this folder
-add_sources(open-ephys
+add_sources(snap-gui
 	TestableExport.h
 	AccessClass.h
 	AccessClass.cpp
@@ -9,8 +9,8 @@ add_sources(open-ephys
 	AutoUpdater.h
 	CoreServices.h
 	CoreServices.cpp
-	MainWindow.h
-	MainWindow.cpp
+	SNAPMainWindow.h
+	SNAPMainWindow.cpp
 	Main.cpp
 )
 

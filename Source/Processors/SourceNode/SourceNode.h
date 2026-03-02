@@ -25,7 +25,7 @@
 #define __SOURCENODE_H_DCE798F1__
 
 #include "../../../JuceLibraryCode/JuceHeader.h"
-#include "../../UI/UIComponent.h"
+#include "../../UI/SNAPUIComponent.h"
 #include "../DataThreads/DataThread.h"
 #include "../GenericProcessor/GenericProcessor.h"
 #include <stdio.h>

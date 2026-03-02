@@ -24,10 +24,10 @@
 #include "RecordNode.h"
 
 #include "../../AccessClass.h"
-#include "../../Audio/AudioComponent.h"
+#include "../../Audio/SNAPAudioComponent.h"
 #include "../../Processors/MessageCenter/MessageCenterEditor.h"
-#include "../../UI/ControlPanel.h"
-#include "../../UI/EditorViewport.h"
+#include "../../UI/SNAPControlPanel.h"
+#include "../../UI/SNAPEditorViewport.h"
 #include "BinaryFormat/BinaryRecording.h"
 
 #include "../Events/Spike.h"
@@ -78,7 +78,7 @@ RecordNode::RecordNode()
       settingsNeeded (false)
 {
     //Get the current audio device's buffer size and use as data queue block size
-    AudioDeviceManager& adm = AccessClass::getAudioComponent()->deviceManager;
+    AudioDeviceManager& adm = AccessClass::getSNAPAudioComponent()->deviceManager;
     AudioDeviceManager::AudioDeviceSetup ads;
     adm.getAudioDeviceSetup (ads);
     int bufferSize = ads.bufferSize;
@@ -513,7 +513,7 @@ std::vector<RecordEngineManager*> RecordNode::getAvailableRecordEngines()
 
 String RecordNode::generateDirectoryName()
 {
-    return AccessClass::getControlPanel()->getRecordingDirectoryName();
+    return AccessClass::getSNAPControlPanel()->getRecordingDirectoryName();
 }
 
 // called by FifoMonitor

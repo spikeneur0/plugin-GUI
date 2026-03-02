@@ -64,23 +64,23 @@ jobs:
         fi
 
         cd Build
-        cp -r Release open-ephys
-        cp -r ../Resources/DLLs/FrontPanelUSB-DriverOnly-4.5.5.exe open-ephys
-        cp -r ../Resources/DLLs/FTD3XXDriver_WHQLCertified_1.3.0.10_Installer.exe open-ephys
-        cp ../LICENSE open-ephys
-        cp C:/Windows/System32/msvcp140.dll open-ephys
-        cp C:/Windows/System32/vcruntime140.dll open-ephys
-        cp C:/Windows/System32/vcruntime140_1.dll open-ephys
-        zipfile=open-ephys-${gui_ver}-windows${version_suffix}.zip
-        powershell Compress-Archive -Path "open-ephys" -DestinationPath ${zipfile}
+        cp -r Release snap
+        cp -r ../Resources/DLLs/FrontPanelUSB-DriverOnly-4.5.5.exe snap
+        cp -r ../Resources/DLLs/FTD3XXDriver_WHQLCertified_1.3.0.10_Installer.exe snap
+        cp ../LICENSE snap
+        cp C:/Windows/System32/msvcp140.dll snap
+        cp C:/Windows/System32/vcruntime140.dll snap
+        cp C:/Windows/System32/vcruntime140_1.dll snap
+        zipfile=snap-${gui_ver}-windows${version_suffix}.zip
+        powershell Compress-Archive -Path "snap" -DestinationPath ${zipfile}
         user_info="X-JFrog-Art-Api:$ARTIFACTORY_ACCESS_TOKEN"
         curl -H $user_info -T $zipfile "https://openephys.jfrog.io/artifactory/GUI-binaries/${artifactory_repo}/windows/$zipfile"
 
-        cd open-ephys
+        cd snap
         rm -f msvcp140.dll vcruntime140.dll vcruntime140_1.dll
         cd ../../Resources/Installers/Windows
         iscc "windows_installer_script.iss"
-        installer=Install-Open-Ephys-GUI-${gui_ver}${version_suffix}.exe
-        mv Open-Ephys_Installer.exe $installer
+        installer=Install-SNAP-${gui_ver}${version_suffix}.exe
+        mv SNAP_Installer.exe $installer
         curl -H $user_info -T $installer "https://openephys.jfrog.io/artifactory/GUI-binaries/${artifactory_repo}-Installer/windows/$installer"
       shell: bash

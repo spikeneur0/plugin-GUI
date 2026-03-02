@@ -29,10 +29,10 @@
 #include "../GenericProcessor/GenericProcessor.h"
 #include "ProcessorGraph.h"
 
-#include "../../UI/EditorViewport.h"
-#include "../../UI/GraphViewer.h"
-#include "../../UI/ProcessorList.h"
-#include "../../UI/UIComponent.h"
+#include "../../UI/SNAPEditorViewport.h"
+#include "../../UI/SNAPGraphViewer.h"
+#include "../../UI/SNAPProcessorList.h"
+#include "../../UI/SNAPUIComponent.h"
 #include "../AudioNode/AudioNode.h"
 #include "../Editors/VisualizerEditor.h"
 #include "../FileReader/FileReader.h"
@@ -43,7 +43,7 @@
 #include "../Splitter/Splitter.h"
 
 #include "../../AccessClass.h"
-#include "../../Audio/AudioComponent.h"
+#include "../../Audio/SNAPAudioComponent.h"
 #include "../PluginManager/PluginManager.h"
 #include "../ProcessorManager/ProcessorManager.h"
 
@@ -123,8 +123,8 @@ void ProcessorGraph::moveProcessor (GenericProcessor* processor,
             {
                 if (! isConsoleApp)
                 {
-                    AccessClass::getGraphViewer()->removeNode (originalSource);
-                    AccessClass::getEditorViewport()->removeEditor (originalSource->getEditor());
+                    AccessClass::getSNAPGraphViewer()->removeNode (originalSource);
+                    AccessClass::getSNAPEditorViewport()->removeEditor (originalSource->getEditor());
                 }
                 rootNodes.remove (rootNodes.indexOf (originalSource));
                 emptyProcessors.removeObject (originalSource);
@@ -192,8 +192,8 @@ void ProcessorGraph::moveProcessor (GenericProcessor* processor,
             {
                 if (! isConsoleApp)
                 {
-                    AccessClass::getGraphViewer()->removeNode (newDest->getSourceNode());
-                    AccessClass::getEditorViewport()->removeEditor (newDest->getSourceNode()->getEditor());
+                    AccessClass::getSNAPGraphViewer()->removeNode (newDest->getSourceNode());
+                    AccessClass::getSNAPEditorViewport()->removeEditor (newDest->getSourceNode()->getEditor());
                 }
                 rootNodes.remove (rootNodes.indexOf (newDest->getSourceNode()));
                 emptyProcessors.removeObject (newDest->getSourceNode());
@@ -333,8 +333,8 @@ GenericProcessor* ProcessorGraph::createProcessor (Plugin::Description& descript
                     {
                         if (! isConsoleApp)
                         {
-                            AccessClass::getGraphViewer()->removeNode (destNode->getSourceNode());
-                            AccessClass::getEditorViewport()->removeEditor (destNode->getSourceNode()->getEditor());
+                            AccessClass::getSNAPGraphViewer()->removeNode (destNode->getSourceNode());
+                            AccessClass::getSNAPEditorViewport()->removeEditor (destNode->getSourceNode()->getEditor());
                         }
 
                         rootNodes.set (rootNodes.indexOf (destNode->getSourceNode()), addedProc);
@@ -556,8 +556,8 @@ bool ProcessorGraph::checkForNewRootNodes (GenericProcessor* processor,
             {
                 if (! isConsoleApp)
                 {
-                    AccessClass::getGraphViewer()->removeNode (processor->getSourceNode());
-                    AccessClass::getEditorViewport()->removeEditor (processor->getSourceNode()->getEditor());
+                    AccessClass::getSNAPGraphViewer()->removeNode (processor->getSourceNode());
+                    AccessClass::getSNAPEditorViewport()->removeEditor (processor->getSourceNode()->getEditor());
                 }
 
                 rootNodes.remove (rootNodes.indexOf (processor->getSourceNode()));
@@ -575,8 +575,8 @@ bool ProcessorGraph::checkForNewRootNodes (GenericProcessor* processor,
             {
                 if (! isConsoleApp)
                 {
-                    AccessClass::getGraphViewer()->removeNode (anotherSource);
-                    AccessClass::getEditorViewport()->removeEditor (anotherSource->getEditor());
+                    AccessClass::getSNAPGraphViewer()->removeNode (anotherSource);
+                    AccessClass::getSNAPEditorViewport()->removeEditor (anotherSource->getEditor());
                 }
 
                 rootNodes.remove (rootNodes.indexOf (anotherSource));
@@ -742,10 +742,10 @@ void ProcessorGraph::updateSettings (GenericProcessor* processor, bool signalCha
     }
 }
 
-void ProcessorGraph::updateViews (GenericProcessor* processor, bool updateGraphViewer)
+void ProcessorGraph::updateViews (GenericProcessor* processor, bool updateSNAPGraphViewer)
 {
-    if (updateGraphViewer && ! isConsoleApp)
-        AccessClass::getGraphViewer()->updateNodes (processor, rootNodes);
+    if (updateSNAPGraphViewer && ! isConsoleApp)
+        AccessClass::getSNAPGraphViewer()->updateNodes (processor, rootNodes);
 
     int tabIndex;
 
@@ -830,7 +830,7 @@ void ProcessorGraph::updateViews (GenericProcessor* processor, bool updateGraphV
             editorArray.add (p->getEditor());
         }
 
-        AccessClass::getEditorViewport()->updateVisibleEditors (editorArray,
+        AccessClass::getSNAPEditorViewport()->updateVisibleEditors (editorArray,
                                                                 rootNodes.size(),
                                                                 rootNodes.indexOf (rootProcessor));
     }
@@ -857,8 +857,8 @@ void ProcessorGraph::connectMergerSource (GenericProcessor* merger_, GenericProc
     {
         if (! isConsoleApp && ! isLoadingSignalChain)
         {
-            AccessClass::getGraphViewer()->removeNode (merger->getSourceNode (path));
-            AccessClass::getEditorViewport()->removeEditor (merger->getSourceNode (path)->getEditor());
+            AccessClass::getSNAPGraphViewer()->removeNode (merger->getSourceNode (path));
+            AccessClass::getSNAPEditorViewport()->removeEditor (merger->getSourceNode (path)->getEditor());
         }
         rootNodes.remove (rootNodes.indexOf (merger->getSourceNode (path)));
         emptyProcessors.removeObject (merger->getSourceNode (path));
@@ -965,8 +965,8 @@ void ProcessorGraph::reconnectProcessors (int sourceNodeId,
         {
             if (! isConsoleApp)
             {
-                AccessClass::getGraphViewer()->removeNode (destNode->getSourceNode());
-                AccessClass::getEditorViewport()->removeEditor (destNode->getSourceNode()->getEditor());
+                AccessClass::getSNAPGraphViewer()->removeNode (destNode->getSourceNode());
+                AccessClass::getSNAPEditorViewport()->removeEditor (destNode->getSourceNode()->getEditor());
             }
 
             rootNodes.remove (rootNodes.indexOf (destNode->getSourceNode()));
@@ -994,7 +994,7 @@ void ProcessorGraph::clearSignalChain()
     currentNodeId = 100;
 
     if (! isConsoleApp)
-        AccessClass::getGraphViewer()->removeAllNodes();
+        AccessClass::getSNAPGraphViewer()->removeAllNodes();
 
     updateViews (nullptr);
 
@@ -1014,7 +1014,7 @@ void ProcessorGraph::refreshColours()
         e->refreshColours();
     }
 
-    AccessClass::getGraphViewer()->repaint();
+    AccessClass::getSNAPGraphViewer()->repaint();
 }
 
 void ProcessorGraph::broadcastMessage (String msg)
@@ -1422,7 +1422,7 @@ void ProcessorGraph::connectProcessors (GenericProcessor* source, GenericProcess
     //3. Ensure the RecordNode block size matches the buffer size of Audio Settings
     if (dest->isRecordNode())
     {
-        AudioDeviceManager& adm = AccessClass::getAudioComponent()->deviceManager;
+        AudioDeviceManager& adm = AccessClass::getSNAPAudioComponent()->deviceManager;
         AudioDeviceManager::AudioDeviceSetup ads;
         adm.getAudioDeviceSetup (ads);
         int blockSize = ads.bufferSize;
@@ -1599,9 +1599,9 @@ void ProcessorGraph::removeProcessor (GenericProcessor* processor)
 
     if (! isConsoleApp)
     {
-        AccessClass::getGraphViewer()->removeNode (processor);
+        AccessClass::getSNAPGraphViewer()->removeNode (processor);
 
-        AccessClass::getEditorViewport()->removeEditor (processor->editor.get());
+        AccessClass::getSNAPEditorViewport()->removeEditor (processor->editor.get());
     }
 
     Node::Ptr node = removeNode (nodeId);
@@ -1612,7 +1612,7 @@ bool ProcessorGraph::isReady()
 {
     LOGD ("ProcessorGraph checking for all valid parameters...");
 
-    auto* controlPanel = AccessClass::getControlPanel();
+    auto* controlPanel = AccessClass::getSNAPControlPanel();
 
     //Iterate through all the active nodes in the signal chain
     for (int i = 0; i < getNumNodes(); i++)
@@ -1629,12 +1629,12 @@ bool ProcessorGraph::isReady()
                 {
                     if (! isConsoleApp)
                     {
-                        AccessClass::getUIComponent()->getLookAndFeel().playAlertSound();
+                        AccessClass::getSNAPUIComponent()->getLookAndFeel().playAlertSound();
 
                         String msg = p->getName() + " (" + String (p->getNodeId()) + ") - "
                                      + param->getDisplayName() + " is invalid and blocking acquisition.";
 
-                        AccessClass::getUIComponent()->showBubbleMessage (controlPanel->getPlayButton(), msg);
+                        AccessClass::getSNAPUIComponent()->showBubbleMessage (controlPanel->getPlayButton(), msg);
                     }
                     CoreServices::sendStatusMessage ("Parameter " + param->getKey() + " is not valid.");
                     controlPanel->disableCallbacks();
@@ -1652,9 +1652,9 @@ bool ProcessorGraph::isReady()
     {
         if (! isConsoleApp)
         {
-            AccessClass::getUIComponent()->getLookAndFeel().playAlertSound();
+            AccessClass::getSNAPUIComponent()->getLookAndFeel().playAlertSound();
 
-            AccessClass::getUIComponent()->showBubbleMessage (controlPanel->getPlayButton(),
+            AccessClass::getSNAPUIComponent()->showBubbleMessage (controlPanel->getPlayButton(),
                                                               "Add a source processor to the signal chain"
                                                               " before starting acquisition");
         }
@@ -1723,7 +1723,7 @@ bool ProcessorGraph::isReady()
             {
                 if (! isConsoleApp)
                 {
-                    AccessClass::getUIComponent()->showBubbleMessage (controlPanel->getPlayButton(),
+                    AccessClass::getSNAPUIComponent()->showBubbleMessage (controlPanel->getPlayButton(),
                                                                       nameAndId + " is not ready and blocking acquisition");
                 }
                 CoreServices::sendStatusMessage (nameAndId + " is not ready and blocking acquisition");
@@ -1737,14 +1737,14 @@ bool ProcessorGraph::isReady()
     {
         if (! isConsoleApp)
         {
-            String disabledProcessorList = disabledProcessors.joinIntoString ("\n");
+            String disabledSNAPProcessorList = disabledProcessors.joinIntoString ("\n");
 
-            AccessClass::getUIComponent()->getLookAndFeel().playAlertSound();
+            AccessClass::getSNAPUIComponent()->getLookAndFeel().playAlertSound();
 
             String msg = "The following processors are disabled and blocking acquisition:\n\n"
-                         + disabledProcessorList;
+                         + disabledSNAPProcessorList;
 
-            AccessClass::getUIComponent()->showBubbleMessage (controlPanel->getPlayButton(), msg);
+            AccessClass::getSNAPUIComponent()->showBubbleMessage (controlPanel->getPlayButton(), msg);
         }
 
         controlPanel->disableCallbacks();
@@ -1981,19 +1981,19 @@ void ProcessorGraph::saveToXml (XmlElement* xml)
         allSplitters[i]->switchIO (splitterStates[i]);
     }
 
-    AccessClass::getControlPanel()->saveStateToXml (xml); // save the control panel settings
+    AccessClass::getSNAPControlPanel()->saveStateToXml (xml); // save the control panel settings
 
     if (! isConsoleApp)
     {
-        AccessClass::getEditorViewport()->saveEditorViewportSettingsToXml (xml);
-        AccessClass::getGraphViewer()->saveStateToXml (xml); // save the graph viewer settings
+        AccessClass::getSNAPEditorViewport()->saveSNAPEditorViewportSettingsToXml (xml);
+        AccessClass::getSNAPGraphViewer()->saveStateToXml (xml); // save the graph viewer settings
         AccessClass::getDataViewport()->saveStateToXml (xml); // save the data viewport settings
-        AccessClass::getProcessorList()->saveStateToXml (xml);
-        AccessClass::getUIComponent()->saveStateToXml (xml); // save the UI settings
+        AccessClass::getSNAPProcessorList()->saveStateToXml (xml);
+        AccessClass::getSNAPUIComponent()->saveStateToXml (xml); // save the UI settings
     }
 
     XmlElement* audioSettings = new XmlElement ("AUDIO");
-    AccessClass::getAudioComponent()->saveStateToXml (audioSettings);
+    AccessClass::getSNAPAudioComponent()->saveStateToXml (audioSettings);
     xml->addChildElement (audioSettings);
 
     XmlElement* messageSettings = new XmlElement ("MESSAGES");
@@ -2040,9 +2040,9 @@ void ProcessorGraph::loadFromXml (XmlElement* xml)
     {
         MouseCursor::showWaitCursor();
 
-        AccessClass::getUIComponent()->setUIBusy (true);
-        AccessClass::getUIComponent()->loadStateFromXml (xml); // load the UI settings first
-        AccessClass::getProcessorList()->loadStateFromXml (xml); // load the processor list settings (may override theme colours)
+        AccessClass::getSNAPUIComponent()->setUIBusy (true);
+        AccessClass::getSNAPUIComponent()->loadStateFromXml (xml); // load the UI settings first
+        AccessClass::getSNAPProcessorList()->loadStateFromXml (xml); // load the processor list settings (may override theme colours)
     }
 
     clearSignalChain();
@@ -2075,7 +2075,7 @@ void ProcessorGraph::loadFromXml (XmlElement* xml)
 
                     if (! isConsoleApp)
                     {
-                        auto loadedPlugins = AccessClass::getProcessorList()->getItemList();
+                        auto loadedPlugins = AccessClass::getSNAPProcessorList()->getItemList();
 
                         if (! loadedPlugins.contains (pName))
                         {
@@ -2125,8 +2125,8 @@ void ProcessorGraph::loadFromXml (XmlElement* xml)
         }
         else if (element->hasTagName ("AUDIO"))
         {
-            AccessClass::getAudioComponent()->loadStateFromXml (element);
-            AccessClass::getControlPanel()->loadStateFromXml (xml); // load the control panel settings after the audio settings
+            AccessClass::getSNAPAudioComponent()->loadStateFromXml (element);
+            AccessClass::getSNAPControlPanel()->loadStateFromXml (xml); // load the control panel settings after the audio settings
         }
         else if (element->hasTagName ("MESSAGES"))
         {
@@ -2140,7 +2140,7 @@ void ProcessorGraph::loadFromXml (XmlElement* xml)
     {
         auto editorViewportXml = xml->getChildByName ("EDITORVIEWPORT");
         if (editorViewportXml != nullptr)
-            AccessClass::getEditorViewport()->loadEditorViewportSettingsFromXml (editorViewportXml);
+            AccessClass::getSNAPEditorViewport()->loadSNAPEditorViewportSettingsFromXml (editorViewportXml);
 
         refreshColours(); // refresh editor colours
         AccessClass::getDataViewport()->loadStateFromXml (xml);
@@ -2148,9 +2148,9 @@ void ProcessorGraph::loadFromXml (XmlElement* xml)
         // load the graph viewer settings
         auto graphViewerXml = xml->getChildByName ("GRAPHVIEWER");
         if (graphViewerXml != nullptr)
-            AccessClass::getGraphViewer()->loadStateFromXml (graphViewerXml);
+            AccessClass::getSNAPGraphViewer()->loadStateFromXml (graphViewerXml);
 
-        AccessClass::getUIComponent()->setUIBusy (false);
+        AccessClass::getSNAPUIComponent()->setUIBusy (false);
         MouseCursor::hideWaitCursor();
     }
 
@@ -2161,7 +2161,7 @@ Plugin::Description ProcessorGraph::getDescriptionFromXml (XmlElement* settings,
 {
     Plugin::Description description;
 
-    description.fromProcessorList = false;
+    description.fromSNAPProcessorList = false;
     description.name = settings->getStringAttribute ("pluginName");
     description.type = (Plugin::Type) settings->getIntAttribute ("type");
     description.processorType = (Plugin::Processor::Type) settings->getIntAttribute ("processorType");

@@ -22,7 +22,7 @@
 */
 #include "Parameter.h"
 #include "../../AccessClass.h"
-#include "../../UI/EditorViewport.h"
+#include "../../UI/SNAPEditorViewport.h"
 #include "../GenericProcessor/GenericProcessor.h"
 #include "../Visualization/Visualizer.h"
 

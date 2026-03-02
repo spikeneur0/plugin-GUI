@@ -1,7 +1,7 @@
-#Open Ephys GUI direcroty-specific file
+#SNAP directory-specific file
 
 #add files in this folder
-add_sources(open-ephys 
+add_sources(snap-gui 
 	ProcessorAction.cpp
 	ProcessorAction.h
 )

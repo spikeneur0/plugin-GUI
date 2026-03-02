@@ -26,8 +26,8 @@
 
 #include "../AccessClass.h"
 #include "../CoreServices.h"
-#include "EditorViewport.h"
-#include "UIComponent.h"
+#include "SNAPEditorViewport.h"
+#include "SNAPUIComponent.h"
 
 //-----------------------------------------------------------------------
 
@@ -244,7 +244,7 @@ void DefaultConfigComponent::buttonClicked (Button* button)
         }
 
         // Load the config file
-        AccessClass::getUIComponent()->getEditorViewport()->loadState (configFile);
+        AccessClass::getSNAPUIComponent()->getSNAPEditorViewport()->loadState (configFile);
 
         // Close config window after loading the config file
         ModalComponentManager::getInstance()->cancelAllModalComponents();

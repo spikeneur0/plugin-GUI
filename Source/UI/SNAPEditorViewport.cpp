@@ -21,20 +21,20 @@
 
 */
 
-#include "EditorViewport.h"
+#include "SNAPEditorViewport.h"
 
 #include "../AccessClass.h"
 #include "../Processors/MessageCenter/MessageCenterEditor.h"
 #include "../Processors/PluginManager/OpenEphysPlugin.h"
 #include "../Processors/ProcessorGraph/ProcessorGraph.h"
 #include "../Processors/ProcessorGraph/ProcessorGraphActions.h"
-#include "GraphViewer.h"
-#include "ProcessorList.h"
+#include "SNAPGraphViewer.h"
+#include "SNAPProcessorList.h"
 
 const int BORDER_SIZE = 6;
 const int TAB_SIZE = 30;
 
-EditorViewport::EditorViewport (SignalChainTabComponent* s_)
+SNAPEditorViewport::SNAPEditorViewport (SignalChainTabComponent* s_)
     : message ("Drag-and-drop some rows from the top-left box onto this component!"),
       somethingIsBeingDraggedOver (false),
       shiftDown (false),
@@ -54,7 +54,7 @@ EditorViewport::EditorViewport (SignalChainTabComponent* s_)
 
     sourceDropImage = sourceDropImage.rescaled (25, 135, Graphics::highResamplingQuality);
 
-    signalChainTabComponent->setEditorViewport (this);
+    signalChainTabComponent->setSNAPEditorViewport (this);
 
     editorNamingLabel.setEditable (true);
     editorNamingLabel.setBounds (0, 0, 100, 20);
@@ -62,12 +62,12 @@ EditorViewport::EditorViewport (SignalChainTabComponent* s_)
     editorNamingLabel.addListener (this);
 }
 
-EditorViewport::~EditorViewport()
+SNAPEditorViewport::~SNAPEditorViewport()
 {
     copyBuffer.clear();
 }
 
-void EditorViewport::paint (Graphics& g)
+void SNAPEditorViewport::paint (Graphics& g)
 {
     g.setColour (findColour (ThemeColours::componentParentBackground));
     g.fillRoundedRectangle (1, 1, getWidth() - 2, getHeight() - 14, 6.0f);
@@ -105,7 +105,7 @@ void EditorViewport::paint (Graphics& g)
     }
 }
 
-bool EditorViewport::isInterestedInDragSource (const SourceDetails& dragSourceDetails)
+bool SNAPEditorViewport::isInterestedInDragSource (const SourceDetails& dragSourceDetails)
 {
     if (! CoreServices::getAcquisitionStatus() && dragSourceDetails.description.toString().startsWith ("Processors"))
     {
@@ -121,7 +121,7 @@ bool EditorViewport::isInterestedInDragSource (const SourceDetails& dragSourceDe
     }
 }
 
-void EditorViewport::itemDragEnter (const SourceDetails& dragSourceDetails)
+void SNAPEditorViewport::itemDragEnter (const SourceDetails& dragSourceDetails)
 {
     if (! CoreServices::getAcquisitionStatus())
     {
@@ -131,7 +131,7 @@ void EditorViewport::itemDragEnter (const SourceDetails& dragSourceDetails)
     }
 }
 
-void EditorViewport::itemDragMove (const SourceDetails& dragSourceDetails)
+void SNAPEditorViewport::itemDragMove (const SourceDetails& dragSourceDetails)
 {
     const int x = dragSourceDetails.localPosition.getX();
 
@@ -193,7 +193,7 @@ void EditorViewport::itemDragMove (const SourceDetails& dragSourceDetails)
     }
 }
 
-void EditorViewport::itemDragExit (const SourceDetails& dragSourceDetails)
+void SNAPEditorViewport::itemDragExit (const SourceDetails& dragSourceDetails)
 {
     somethingIsBeingDraggedOver = false;
     dragProcType = Plugin::Processor::INVALID;
@@ -210,7 +210,7 @@ void EditorViewport::itemDragExit (const SourceDetails& dragSourceDetails)
     refreshEditors();
 }
 
-void EditorViewport::itemDropped (const SourceDetails& dragSourceDetails)
+void SNAPEditorViewport::itemDropped (const SourceDetails& dragSourceDetails)
 {
     if (! CoreServices::getAcquisitionStatus())
     {
@@ -218,7 +218,7 @@ void EditorViewport::itemDropped (const SourceDetails& dragSourceDetails)
 
         Plugin::Description description;
 
-        description.fromProcessorList = descr->getUnchecked (0);
+        description.fromSNAPProcessorList = descr->getUnchecked (0);
         description.name = descr->getUnchecked (1);
         description.index = descr->getUnchecked (2);
         description.type = (Plugin::Type) int (descr->getUnchecked (3));
@@ -243,7 +243,7 @@ void EditorViewport::itemDropped (const SourceDetails& dragSourceDetails)
     }
 }
 
-GenericProcessor* EditorViewport::addProcessor (Plugin::Description description, int insertionPt)
+GenericProcessor* SNAPEditorViewport::addProcessor (Plugin::Description description, int insertionPt)
 {
     GenericProcessor* source = nullptr;
     GenericProcessor* dest = nullptr;
@@ -274,7 +274,7 @@ GenericProcessor* EditorViewport::addProcessor (Plugin::Description description,
     }
 }
 
-void EditorViewport::clearSignalChain()
+void SNAPEditorViewport::clearSignalChain()
 {
     if (! CoreServices::getAcquisitionStatus() && ! signalChainIsLocked)
     {
@@ -290,12 +290,12 @@ void EditorViewport::clearSignalChain()
     }
 }
 
-void EditorViewport::lockSignalChain (bool shouldLock)
+void SNAPEditorViewport::lockSignalChain (bool shouldLock)
 {
     signalChainIsLocked = shouldLock;
 }
 
-void EditorViewport::makeEditorVisible (GenericEditor* editor, bool updateSettings)
+void SNAPEditorViewport::makeEditorVisible (GenericEditor* editor, bool updateSettings)
 {
     if (updateSettings)
         AccessClass::getProcessorGraph()->updateSettings (editor->getProcessor());
@@ -315,7 +315,7 @@ void EditorViewport::makeEditorVisible (GenericEditor* editor, bool updateSettin
     }
 }
 
-void EditorViewport::highlightEditor (GenericEditor* editor)
+void SNAPEditorViewport::highlightEditor (GenericEditor* editor)
 {
     // Do not highlight if the editor is already selected
     if (editor->getSelectionState())
@@ -339,7 +339,7 @@ void EditorViewport::highlightEditor (GenericEditor* editor)
     }
 }
 
-void EditorViewport::removeEditor (GenericEditor* editor)
+void SNAPEditorViewport::removeEditor (GenericEditor* editor)
 {
     int matchingIndex = -1;
 
@@ -353,7 +353,7 @@ void EditorViewport::removeEditor (GenericEditor* editor)
         editorArray.remove (matchingIndex);
 }
 
-void EditorViewport::updateVisibleEditors (Array<GenericEditor*> visibleEditors,
+void SNAPEditorViewport::updateVisibleEditors (Array<GenericEditor*> visibleEditors,
                                            int numberOfTabs,
                                            int selectedTab)
 {
@@ -380,7 +380,7 @@ void EditorViewport::updateVisibleEditors (Array<GenericEditor*> visibleEditors,
     repaint();
 }
 
-int EditorViewport::getDesiredWidth()
+int SNAPEditorViewport::getDesiredWidth()
 {
     int desiredWidth = 0;
 
@@ -395,7 +395,7 @@ int EditorViewport::getDesiredWidth()
     return desiredWidth + BORDER_SIZE;
 }
 
-void EditorViewport::refreshEditors()
+void SNAPEditorViewport::refreshEditors()
 {
     int lastBound = BORDER_SIZE;
 
@@ -445,7 +445,7 @@ void EditorViewport::refreshEditors()
     repaint();
 }
 
-void EditorViewport::moveSelection (const KeyPress& key)
+void SNAPEditorViewport::moveSelection (const KeyPress& key)
 {
     ModifierKeys mk = key.getModifiers();
 
@@ -564,7 +564,7 @@ void EditorViewport::moveSelection (const KeyPress& key)
     }
 }
 
-bool EditorViewport::keyPressed (const KeyPress& key)
+bool SNAPEditorViewport::keyPressed (const KeyPress& key)
 {
     LOGDD ("Editor viewport received ", key.getKeyCode());
 
@@ -629,7 +629,7 @@ bool EditorViewport::keyPressed (const KeyPress& key)
     return false;
 }
 
-void EditorViewport::switchIO (GenericProcessor* processor, int path)
+void SNAPEditorViewport::switchIO (GenericProcessor* processor, int path)
 {
     AccessClass::getProcessorGraph()->getUndoManager()->beginNewTransaction ("Disabled during acquisition");
 
@@ -638,7 +638,7 @@ void EditorViewport::switchIO (GenericProcessor* processor, int path)
     AccessClass::getProcessorGraph()->getUndoManager()->perform (switchIO);
 }
 
-void EditorViewport::copySelectedEditors()
+void SNAPEditorViewport::copySelectedEditors()
 {
     LOGDD ("Editor viewport received copy signal");
 
@@ -667,7 +667,7 @@ void EditorViewport::copySelectedEditors()
     }
 }
 
-bool EditorViewport::editorIsSelected()
+bool SNAPEditorViewport::editorIsSelected()
 {
     for (auto editor : editorArray)
     {
@@ -678,7 +678,7 @@ bool EditorViewport::editorIsSelected()
     return false;
 }
 
-bool EditorViewport::canPaste()
+bool SNAPEditorViewport::canPaste()
 {
     if (copyBuffer.size() > 0 && editorIsSelected())
         return true;
@@ -686,13 +686,13 @@ bool EditorViewport::canPaste()
         return false;
 }
 
-void EditorViewport::copy (Array<XmlElement*> copyInfo)
+void SNAPEditorViewport::copy (Array<XmlElement*> copyInfo)
 {
     copyBuffer.clear();
     copyBuffer.addArray (copyInfo);
 }
 
-void EditorViewport::paste()
+void SNAPEditorViewport::paste()
 {
     LOGDD ("Editor viewport received paste signal");
 
@@ -763,7 +763,7 @@ void EditorViewport::paste()
     }
 }
 
-void EditorViewport::labelTextChanged (Label* label)
+void SNAPEditorViewport::labelTextChanged (Label* label)
 {
     if (label == &editorNamingLabel && label->getText().isNotEmpty())
     {
@@ -778,7 +778,7 @@ void EditorViewport::labelTextChanged (Label* label)
     }
 }
 
-void EditorViewport::mouseDown (const MouseEvent& e)
+void SNAPEditorViewport::mouseDown (const MouseEvent& e)
 {
     bool clickInEditor = false;
 
@@ -989,7 +989,7 @@ void EditorViewport::mouseDown (const MouseEvent& e)
         lastEditorClicked = 0;
 }
 
-void EditorViewport::mouseDrag (const MouseEvent& e)
+void SNAPEditorViewport::mouseDrag (const MouseEvent& e)
 {
     if (! signalChainIsLocked)
     {
@@ -1063,7 +1063,7 @@ void EditorViewport::mouseDrag (const MouseEvent& e)
     }
 }
 
-void EditorViewport::mouseUp (const MouseEvent& e)
+void SNAPEditorViewport::mouseUp (const MouseEvent& e)
 {
     if (componentWantsToMove)
     {
@@ -1128,7 +1128,7 @@ void EditorViewport::mouseUp (const MouseEvent& e)
     }
 }
 
-void EditorViewport::mouseExit (const MouseEvent& e)
+void SNAPEditorViewport::mouseExit (const MouseEvent& e)
 {
     if (componentWantsToMove)
     {
@@ -1140,7 +1140,7 @@ void EditorViewport::mouseExit (const MouseEvent& e)
     }
 }
 
-bool EditorViewport::isSignalChainEmpty()
+bool SNAPEditorViewport::isSignalChainEmpty()
 {
     if (editorArray.size() == 0)
         return true;
@@ -1288,7 +1288,7 @@ SignalChainTabComponent::~SignalChainTabComponent()
 {
 }
 
-void SignalChainTabComponent::setEditorViewport (EditorViewport* ev)
+void SignalChainTabComponent::setSNAPEditorViewport (SNAPEditorViewport* ev)
 {
     editorViewport = ev;
     viewport->setViewedComponent (ev, true);
@@ -1437,12 +1437,12 @@ void SignalChainTabComponent::buttonClicked (Button* button)
 
 // LOADING AND SAVING
 
-const String EditorViewport::saveState (File fileToUse, String& xmlText)
+const String SNAPEditorViewport::saveState (File fileToUse, String& xmlText)
 {
     return saveState (fileToUse, &xmlText);
 }
 
-const String EditorViewport::saveState (File fileToUse, String* xmlText)
+const String SNAPEditorViewport::saveState (File fileToUse, String* xmlText)
 {
     String error;
 
@@ -1464,7 +1464,7 @@ const String EditorViewport::saveState (File fileToUse, String* xmlText)
     return error;
 }
 
-void EditorViewport::saveEditorViewportSettingsToXml (XmlElement* xml)
+void SNAPEditorViewport::saveSNAPEditorViewportSettingsToXml (XmlElement* xml)
 {
     XmlElement* editorViewportSettings = new XmlElement ("EDITORVIEWPORT");
     editorViewportSettings->setAttribute ("selectedTab", signalChainTabComponent->getSelectedTab());
@@ -1473,7 +1473,7 @@ void EditorViewport::saveEditorViewportSettingsToXml (XmlElement* xml)
     xml->addChildElement (editorViewportSettings);
 }
 
-void EditorViewport::loadEditorViewportSettingsFromXml (XmlElement* element)
+void SNAPEditorViewport::loadSNAPEditorViewportSettingsFromXml (XmlElement* element)
 {
     auto* pg = AccessClass::getProcessorGraph();
 
@@ -1488,7 +1488,7 @@ void EditorViewport::loadEditorViewportSettingsFromXml (XmlElement* element)
     signalChainTabComponent->setScrollOffset (scrollOffset);
 }
 
-const String EditorViewport::loadPluginState (File fileToLoad, GenericEditor* selectedEditor)
+const String SNAPEditorViewport::loadPluginState (File fileToLoad, GenericEditor* selectedEditor)
 {
     int numSelected = 0;
 
@@ -1538,7 +1538,7 @@ const String EditorViewport::loadPluginState (File fileToLoad, GenericEditor* se
     return "Success";
 }
 
-const String EditorViewport::savePluginState (File fileToSave, GenericEditor* selectedEditor)
+const String SNAPEditorViewport::savePluginState (File fileToSave, GenericEditor* selectedEditor)
 {
     int numSelected = 0;
 
@@ -1585,7 +1585,7 @@ const String EditorViewport::savePluginState (File fileToSave, GenericEditor* se
     }
 }
 
-std::unique_ptr<XmlElement> EditorViewport::createSettingsXml()
+std::unique_ptr<XmlElement> SNAPEditorViewport::createSettingsXml()
 {
     std::unique_ptr<XmlElement> xml = std::make_unique<XmlElement> ("SETTINGS");
 
@@ -1594,13 +1594,13 @@ std::unique_ptr<XmlElement> EditorViewport::createSettingsXml()
     return xml;
 }
 
-XmlElement* EditorViewport::createNodeXml (GenericProcessor* processor, bool isStartOfSignalChain)
+XmlElement* SNAPEditorViewport::createNodeXml (GenericProcessor* processor, bool isStartOfSignalChain)
 {
     XmlElement* node = AccessClass::getProcessorGraph()->createNodeXml (processor, isStartOfSignalChain);
     return node;
 }
 
-const String EditorViewport::loadState (File fileToLoad)
+const String SNAPEditorViewport::loadState (File fileToLoad)
 {
     currentFile = fileToLoad;
 
@@ -1658,13 +1658,13 @@ const String EditorViewport::loadState (File fileToLoad)
     return "Loaded signal chain.";
 }
 
-const String EditorViewport::loadStateFromXml (XmlElement* xml)
+const String SNAPEditorViewport::loadStateFromXml (XmlElement* xml)
 {
     AccessClass::getProcessorGraph()->loadFromXml (xml);
     return String();
 }
 
-void EditorViewport::deleteSelectedProcessors()
+void SNAPEditorViewport::deleteSelectedProcessors()
 {
     if (signalChainIsLocked)
         return;
@@ -1684,12 +1684,12 @@ void EditorViewport::deleteSelectedProcessors()
     }
 }
 
-Plugin::Description EditorViewport::getDescriptionFromXml (XmlElement* settings, bool ignoreNodeId)
+Plugin::Description SNAPEditorViewport::getDescriptionFromXml (XmlElement* settings, bool ignoreNodeId)
 {
     return AccessClass::getProcessorGraph()->getDescriptionFromXml (settings, ignoreNodeId);
 }
 
-GenericProcessor* EditorViewport::createProcessorAtInsertionPoint (XmlElement* parametersAsXml,
+GenericProcessor* SNAPEditorViewport::createProcessorAtInsertionPoint (XmlElement* parametersAsXml,
                                                                    int insertionPt,
                                                                    bool ignoreNodeId)
 {

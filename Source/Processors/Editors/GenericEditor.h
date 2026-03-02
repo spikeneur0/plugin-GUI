@@ -46,7 +46,7 @@ class UtilityButton;
     Classes derived from this class must place their controls as child components.
     They shouldn't try to re-draw any aspects of their background.
 
-    @see GenericProcessor, EditorViewport
+    @see GenericProcessor, SNAPEditorViewport
 */
 class PLUGIN_API GenericEditor : public AudioProcessorEditor
 {
@@ -139,10 +139,10 @@ public:
     /** The unique integer ID of the editor's processor. */
     int nodeId;
 
-    /** Sets the number of the editor's associated tab in the DataViewport. */
+    /** Sets the number of the editor's associated tab in the SNAPDataViewport. */
     virtual void tabNumber (int t);
 
-    /** Returns the number of the editor's associated tab in the DataViewport. */
+    /** Returns the number of the editor's associated tab in the SNAPDataViewport. */
     int tabNumber();
 
     /** Required for MergerEditor only.*/
@@ -163,13 +163,13 @@ public:
     /** Required for SplitterEditor and MergerEditor only.*/
     virtual int getPathForEditor (GenericEditor* editor);
 
-    /** Used by GraphViewer */
+    /** Used by SNAPGraphViewer */
     bool isSplitter();
 
-    /** Used by GraphViewer */
+    /** Used by SNAPGraphViewer */
     bool isMerger();
 
-    /** Used by GraphViewer */
+    /** Used by SNAPGraphViewer */
     bool isUtility();
 
     /** Used by VisualizerEditor to bring the editor's tab to the foreground.*/

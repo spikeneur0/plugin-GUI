@@ -28,7 +28,7 @@
 #define _MAIN
 #endif
 #include "../JuceLibraryCode/JuceHeader.h"
-#include "MainWindow.h"
+#include "SNAPMainWindow.h"
 #include "UI/SplashScreen.h"
 
 #include <fstream>
@@ -60,19 +60,19 @@ BOOL WINAPI ConsoleHandler (DWORD CEvent)
 
   Launches the application and creates the CustomLookAndFeelClass.
 
-  The OpenEphysApplication class own the application's MainWindow (via
+  The SNAPApplication class own the application's SNAPMainWindow (via
   a ScopedPointer).
 
-  @see MainWindow
+  @see SNAPMainWindow
 
 */
 
-class OpenEphysApplication : public JUCEApplication
+class SNAPApplication : public JUCEApplication
 {
 public:
-    OpenEphysApplication() {}
+    SNAPApplication() {}
 
-    ~OpenEphysApplication() {}
+    ~SNAPApplication() {}
 
     void initialise (const String& commandLine)
     {
@@ -142,14 +142,14 @@ public:
             splashPtr = splashScreen.get();
         }
 
-        mainWindow = std::make_unique<MainWindow> (fileToLoad, isConsoleApp, splashPtr);
+        mainWindow = std::make_unique<SNAPMainWindow> (fileToLoad, isConsoleApp, splashPtr);
     }
 
     void shutdown() {}
 
     static void handleCrash (void* input)
     {
-        MainWindow::handleCrash (input);
+        SNAPMainWindow::handleCrash (input);
     }
 
     void systemRequestedQuit()
@@ -206,9 +206,9 @@ public:
 
 private:
     std::unique_ptr<OpenEphysSplashScreen> splashScreen;
-    std::unique_ptr<MainWindow> mainWindow;
+    std::unique_ptr<SNAPMainWindow> mainWindow;
 };
 
 //==============================================================================
 // This macro generates the main() routine that starts the app.
-START_JUCE_APPLICATION (OpenEphysApplication)
+START_JUCE_APPLICATION (SNAPApplication)

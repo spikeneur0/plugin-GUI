@@ -1,9 +1,9 @@
-Package: open-ephys
+Package: snap-neuro
 Version: 1.0.2
 Architecture: amd64
 Installed-Size: 18644
 Section: science
 Priority: optional
-Maintainer: Open Ephys <gui@open-ephys.org>
-Homepage: https://open-ephys.org/gui
-Description: Software for processing, recording, and visualizing multichannel electrophysiology data.
+Maintainer: Spike Neuro <info@spikeneuro.com>
+Homepage: https://spikeneuro.com
+Description: SNAP - Spike Neuro Acquisition Platform for processing, recording, and visualizing multichannel electrophysiology data.

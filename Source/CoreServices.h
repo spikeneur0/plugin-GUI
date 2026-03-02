@@ -80,7 +80,7 @@ PLUGIN_API void sendStatusMessage (const String& text);
 */
 PLUGIN_API void sendStatusMessage (const char* text);
 
-/** Highlights a plugin's editor in the EditorViewport, without updating the signal chain.
+/** Highlights a plugin's editor in the SNAPEditorViewport, without updating the signal chain.
 * It will also make the editor visible if it's not currently seen by the user.*/
 PLUGIN_API void highlightEditor (GenericEditor* ed);
 

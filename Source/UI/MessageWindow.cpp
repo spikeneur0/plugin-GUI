@@ -28,7 +28,7 @@
 #include "../CoreServices.h"
 #include "../Processors/MessageCenter/MessageCenter.h"
 
-#include "UIComponent.h"
+#include "SNAPUIComponent.h"
 
 //-----------------------------------------------------------------------
 

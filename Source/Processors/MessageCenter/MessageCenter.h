@@ -40,7 +40,7 @@
 
   The MessageCenter is located along the bottom left of the application window.
 
-  @see UIComponent
+  @see SNAPUIComponent
 
 */
 

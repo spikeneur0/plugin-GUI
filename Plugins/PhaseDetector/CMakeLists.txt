@@ -11,7 +11,7 @@ add_sources(${PLUGIN_NAME} PhaseDetector.cpp PhaseDetector.h
 if(APPLE)
   set_target_properties(
     ${PLUGIN_NAME} PROPERTIES XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER
-                              "org.open-ephys.plugin.PhaseDetector")
+                              "com.spikeneuro.plugin.PhaseDetector")
 endif()
 
 if(BUILD_TESTS)

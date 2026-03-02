@@ -30,7 +30,7 @@
 
 class GenericEditor;
 class DraggableTabComponent;
-class DataViewport;
+class SNAPDataViewport;
 
 /**
  
@@ -117,7 +117,7 @@ class DraggableTabComponent : public TabbedComponent,
 {
 public:
     /** Constructor */
-    DraggableTabComponent (DataViewport* parent);
+    DraggableTabComponent (SNAPDataViewport* parent);
 
     /** Destructor */
     ~DraggableTabComponent();
@@ -183,7 +183,7 @@ public:
     void takeComponentSnapshot (int tabIndex, const String& tabName);
 
     /** Parent component*/
-    DataViewport* dataViewport;
+    SNAPDataViewport* dataViewport;
 
 private:
     /** Tracks whether dragging is active */
@@ -248,26 +248,26 @@ private:
 
 /**
 
-  The DataViewport sits in the center of the MainWindow
+  The SNAPDataViewport sits in the center of the SNAPMainWindow
   and is always visible. Editors that create data
   visualizations can place them in the
-  DataViewport for easy access on small monitors, or in
+  SNAPDataViewport for easy access on small monitors, or in
   a separate window for maximum flexibility.
 
   @see GenericEditor, InfoLabel, LfpDisplayCanvas
 
 */
 
-class TESTABLE DataViewport : public Component,
+class TESTABLE SNAPDataViewport : public Component,
                               public DragAndDropContainer,
                               public Button::Listener
 {
 public:
     /** Constructor*/
-    DataViewport();
+    SNAPDataViewport();
 
     /** Destructor*/
-    ~DataViewport() {}
+    ~SNAPDataViewport() {}
 
     /** Adds a new visualizer within a tab and returns the tab index.*/
     void addTab (String tabName, Component* componentToAdd, int nodeId);
@@ -290,8 +290,8 @@ public:
     /** Load settings.*/
     void loadStateFromXml (XmlElement* xml);
 
-    /** Prevents the DataViewport from signaling EditorViewport when changing tabs.*/
-    void disableConnectionToEditorViewport();
+    /** Prevents the SNAPDataViewport from signaling SNAPEditorViewport when changing tabs.*/
+    void disableConnectionToSNAPEditorViewport();
 
     /** Gets the content component for a particular nodeId */
     Component* getContentComponentForNodeId (int nodeId);
@@ -306,10 +306,10 @@ public:
     void removeTabbedComponent (DraggableTabComponent* draggableTabComponent);
 
 private:
-    /** Maps original tab indices to their location within the DataViewport. */
+    /** Maps original tab indices to their location within the SNAPDataViewport. */
     //Array<int> tabArray;
 
-    /** Maps processors to their respective tabs within the DataViewport. */
+    /** Maps processors to their respective tabs within the SNAPDataViewport. */
     //Array<int> savedTabIndices;
     //Array<String> savedTabNames;
     //Array<Component*> savedTabComponents;
@@ -332,7 +332,7 @@ private:
     /** True when shutting down */
     bool shutdown;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DataViewport);
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SNAPDataViewport);
 };
 
 #endif // __DATAVIEWPORT_H_B38FE628__

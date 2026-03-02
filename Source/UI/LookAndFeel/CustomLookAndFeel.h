@@ -75,7 +75,7 @@ enum ColourTheme
    Currently contains methods for drawing custom tabs, scroll bars, and sliders.
    It also takes care of custom fonts via getTypefaceForFont().
 
-   @see MainWindow
+   @see SNAPMainWindow
 
 */
 

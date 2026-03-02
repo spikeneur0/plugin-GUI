@@ -84,7 +84,7 @@ public:
     */
     void setParameter (int parameterIndex, float newValue) override;
 
-    /** Creates the AudioEditor (located in the ControlPanel). */
+    /** Creates the AudioEditor (located in the SNAPControlPanel). */
     AudioProcessorEditor* createEditor() override;
 
     /** Resets the connections prior to a new round of data acquisition. */

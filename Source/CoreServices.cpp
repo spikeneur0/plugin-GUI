@@ -28,8 +28,8 @@
 #include "Processors/MessageCenter/MessageCenterEditor.h"
 #include "Processors/ProcessorGraph/ProcessorGraph.h"
 #include "Processors/RecordNode/RecordNode.h"
-#include "UI/ControlPanel.h"
-#include "UI/EditorViewport.h"
+#include "UI/SNAPControlPanel.h"
+#include "UI/SNAPEditorViewport.h"
 #include "UI/PopupComponent.h"
 #include "Processors/Merger/Merger.h"
 
@@ -53,7 +53,7 @@ void saveRecoveryConfig()
     if (! configsDir.getFullPathName().contains ("plugin-GUI" + File::getSeparatorString() + "Build"))
         configsDir = configsDir.getChildFile ("configs-api" + String (PLUGIN_API_VER));
 
-    EditorViewport* ev = getEditorViewport();
+    SNAPEditorViewport* ev = getSNAPEditorViewport();
     File recoveryFile = configsDir.getChildFile ("recoveryConfig.xml");
     //NOTE: Recovery config will not get saved in headless mode
     if (ev != nullptr)
@@ -66,8 +66,8 @@ void loadSignalChain (String path)
 
     if (fileToLoad.existsAsFile())
     {
-        if (getEditorViewport() != nullptr)
-            getEditorViewport()->loadState (File (path));
+        if (getSNAPEditorViewport() != nullptr)
+            getSNAPEditorViewport()->loadState (File (path));
         else // headless mode
         {
             XmlDocument doc (fileToLoad);
@@ -79,24 +79,24 @@ void loadSignalChain (String path)
 
 bool getAcquisitionStatus()
 {
-    return getControlPanel()->getAcquisitionState();
+    return getSNAPControlPanel()->getAcquisitionState();
 }
 
 void setAcquisitionStatus (bool enable)
 {
     const MessageManagerLock mml;
-    getControlPanel()->setAcquisitionState (enable);
+    getSNAPControlPanel()->setAcquisitionState (enable);
 }
 
 bool getRecordingStatus()
 {
-    return getControlPanel()->getRecordingState();
+    return getSNAPControlPanel()->getRecordingState();
 }
 
 void setRecordingStatus (bool enable)
 {
     const MessageManagerLock mml;
-    getControlPanel()->setRecordingState (enable, true); // starts recording regardless of sync status
+    getSNAPControlPanel()->setRecordingState (enable, true); // starts recording regardless of sync status
 }
 
 void sendStatusMessage (const String& text)
@@ -113,7 +113,7 @@ void sendStatusMessage (const char* text)
 
 void highlightEditor (GenericEditor* ed)
 {
-    getEditorViewport()->makeEditorVisible (ed);
+    getSNAPEditorViewport()->makeEditorVisible (ed);
 }
 
 juce::int64 getSystemTime()
@@ -123,14 +123,14 @@ juce::int64 getSystemTime()
 
 juce::int64 getRecordingTime()
 {
-    return getControlPanel()->getRecordingTime();
+    return getSNAPControlPanel()->getRecordingTime();
 }
 
 void setRecordingParentDirectory (String dir)
 {
     if (File (dir).exists())
     {
-        getControlPanel()->setRecordingParentDirectory (dir);
+        getSNAPControlPanel()->setRecordingParentDirectory (dir);
     }
     else
     {
@@ -140,62 +140,62 @@ void setRecordingParentDirectory (String dir)
 
 File getRecordingParentDirectory()
 {
-    return getControlPanel()->getRecordingParentDirectory();
+    return getSNAPControlPanel()->getRecordingParentDirectory();
 }
 
 void setRecordingDirectoryBaseText (String text)
 {
-    getControlPanel()->setRecordingDirectoryBaseText (text);
+    getSNAPControlPanel()->setRecordingDirectoryBaseText (text);
 }
 
 String getRecordingDirectoryBaseText()
 {
-    return getControlPanel()->getRecordingDirectoryBaseText();
+    return getSNAPControlPanel()->getRecordingDirectoryBaseText();
 }
 
 String getRecordingDirectoryName()
 {
-    return getControlPanel()->getRecordingDirectoryName();
+    return getSNAPControlPanel()->getRecordingDirectoryName();
 }
 
 void createNewRecordingDirectory()
 {
-    getControlPanel()->createNewRecordingDirectory();
+    getSNAPControlPanel()->createNewRecordingDirectory();
 }
 
 void setRecordingDirectoryPrependText (String text)
 {
-    getControlPanel()->setRecordingDirectoryPrependText (text);
+    getSNAPControlPanel()->setRecordingDirectoryPrependText (text);
 }
 
 void setRecordingDirectoryAppendText (String text)
 {
-    getControlPanel()->setRecordingDirectoryAppendText (text);
+    getSNAPControlPanel()->setRecordingDirectoryAppendText (text);
 }
 
 String getRecordingDirectoryPrependText()
 {
-    return getControlPanel()->getRecordingDirectoryPrependText();
+    return getSNAPControlPanel()->getRecordingDirectoryPrependText();
 }
 
 String getRecordingDirectoryAppendText()
 {
-    return getControlPanel()->getRecordingDirectoryAppendText();
+    return getSNAPControlPanel()->getRecordingDirectoryAppendText();
 }
 
 std::vector<RecordEngineManager*> getAvailableRecordEngines()
 {
-    return getControlPanel()->getAvailableRecordEngines();
+    return getSNAPControlPanel()->getAvailableRecordEngines();
 }
 
 String getDefaultRecordEngineId()
 {
-    return getControlPanel()->getSelectedRecordEngineId();
+    return getSNAPControlPanel()->getSelectedRecordEngineId();
 }
 
 bool setDefaultRecordEngine (String id)
 {
-    return getControlPanel()->setSelectedRecordEngineId (id);
+    return getSNAPControlPanel()->setSelectedRecordEngineId (id);
 }
 
 bool allRecordNodesAreSynchronized()
@@ -504,14 +504,14 @@ UndoManager* getUndoManager()
 
 PopupManager* getPopupManager()
 {
-    return getUIComponent()->getPopupManager();
+    return getSNAPUIComponent()->getPopupManager();
 }
 
 namespace PluginInstaller
 {
     bool installPlugin (String plugin, String version)
     {
-        getUIComponent()->getPluginInstaller()->installPluginAndDependency (plugin, version);
+        getSNAPUIComponent()->getSNAPPluginInstaller()->installPluginAndDependency (plugin, version);
 
         return true;
     }

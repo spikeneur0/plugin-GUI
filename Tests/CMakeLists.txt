@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5.0)
 
-project(open-ephys-components)
+project(snap-components)
 set(PLUGIN_HEADER_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../Plugins/Headers)
 set(CMAKE_SHARED_LIBRARY_PREFIX "")
 

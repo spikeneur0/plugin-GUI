@@ -21,7 +21,7 @@
 
 */
 
-#include "AudioComponent.h"
+#include "SNAPAudioComponent.h"
 #include "../AccessClass.h"
 #include "../Processors/ProcessorGraph/ProcessorGraph.h"
 #include <stdio.h>
@@ -29,9 +29,9 @@
 #include "../CoreServices.h"
 #include "../Utils/Utils.h"
 
-AudioComponent::AudioComponent() : isPlaying (false)
+SNAPAudioComponent::SNAPAudioComponent() : isPlaying (false)
 {
-    AccessClass::setAudioComponent (this);
+    AccessClass::setSNAPAudioComponent (this);
 
     bool initialized = false;
     while (! initialized)
@@ -116,13 +116,13 @@ AudioComponent::AudioComponent() : isPlaying (false)
     graphPlayer = std::make_unique<AudioProcessorPlayer>();
 }
 
-AudioComponent::~AudioComponent()
+SNAPAudioComponent::~SNAPAudioComponent()
 {
     if (callbacksAreActive())
         endCallbacks();
 }
 
-int AudioComponent::getBufferSize()
+int SNAPAudioComponent::getBufferSize()
 {
     AudioDeviceManager::AudioDeviceSetup setup;
     deviceManager.getAudioDeviceSetup (setup);
@@ -130,7 +130,7 @@ int AudioComponent::getBufferSize()
     return setup.bufferSize;
 }
 
-void AudioComponent::setBufferSize (int bufferSize)
+void SNAPAudioComponent::setBufferSize (int bufferSize)
 {
     if (callbacksAreActive())
     {
@@ -148,7 +148,7 @@ void AudioComponent::setBufferSize (int bufferSize)
     CoreServices::sendStatusMessage ("Set buffer size to " + String (deviceManager.getAudioDeviceSetup().bufferSize) + " samples.");
 }
 
-int AudioComponent::getBufferSizeMs()
+int SNAPAudioComponent::getBufferSizeMs()
 {
     AudioDeviceManager::AudioDeviceSetup setup;
     deviceManager.getAudioDeviceSetup (setup);
@@ -156,7 +156,7 @@ int AudioComponent::getBufferSizeMs()
     return int (float (setup.bufferSize) / setup.sampleRate * 1000);
 }
 
-int AudioComponent::getSampleRate()
+int SNAPAudioComponent::getSampleRate()
 {
     AudioDeviceManager::AudioDeviceSetup setup;
     deviceManager.getAudioDeviceSetup (setup);
@@ -164,7 +164,7 @@ int AudioComponent::getSampleRate()
     return setup.sampleRate;
 }
 
-void AudioComponent::setSampleRate (int sampleRate)
+void SNAPAudioComponent::setSampleRate (int sampleRate)
 {
     if (callbacksAreActive())
     {
@@ -182,12 +182,12 @@ void AudioComponent::setSampleRate (int sampleRate)
     CoreServices::sendStatusMessage ("Set sample rate to " + String (deviceManager.getAudioDeviceSetup().sampleRate) + " Hz.");
 }
 
-String AudioComponent::getDeviceName()
+String SNAPAudioComponent::getDeviceName()
 {
     return deviceManager.getAudioDeviceSetup().outputDeviceName;
 }
 
-void AudioComponent::setDeviceName (String deviceName)
+void SNAPAudioComponent::setDeviceName (String deviceName)
 {
     if (callbacksAreActive())
     {
@@ -205,12 +205,12 @@ void AudioComponent::setDeviceName (String deviceName)
     CoreServices::sendStatusMessage ("Set device name to " + deviceName);
 }
 
-String AudioComponent::getDeviceType()
+String SNAPAudioComponent::getDeviceType()
 {
     return deviceManager.getCurrentAudioDeviceType();
 }
 
-void AudioComponent::setDeviceType (String deviceType)
+void SNAPAudioComponent::setDeviceType (String deviceType)
 {
     if (callbacksAreActive())
     {
@@ -223,32 +223,32 @@ void AudioComponent::setDeviceType (String deviceType)
     CoreServices::sendStatusMessage ("Set device type to " + String (deviceManager.getCurrentDeviceTypeObject()->getTypeName()));
 }
 
-Array<double> AudioComponent::getAvailableSampleRates()
+Array<double> SNAPAudioComponent::getAvailableSampleRates()
 {
     return deviceManager.getCurrentAudioDevice()->getAvailableSampleRates();
 }
 
-Array<int> AudioComponent::getAvailableBufferSizes()
+Array<int> SNAPAudioComponent::getAvailableBufferSizes()
 {
     return deviceManager.getCurrentAudioDevice()->getAvailableBufferSizes();
 }
 
-void AudioComponent::connectToProcessorGraph (AudioProcessorGraph* processorGraph)
+void SNAPAudioComponent::connectToProcessorGraph (AudioProcessorGraph* processorGraph)
 {
     graphPlayer->setProcessor (processorGraph);
 }
 
-void AudioComponent::disconnectProcessorGraph()
+void SNAPAudioComponent::disconnectProcessorGraph()
 {
     graphPlayer->setProcessor (0);
 }
 
-bool AudioComponent::callbacksAreActive()
+bool SNAPAudioComponent::callbacksAreActive()
 {
     return isPlaying;
 }
 
-bool AudioComponent::checkForDevice()
+bool SNAPAudioComponent::checkForDevice()
 {
     if (deviceManager.getCurrentAudioDevice() == nullptr)
     {
@@ -260,7 +260,7 @@ bool AudioComponent::checkForDevice()
     return true;
 }
 
-bool AudioComponent::restartDevice()
+bool SNAPAudioComponent::restartDevice()
 {
     deviceManager.restartLastAudioDevice();
 
@@ -276,12 +276,12 @@ bool AudioComponent::restartDevice()
     return true;
 }
 
-void AudioComponent::stopDevice()
+void SNAPAudioComponent::stopDevice()
 {
     deviceManager.closeAudioDevice();
 }
 
-bool AudioComponent::beginCallbacks()
+bool SNAPAudioComponent::beginCallbacks()
 {
     if (! isPlaying)
     {
@@ -312,14 +312,14 @@ bool AudioComponent::beginCallbacks()
     return false;
 }
 
-void AudioComponent::endCallbacks()
+void SNAPAudioComponent::endCallbacks()
 {
     LOGD ("Removing audio callback.");
     deviceManager.removeAudioCallback (graphPlayer.get());
     isPlaying = false;
 }
 
-void AudioComponent::saveStateToXml (XmlElement* parent)
+void SNAPAudioComponent::saveStateToXml (XmlElement* parent)
 {
     // JUCE's audioState XML format (includes all info)
     std::unique_ptr<XmlElement> audioState = deviceManager.createStateXml();
@@ -339,7 +339,7 @@ void AudioComponent::saveStateToXml (XmlElement* parent)
     parent->setAttribute ("deviceType", deviceManager.getCurrentAudioDeviceType());
 }
 
-void AudioComponent::loadStateFromXml (XmlElement* parent)
+void SNAPAudioComponent::loadStateFromXml (XmlElement* parent)
 {
     for (auto* child : parent->getChildIterator())
     {

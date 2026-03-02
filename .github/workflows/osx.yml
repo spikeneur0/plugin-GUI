@@ -70,8 +70,8 @@ jobs:
         fi
 
         cd Build/Release
-        mkdir open-ephys
-        mv Open\ Ephys\ GUI.app open-ephys
+        mkdir snap
+        mv SNAP.app snap
 
         # Turn our base64-encoded certificate back to a regular .p12 file
         echo $MACOS_CERTIFICATE | base64 --decode > certificate.p12
@@ -84,9 +84,9 @@ jobs:
         security unlock-keychain -p $MACOS_CI_KEYCHAIN_PWD build.keychain
         security import certificate.p12 -k build.keychain -P $MACOS_CERTIFICATE_PWD -T /usr/bin/codesign
         security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $MACOS_CI_KEYCHAIN_PWD build.keychain
-        /usr/bin/codesign --force -s "$MACOS_CERTIFICATE_NAME" -v open-ephys/Open\ Ephys\ GUI.app --deep --strict --timestamp --options=runtime --entitlements ../../Resources/Build-files/entitlements.plist
+        /usr/bin/codesign --force -s "$MACOS_CERTIFICATE_NAME" -v snap/SNAP.app --deep --strict --timestamp --options=runtime --entitlements ../../Resources/Build-files/entitlements.plist
 
-        /usr/bin/codesign -dv --verbose=4 --entitlements - open-ephys/Open\ Ephys\ GUI.app
+        /usr/bin/codesign -dv --verbose=4 --entitlements - snap/SNAP.app
 
         # Store the notarization credentials so that we can prevent a UI password dialog from blocking the CI
 
@@ -98,7 +98,7 @@ jobs:
         # notarization service
 
         echo "Creating temp notarization archive"
-        /usr/bin/ditto -c -k --sequesterRsrc --keepParent open-ephys/Open\ Ephys\ GUI.app open-ephys.zip
+        /usr/bin/ditto -c -k --sequesterRsrc --keepParent snap/SNAP.app snap.zip
 
         # Here we send the notarization request to the Apple's Notarization service, waiting for the result.
         # This typically takes a few seconds inside a CI environment, but it might take more depending on the App
@@ -106,36 +106,36 @@ jobs:
         # you're curious
 
         echo "Notarize app"
-        xcrun notarytool submit "open-ephys.zip" --keychain-profile "notarytool-profile" --wait
+        xcrun notarytool submit "snap.zip" --keychain-profile "notarytool-profile" --wait
 
         # Finally, we need to "attach the staple" to our executable, which will allow our app to be
         # validated by macOS even when an internet connection is not available.
         echo "Attach staple"
-        rm -r open-ephys/*
-        /usr/bin/ditto -x -k open-ephys.zip open-ephys
-        xcrun stapler staple open-ephys/Open\ Ephys\ GUI.app
+        rm -r snap/*
+        /usr/bin/ditto -x -k snap.zip snap
+        xcrun stapler staple snap/SNAP.app
 
-        zipfile=open-ephys-${gui_ver}-mac${version_suffix}.zip
-        /usr/bin/ditto -c -k --sequesterRsrc --keepParent open-ephys $zipfile
+        zipfile=snap-${gui_ver}-mac${version_suffix}.zip
+        /usr/bin/ditto -c -k --sequesterRsrc --keepParent snap $zipfile
         user_info="X-JFrog-Art-Api:$ARTIFACTORY_ACCESS_TOKEN"
         curl -H $user_info -T $zipfile "https://openephys.jfrog.io/artifactory/GUI-binaries/${artifactory_repo}/mac/$zipfile"
 
         # Create a DMG installer
         brew install create-dmg && create-dmg \
-          --volname "Open-Ephys Installer" \
-          --volicon "open-ephys/Open Ephys GUI.app/Contents/Resources/Icon.icns" \
-          --background "open-ephys/Open Ephys GUI.app/Contents/Resources/dmg_background.png" \
+          --volname "SNAP Installer" \
+          --volicon "snap/SNAP.app/Contents/Resources/Icon.icns" \
+          --background "snap/SNAP.app/Contents/Resources/dmg_background.png" \
           --window-pos 300 0 \
           --window-size 688 416 \
           --icon-size 128 \
-          --icon "Open Ephys GUI.app" 200 190 \
-          --hide-extension "Open Ephys GUI.app" \
+          --icon "SNAP.app" 200 190 \
+          --hide-extension "SNAP.app" \
           --app-drop-link 500 188 \
-          "Open-Ephys-Installer.dmg" \
-          "open-ephys/"
+          "SNAP-Installer.dmg" \
+          "snap/"
 
-        installer=Open_Ephys_GUI_${gui_ver}${version_suffix}.dmg
-        mv -v Open-Ephys-Installer.dmg $installer
+        installer=SNAP_${gui_ver}${version_suffix}.dmg
+        mv -v SNAP-Installer.dmg $installer
 
         echo "Notarize DMG"
         xcrun notarytool submit "$installer" --keychain-profile "notarytool-profile" --wait

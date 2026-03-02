@@ -1,19 +1,19 @@
 #!/bin/sh
-# postinst script for Open Ephys
+# postinst script for SNAP
 
 if [ "$1" = configure ]; then
 
-    echo "Copying open-ephys udev rules and restaring udev service..."
+    echo "Copying snap-neuro udev rules and restarting udev service..."
     cd /usr/local/bin
-    mv open-ephys-gui/*.rules /etc/udev/rules.d
+    mv snap-neuro/*.rules /etc/udev/rules.d
     service udev restart
 
-    echo "Creating open-ephys symlink to /usr/local/bin..."
-    ln -sf open-ephys-gui/open-ephys open-ephys
+    echo "Creating snap-neuro symlink to /usr/local/bin..."
+    ln -sf snap-neuro/snap-neuro snap-neuro
 
     echo "Ensuring desktop entry permissions..."
-    chmod 644 /usr/share/applications/open-ephys.desktop
-    
+    chmod 644 /usr/share/applications/snap-neuro.desktop
+
     echo "Updating desktop database..."
     update-desktop-database -q
 

@@ -1,23 +1,23 @@
 [Setup]
-AppId=Open Ephys
-AppName=Open Ephys GUI
+AppId=SNAP
+AppName=SNAP - Spike Neuro Acquisition Platform
 AppVersion=1.0.2
-AppVerName=Open Ephys GUI 1.0.2
-AppCopyright=Copyright (C) 2010-2026, Open Ephys & Contributors
-AppPublisher=open-ephys.org
-AppPublisherURL=https://open-ephys.org/gui
-DefaultDirName={autopf}\Open Ephys
-DefaultGroupName=Open Ephys GUI
+AppVerName=SNAP 1.0.2
+AppCopyright=Copyright (C) 2024-2026, Spike Neuro & Contributors
+AppPublisher=Spike Neuro
+AppPublisherURL=https://spikeneuro.com
+DefaultDirName={autopf}\SNAP
+DefaultGroupName=SNAP
 DisableProgramGroupPage=yes
 UsePreviousGroup=no
-OutputBaseFilename=Open-Ephys_Installer
+OutputBaseFilename=SNAP_Installer
 OutputDir=.
 LicenseFile=..\..\..\LICENSE
 ArchitecturesAllowed=x64
 ArchitecturesInstallIn64BitMode=x64
 ChangesAssociations=yes
 SetupIconFile="..\..\Build-files\icon.ico"
-UninstallDisplayIcon={app}\open-ephys.exe
+UninstallDisplayIcon={app}\SNAP.exe
 AllowNoIcons=yes
 WizardStyle=modern
 
@@ -32,19 +32,19 @@ Source: "..\..\DLLs\FTD3XXDriver_WHQLCertified_1.3.0.10_Installer.exe"; DestDir:
 Source: "..\..\DLLs\FrontPanelUSB-DriverOnly-4.5.5.exe"; DestDir: {tmp}; Flags: deleteafterinstall; BeforeInstall: UpdateProgress(90);
 
 [Icons]
-Name: "{autodesktop}\Open Ephys GUI"; Filename: "{app}\open-ephys.exe"; Tasks: desktopicon
-Name: "{autoprograms}\Open Ephys GUI"; Filename: "{app}\open-ephys.exe"
+Name: "{autodesktop}\SNAP"; Filename: "{app}\SNAP.exe"; Tasks: desktopicon
+Name: "{autoprograms}\SNAP"; Filename: "{app}\SNAP.exe"
 
 [Run]
 Filename: "{tmp}\FTD3XXDriver_WHQLCertified_1.3.0.10_Installer.exe"; StatusMsg: "Installing FTDI D3XX driver..."; Tasks: install_usb1; Flags: skipifsilent
 Filename: "{tmp}\FrontPanelUSB-DriverOnly-4.5.5.exe"; StatusMsg: "Installing Front Panel USB driver..."; Tasks: install_usb2; Flags: skipifsilent
-Filename: "{app}\open-ephys.exe"; Description: "Launch Open Ephys GUI"; Flags: postinstall nowait skipifsilent
+Filename: "{app}\SNAP.exe"; Description: "Launch SNAP"; Flags: postinstall nowait skipifsilent
 
 [InstallDelete]
 Type: files; Name: "{app}\plugins\*.dll";
-Type: files; Name: "{autodesktop}\Open Ephys.lnk";
-Type: files; Name: "{autoprograms}\Open Ephys.lnk";
-Type: filesandordirs; Name: "{autoprograms}\Open Ephys";
+Type: files; Name: "{autodesktop}\SNAP.lnk";
+Type: files; Name: "{autoprograms}\SNAP.lnk";
+Type: filesandordirs; Name: "{autoprograms}\SNAP";
 
 [Code]
 // types and variables

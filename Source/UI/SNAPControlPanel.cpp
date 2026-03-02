@@ -21,12 +21,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
-#include "ControlPanel.h"
+#include "SNAPControlPanel.h"
 #include "../AccessClass.h"
 #include "../Processors/PluginManager/PluginManager.h"
 #include "../Processors/RecordNode/RecordEngine.h"
 #include "FilenameConfigWindow.h"
-#include "UIComponent.h"
+#include "SNAPUIComponent.h"
 #include <math.h>
 #include <stdio.h>
 
@@ -235,7 +235,7 @@ void CPUMeter::mouseUp (const MouseEvent& e)
 {
     if (e.mods.isLeftButtonDown())
     {
-        AccessClass::getUIComponent()->showBubbleMessage (this,
+        AccessClass::getSNAPUIComponent()->showBubbleMessage (this,
                                                           "Displays the fraction of available time that the"
                                                           " signal chain takes to complete one processing cycle");
     }
@@ -289,7 +289,7 @@ void DiskSpaceMeter::mouseUp (const MouseEvent& e)
 {
     if (e.mods.isLeftButtonDown())
     {
-        AccessClass::getUIComponent()->showBubbleMessage (this,
+        AccessClass::getSNAPUIComponent()->showBubbleMessage (this,
                                                           "Displays the fraction of available disk space"
                                                           " used by the default recording directory");
     }
@@ -488,12 +488,12 @@ void Clock::mouseDown (const MouseEvent& e)
     }
 }
 
-ControlPanel::ControlPanel (ProcessorGraph* graph_, AudioComponent* audio_, bool isConsoleApp_)
+SNAPControlPanel::SNAPControlPanel (ProcessorGraph* graph_, SNAPAudioComponent* audio_, bool isConsoleApp_)
     : graph (graph_),
       audio (audio_),
       isConsoleApp (isConsoleApp_)
 {
-    AccessClass::setControlPanel (this);
+    AccessClass::setSNAPControlPanel (this);
 
     recordButton = std::make_unique<RecordButton>();
     recordButton->addListener (this);
@@ -578,28 +578,28 @@ ControlPanel::ControlPanel (ProcessorGraph* graph_, AudioComponent* audio_, bool
     }
 }
 
-ControlPanel::~ControlPanel()
+SNAPControlPanel::~SNAPControlPanel()
 {
 }
 
-void ControlPanel::setRecordingState (bool t, bool force)
+void SNAPControlPanel::setRecordingState (bool t, bool force)
 {
     forceRecording = force;
 
     recordButton->setToggleState (t, sendNotification);
 }
 
-bool ControlPanel::getRecordingState()
+bool SNAPControlPanel::getRecordingState()
 {
     return recordButton->getToggleState();
 }
 
-int64 ControlPanel::getRecordingTime() const
+int64 SNAPControlPanel::getRecordingTime() const
 {
     return clock->getRecordingTime();
 }
 
-void ControlPanel::setRecordingParentDirectory (String path)
+void SNAPControlPanel::setRecordingParentDirectory (String path)
 {
     if (getRecordingState())
     {
@@ -617,22 +617,22 @@ void ControlPanel::setRecordingParentDirectory (String path)
     }
 }
 
-File ControlPanel::getRecordingParentDirectory()
+File SNAPControlPanel::getRecordingParentDirectory()
 {
     return filenameComponent->getCurrentFile();
 }
 
-bool ControlPanel::getAcquisitionState()
+bool SNAPControlPanel::getAcquisitionState()
 {
     return playButton->getToggleState();
 }
 
-void ControlPanel::setAcquisitionState (bool state)
+void SNAPControlPanel::setAcquisitionState (bool state)
 {
     playButton->setToggleState (state, sendNotification);
 }
 
-void ControlPanel::startAcquisition (bool recordingShouldAlsoStart)
+void SNAPControlPanel::startAcquisition (bool recordingShouldAlsoStart)
 {
     if (! audio->checkForDevice())
     {
@@ -718,7 +718,7 @@ void ControlPanel::startAcquisition (bool recordingShouldAlsoStart)
     }
 }
 
-void ControlPanel::stopAcquisition()
+void SNAPControlPanel::stopAcquisition()
 {
     if (recordButton->getToggleState())
     {
@@ -748,7 +748,7 @@ void ControlPanel::stopAcquisition()
     }
 }
 
-void ControlPanel::updateRecordEngineList()
+void SNAPControlPanel::updateRecordEngineList()
 {
     int selectedEngine = recordSelector->getSelectedId();
     recordSelector->clear (dontSendNotification);
@@ -787,7 +787,7 @@ void ControlPanel::updateRecordEngineList()
     }
 }
 
-std::vector<RecordEngineManager*> ControlPanel::getAvailableRecordEngines()
+std::vector<RecordEngineManager*> SNAPControlPanel::getAvailableRecordEngines()
 {
     std::vector<RecordEngineManager*> engines;
 
@@ -799,12 +799,12 @@ std::vector<RecordEngineManager*> ControlPanel::getAvailableRecordEngines()
     return engines;
 }
 
-String ControlPanel::getSelectedRecordEngineId()
+String SNAPControlPanel::getSelectedRecordEngineId()
 {
     return recordEngines[recordSelector->getSelectedId() - 1]->getID();
 }
 
-bool ControlPanel::setSelectedRecordEngineId (String id)
+bool SNAPControlPanel::setSelectedRecordEngineId (String id)
 {
     if (getAcquisitionState())
     {
@@ -823,7 +823,7 @@ bool ControlPanel::setSelectedRecordEngineId (String id)
     return false;
 }
 
-void ControlPanel::createPaths()
+void SNAPControlPanel::createPaths()
 {
     int w = getWidth() - 435;
     if (w > 22)
@@ -849,7 +849,7 @@ void ControlPanel::createPaths()
     p2.closeSubPath();
 }
 
-void ControlPanel::paint (Graphics& g)
+void SNAPControlPanel::paint (Graphics& g)
 {
     auto panelBg = findColour (ThemeColours::controlPanelBackground);
 
@@ -887,7 +887,7 @@ void ControlPanel::paint (Graphics& g)
     }
 }
 
-void ControlPanel::resized()
+void SNAPControlPanel::resized()
 {
     const int w = getWidth();
     const int h = 32;
@@ -1030,17 +1030,17 @@ void ControlPanel::resized()
     repaint();
 }
 
-void ControlPanel::openState (bool os)
+void SNAPControlPanel::openState (bool os)
 {
     open = os;
 
     showHideRecordingOptionsButton->setToggleState (os, dontSendNotification);
 
     if (! isConsoleApp)
-        AccessClass::getUIComponent()->childComponentChanged();
+        AccessClass::getSNAPUIComponent()->childComponentChanged();
 }
 
-void ControlPanel::labelTextChanged (Label* label)
+void SNAPControlPanel::labelTextChanged (Label* label)
 {
     for (auto* node : AccessClass::getProcessorGraph()->getRecordNodes())
     {
@@ -1050,7 +1050,7 @@ void ControlPanel::labelTextChanged (Label* label)
     clock->resetRecordingTime();
 }
 
-void ControlPanel::startRecording()
+void SNAPControlPanel::startRecording()
 {
     if (newDirectoryButton->getToggleState())
         clock->resetRecordingTime();
@@ -1087,7 +1087,7 @@ void ControlPanel::startRecording()
     repaint();
 }
 
-void ControlPanel::stopRecording()
+void SNAPControlPanel::stopRecording()
 {
     hasRecorded = true;
 
@@ -1120,7 +1120,7 @@ void ControlPanel::stopRecording()
     repaint();
 }
 
-void ControlPanel::componentBeingDeleted (Component& component)
+void SNAPControlPanel::componentBeingDeleted (Component& component)
 {
     /*Update filename fields as configured in the popup box upon exit. */
     filenameConfigWindow = std::make_unique<FilenameConfigWindow> (filenameFields);
@@ -1138,18 +1138,18 @@ void ControlPanel::componentBeingDeleted (Component& component)
     component.removeComponentListener (this);
 }
 
-void ControlPanel::colourChanged()
+void SNAPControlPanel::colourChanged()
 {
     playButton->updateImages (getAcquisitionState());
     recordButton->updateImages (getRecordingState());
 }
 
-void ControlPanel::buttonClicked (Button* button)
+void SNAPControlPanel::buttonClicked (Button* button)
 {
     if (button == showHideRecordingOptionsButton.get())
     {
         openState (button->getToggleState());
-        AccessClass::getUIComponent()->resized();
+        AccessClass::getSNAPUIComponent()->resized();
         return;
     }
 
@@ -1214,7 +1214,7 @@ void ControlPanel::buttonClicked (Button* button)
                 if (! isConsoleApp)
                 {
                     getLookAndFeel().playAlertSound();
-                    AccessClass::getUIComponent()->showBubbleMessage (getRecordButton(),
+                    AccessClass::getSNAPUIComponent()->showBubbleMessage (getRecordButton(),
                                                                       "Insert at least one Record Node to start recording");
                 }
                 CoreServices::sendStatusMessage ("Insert at least one Record Node to start recording.");
@@ -1284,7 +1284,7 @@ void ControlPanel::buttonClicked (Button* button)
     }
 }
 
-void ControlPanel::comboBoxChanged (ComboBox* combo)
+void SNAPControlPanel::comboBoxChanged (ComboBox* combo)
 {
     if (combo->getSelectedId() > 0)
     {
@@ -1297,7 +1297,7 @@ void ControlPanel::comboBoxChanged (ComboBox* combo)
     }
 }
 
-void ControlPanel::setSelectedRecordEngine (int index)
+void SNAPControlPanel::setSelectedRecordEngine (int index)
 {
     ScopedPointer<RecordEngine> re;
 
@@ -1310,7 +1310,7 @@ void ControlPanel::setSelectedRecordEngine (int index)
     lastEngineIndex = index;
 }
 
-void ControlPanel::filenameComponentChanged (FilenameComponent* fnComponent)
+void SNAPControlPanel::filenameComponentChanged (FilenameComponent* fnComponent)
 {
     File currentFile = fnComponent->getCurrentFile();
 
@@ -1323,7 +1323,7 @@ void ControlPanel::filenameComponentChanged (FilenameComponent* fnComponent)
 
         if (! isConsoleApp)
         {
-            AccessClass::getUIComponent()->showBubbleMessage (fnComponent,
+            AccessClass::getSNAPUIComponent()->showBubbleMessage (fnComponent,
                                                               "The selected recording directory does not exist. "
                                                               "Setting the parent recording directory to the default user save directory.");
         }
@@ -1339,7 +1339,7 @@ void ControlPanel::filenameComponentChanged (FilenameComponent* fnComponent)
     }
 }
 
-void ControlPanel::disableCallbacks()
+void SNAPControlPanel::disableCallbacks()
 {
     LOGD ("Control panel received signal to disable callbacks.");
 
@@ -1364,12 +1364,12 @@ void ControlPanel::disableCallbacks()
     clock->stop();
 }
 
-void ControlPanel::timerCallback()
+void SNAPControlPanel::timerCallback()
 {
     refreshMeters();
 }
 
-void ControlPanel::refreshMeters()
+void SNAPControlPanel::refreshMeters()
 {
     if (playButton->getToggleState())
     {
@@ -1394,15 +1394,15 @@ void ControlPanel::refreshMeters()
     }
 }
 
-void ControlPanel::toggleState()
+void SNAPControlPanel::toggleState()
 {
     open = ! open;
 
     showHideRecordingOptionsButton->setToggleState (open, dontSendNotification);
-    AccessClass::getUIComponent()->childComponentChanged();
+    AccessClass::getSNAPUIComponent()->childComponentChanged();
 }
 
-void ControlPanel::saveStateToXml (XmlElement* xml)
+void SNAPControlPanel::saveStateToXml (XmlElement* xml)
 {
     XmlElement* controlPanelState = xml->createNewChildElement ("CONTROLPANEL");
     controlPanelState->setAttribute ("isOpen", open);
@@ -1418,7 +1418,7 @@ void ControlPanel::saveStateToXml (XmlElement* xml)
     filenameConfigWindow->saveStateToXml (xml);
 }
 
-void ControlPanel::loadStateFromXml (XmlElement* xml)
+void SNAPControlPanel::loadStateFromXml (XmlElement* xml)
 {
     for (auto* xmlNode : xml->getChildIterator())
     {
@@ -1472,12 +1472,12 @@ void ControlPanel::loadStateFromXml (XmlElement* xml)
     generateFilenameFromFields (true);
 }
 
-Array<String> ControlPanel::getRecentlyUsedFilenames()
+Array<String> SNAPControlPanel::getRecentlyUsedFilenames()
 {
     return filenameComponent->getRecentlyUsedFilenames().strings;
 }
 
-void ControlPanel::setRecentlyUsedFilenames (const Array<String>& filenames)
+void SNAPControlPanel::setRecentlyUsedFilenames (const Array<String>& filenames)
 {
     StringArray validFilenames;
     for (const auto& filename : filenames)
@@ -1491,7 +1491,7 @@ void ControlPanel::setRecentlyUsedFilenames (const Array<String>& filenames)
     filenameComponent->setRecentlyUsedFilenames (validFilenames);
 }
 
-static void forceFilenameEditor (int result, ControlPanel* panel)
+static void forceFilenameEditor (int result, SNAPControlPanel* panel)
 {
     CallOutBox& myBox = CallOutBox::launchAsynchronously (std::move (panel->filenameConfigWindow),
                                                           panel->filenameText->getScreenBounds(),
@@ -1502,12 +1502,12 @@ static void forceFilenameEditor (int result, ControlPanel* panel)
     return;
 }
 
-String ControlPanel::getRecordingDirectoryName()
+String SNAPControlPanel::getRecordingDirectoryName()
 {
     return recordingDirectoryName;
 }
 
-void ControlPanel::createNewRecordingDirectory()
+void SNAPControlPanel::createNewRecordingDirectory()
 {
     //TODO: Remove dependency on button states/callbacks
     newDirectoryNeeded = true;
@@ -1515,7 +1515,7 @@ void ControlPanel::createNewRecordingDirectory()
                                { newDirectoryButton->setToggleState (true, dontSendNotification); });
 }
 
-String ControlPanel::getRecordingDirectoryPrependText()
+String SNAPControlPanel::getRecordingDirectoryPrependText()
 {
     for (auto& field : filenameFields) //loops in order through prepend, main, append
     {
@@ -1527,7 +1527,7 @@ String ControlPanel::getRecordingDirectoryPrependText()
     return "";
 }
 
-void ControlPanel::setRecordingDirectoryPrependText (String text)
+void SNAPControlPanel::setRecordingDirectoryPrependText (String text)
 {
     for (auto& field : filenameFields) //loops in order through prepend, main, append
     {
@@ -1557,7 +1557,7 @@ void ControlPanel::setRecordingDirectoryPrependText (String text)
     }
 }
 
-String ControlPanel::getRecordingDirectoryAppendText()
+String SNAPControlPanel::getRecordingDirectoryAppendText()
 {
     for (auto& field : filenameFields) //loops in order through prepend, main, append
     {
@@ -1569,7 +1569,7 @@ String ControlPanel::getRecordingDirectoryAppendText()
     return "";
 }
 
-void ControlPanel::setRecordingDirectoryAppendText (String text)
+void SNAPControlPanel::setRecordingDirectoryAppendText (String text)
 {
     for (auto& field : filenameFields) //loops in order through prepend, main, append
     {
@@ -1599,7 +1599,7 @@ void ControlPanel::setRecordingDirectoryAppendText (String text)
     }
 }
 
-String ControlPanel::getRecordingDirectoryBaseText()
+String SNAPControlPanel::getRecordingDirectoryBaseText()
 {
     for (auto& field : filenameFields) //loops in order through prepend, main, append
     {
@@ -1611,7 +1611,7 @@ String ControlPanel::getRecordingDirectoryBaseText()
     return "";
 }
 
-void ControlPanel::setRecordingDirectoryBaseText (String text)
+void SNAPControlPanel::setRecordingDirectoryBaseText (String text)
 {
     for (auto& field : filenameFields) //loops in order through prepend, main, append
     {
@@ -1643,7 +1643,7 @@ void ControlPanel::setRecordingDirectoryBaseText (String text)
     }
 }
 
-String ControlPanel::generateFilenameFromFields (bool usePlaceholderText)
+String SNAPControlPanel::generateFilenameFromFields (bool usePlaceholderText)
 {
     String filename = "";
 
@@ -1658,7 +1658,7 @@ String ControlPanel::generateFilenameFromFields (bool usePlaceholderText)
     return filename;
 }
 
-String ControlPanel::generateDatetimeFromFormat (String format)
+String SNAPControlPanel::generateDatetimeFromFormat (String format)
 {
     //TODO: Parse format and generate the proper date string
     //For now use default format: "YYYY-MM-DD_HH-MM-SS"

@@ -21,11 +21,11 @@
 
 */
 
-#include "MainWindow.h"
+#include "SNAPMainWindow.h"
 #include "AutoUpdater.h"
 #include "UI/ConsoleViewer.h"
-#include "UI/EditorViewport.h"
-#include "UI/UIComponent.h"
+#include "UI/SNAPEditorViewport.h"
+#include "UI/SNAPUIComponent.h"
 #include "Utils/OpenEphysHttpServer.h"
 #include <stdio.h>
 
@@ -46,7 +46,7 @@ MainDocumentWindow::MainDocumentWindow()
     setAccessible (false);
 }
 
-MainWindow::MainWindow (const File& fileToLoad, bool isConsoleApp_, OpenEphysSplashScreen* splash) : isConsoleApp (isConsoleApp_)
+SNAPMainWindow::SNAPMainWindow (const File& fileToLoad, bool isConsoleApp_, OpenEphysSplashScreen* splash) : isConsoleApp (isConsoleApp_)
 {
     // Helper lambda to update splash progress
     auto updateSplash = [splash] (float progress, const String& msg)
@@ -109,12 +109,12 @@ MainWindow::MainWindow (const File& fileToLoad, bool isConsoleApp_, OpenEphysSpl
     openDefaultConfigWindow = false;
     automaticVersionChecking = true;
 
-    // Create ProcessorGraph and AudioComponent, and connect them.
+    // Create ProcessorGraph and SNAPAudioComponent, and connect them.
     // Callbacks will be set by the play button in the control panel
 
     updateSplash (0.05f, "Creating audio system...");
     LOGD ("Creating audio component...");
-    audioComponent = std::make_unique<AudioComponent>();
+    audioComponent = std::make_unique<SNAPAudioComponent>();
 
     updateSplash (0.15f, "Creating processor graph...");
     LOGD ("Creating processor graph...");
@@ -126,15 +126,15 @@ MainWindow::MainWindow (const File& fileToLoad, bool isConsoleApp_, OpenEphysSpl
 
     updateSplash (0.40f, "Initializing control panel...");
     LOGD ("Creating control panel...");
-    controlPanel = std::make_unique<ControlPanel> (processorGraph.get(), audioComponent.get(), isConsoleApp);
+    controlPanel = std::make_unique<SNAPControlPanel> (processorGraph.get(), audioComponent.get(), isConsoleApp);
 
     if (! isConsoleApp)
     {
         updateSplash (0.50f, "Building user interface...");
         LOGD ("Creating UI component...");
-        documentWindow->setContentOwned (new UIComponent (this, processorGraph.get(), audioComponent.get(), controlPanel.get(), consoleViewer, customLookAndFeel.get()), true);
+        documentWindow->setContentOwned (new SNAPUIComponent (this, processorGraph.get(), audioComponent.get(), controlPanel.get(), consoleViewer, customLookAndFeel.get()), true);
 
-        UIComponent* ui = static_cast<UIComponent*> (documentWindow->getContentComponent());
+        SNAPUIComponent* ui = static_cast<SNAPUIComponent*> (documentWindow->getContentComponent());
 
 #if JUCE_MAC
         MenuBarModel::setMacMainMenu (ui);
@@ -275,7 +275,7 @@ MainWindow::MainWindow (const File& fileToLoad, bool isConsoleApp_, OpenEphysSpl
     // Check for plugin updates and notify user if any are available
     if (! isConsoleApp)
     {
-        UIComponent* ui = static_cast<UIComponent*> (documentWindow->getContentComponent());
+        SNAPUIComponent* ui = static_cast<SNAPUIComponent*> (documentWindow->getContentComponent());
         ui->checkForPluginUpdates();
     }
 
@@ -296,7 +296,7 @@ MainWindow::MainWindow (const File& fileToLoad, bool isConsoleApp_, OpenEphysSpl
     }
 }
 
-MainWindow::~MainWindow()
+SNAPMainWindow::~SNAPMainWindow()
 {
     if (audioComponent->callbacksAreActive())
     {
@@ -311,7 +311,7 @@ MainWindow::~MainWindow()
     if (! isConsoleApp)
     {
         saveWindowBounds();
-        UIComponent* ui = static_cast<UIComponent*> (documentWindow->getContentComponent());
+        SNAPUIComponent* ui = static_cast<SNAPUIComponent*> (documentWindow->getContentComponent());
         ui->disableDataViewport();
 
         documentWindow->setLookAndFeel (nullptr);
@@ -335,17 +335,17 @@ MainWindow::~MainWindow()
     }
 }
 
-void MainWindow::enableHttpServer()
+void SNAPMainWindow::enableHttpServer()
 {
     http_server_thread->start();
 }
 
-void MainWindow::disableHttpServer()
+void SNAPMainWindow::disableHttpServer()
 {
     http_server_thread->stop();
 }
 
-void MainWindow::repaintWindow()
+void SNAPMainWindow::repaintWindow()
 {
     if (! isConsoleApp)
     {
@@ -370,7 +370,7 @@ void MainDocumentWindow::closeButtonPressed()
     JUCEApplication::getInstance()->systemRequestedQuit();
 }
 
-void MainWindow::shutDownGUI()
+void SNAPMainWindow::shutDownGUI()
 {
     if (audioComponent->callbacksAreActive())
     {
@@ -381,7 +381,7 @@ void MainWindow::shutDownGUI()
         processorGraph->stopAcquisition();
 }
 
-void MainWindow::handleCrash (void* input)
+void SNAPMainWindow::handleCrash (void* input)
 {
     String backtrace = SystemStats::getStackBacktrace();
     LOGD ("\n", backtrace);
@@ -392,7 +392,7 @@ void MainWindow::handleCrash (void* input)
         crashLogDir = crashLogDir.getChildFile ("configs-api" + String (PLUGIN_API_VER));
 
     File activityLog = crashLogDir.getChildFile ("activity.log");
-    String dt = AccessClass::getControlPanel()->generateDatetimeFromFormat ("MM-DD-YYYY_HH_MM_SS");
+    String dt = AccessClass::getSNAPControlPanel()->generateDatetimeFromFormat ("MM-DD-YYYY_HH_MM_SS");
     File crashLog = crashLogDir.getChildFile ("activity_" + dt + ".log");
 
     if (activityLog.exists())
@@ -411,7 +411,7 @@ void MainWindow::handleCrash (void* input)
                                      + crashLog.getFullPathName());
 }
 
-void MainWindow::saveProcessorGraph (const File& file)
+void SNAPMainWindow::saveProcessorGraph (const File& file)
 {
     std::unique_ptr<XmlElement> xml = std::make_unique<XmlElement> ("SETTINGS");
 
@@ -429,7 +429,7 @@ void MainWindow::saveProcessorGraph (const File& file)
     LOGC (message);
 }
 
-void MainWindow::loadProcessorGraph (const File& file)
+void SNAPMainWindow::loadProcessorGraph (const File& file)
 {
     XmlDocument doc (file);
     std::unique_ptr<XmlElement> xml = doc.getDocumentElement();
@@ -443,7 +443,7 @@ void MainWindow::loadProcessorGraph (const File& file)
     processorGraph->loadFromXml (xml.get());
 }
 
-void MainWindow::saveWindowBounds()
+void SNAPMainWindow::saveWindowBounds()
 {
     LOGD ("Saving window bounds.");
 
@@ -468,7 +468,7 @@ void MainWindow::saveWindowBounds()
 
     auto* recentDirectories = new XmlElement ("RECENTDIRECTORYNAMES");
 
-    UIComponent* ui = static_cast<UIComponent*> (documentWindow->getContentComponent());
+    SNAPUIComponent* ui = static_cast<SNAPUIComponent*> (documentWindow->getContentComponent());
 
     StringArray dirs = ui->getRecentlyUsedFilenames();
 
@@ -482,7 +482,7 @@ void MainWindow::saveWindowBounds()
     xml->addChildElement (recentDirectories);
 
     auto* signalChainLocked = new XmlElement ("SIGNALCHAIN");
-    signalChainLocked->setAttribute ("locked", ui->getEditorViewport()->isSignalChainLocked());
+    signalChainLocked->setAttribute ("locked", ui->getSNAPEditorViewport()->isSignalChainLocked());
 
     xml->addChildElement (signalChainLocked);
 
@@ -490,7 +490,7 @@ void MainWindow::saveWindowBounds()
         LOGE ("Couldn't write window state to file");
 }
 
-void MainWindow::loadWindowBounds()
+void SNAPMainWindow::loadWindowBounds()
 {
     File file = configsDir.getChildFile ("windowState.xml");
 
@@ -540,13 +540,13 @@ void MainWindow::loadWindowBounds()
                     }
                 }
 
-                UIComponent* ui = static_cast<UIComponent*> (documentWindow->getContentComponent());
+                SNAPUIComponent* ui = static_cast<SNAPUIComponent*> (documentWindow->getContentComponent());
                 ui->setRecentlyUsedFilenames (filenames);
             }
             else if (e->hasTagName ("SIGNALCHAIN"))
             {
-                UIComponent* ui = static_cast<UIComponent*> (documentWindow->getContentComponent());
-                ui->getEditorViewport()->lockSignalChain (e->getBoolAttribute ("locked", false));
+                SNAPUIComponent* ui = static_cast<SNAPUIComponent*> (documentWindow->getContentComponent());
+                ui->getSNAPEditorViewport()->lockSignalChain (e->getBoolAttribute ("locked", false));
             }
         }
 
@@ -554,12 +554,12 @@ void MainWindow::loadWindowBounds()
     }
 }
 
-void MainWindow::centreWithSize (int x, int y)
+void SNAPMainWindow::centreWithSize (int x, int y)
 {
     documentWindow->centreWithSize (x, y);
 }
 
-bool MainWindow::compareConfigFiles (File file1, File file2)
+bool SNAPMainWindow::compareConfigFiles (File file1, File file2)
 {
     XmlDocument lcDoc (file1);
     XmlDocument rcDoc (file2);

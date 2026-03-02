@@ -1,4 +1,4 @@
-#Open Ephys GUI directory-specific file
+#SNAP directory-specific file
 
 #add files in this folder
 

@@ -21,10 +21,10 @@
 
 */
 
-#include "DataViewport.h"
+#include "SNAPDataViewport.h"
 #include "../Processors/Editors/VisualizerEditor.h"
 #include "../Processors/Visualization/Visualizer.h"
-#include "EditorViewport.h"
+#include "SNAPEditorViewport.h"
 
 void CloseTabButton::mouseEnter (const MouseEvent& event)
 {
@@ -155,7 +155,7 @@ void CustomTabButton::buttonClicked (Button* button)
     parent->dataViewport->removeTab (nodeId);
 }
 
-DraggableTabComponent::DraggableTabComponent (DataViewport* parent_) : TabbedComponent (TabbedButtonBar::TabsAtRight), dataViewport (parent_)
+DraggableTabComponent::DraggableTabComponent (SNAPDataViewport* parent_) : TabbedComponent (TabbedButtonBar::TabsAtRight), dataViewport (parent_)
 {
     setTabBarDepth (28);
     setOutline (0);
@@ -260,11 +260,11 @@ bool DraggableTabComponent::removeTabForNodeId (int nodeId, bool sendNotificatio
             else
             {
                 if (nodeId == 0)
-                    AccessClass::getUIComponent()->closeInfoTab();
+                    AccessClass::getSNAPUIComponent()->closeInfoTab();
                 else if (nodeId == 1)
-                    AccessClass::getUIComponent()->closeGraphViewer();
+                    AccessClass::getSNAPUIComponent()->closeGraphViewer();
                 else if (nodeId == 2)
-                    AccessClass::getUIComponent()->closeConsoleViewer();
+                    AccessClass::getSNAPUIComponent()->closeConsoleViewer();
             }
         }
 
@@ -424,7 +424,7 @@ void DraggableTabComponent::popupMenuClickOnTab (int tabIndex, const String& tab
             PopupMenu m;
 
             m.addItem ("Move to New Window", [this]()
-                       { AccessClass::getUIComponent()->openConsoleWindow(); });
+                       { AccessClass::getSNAPUIComponent()->openConsoleWindow(); });
 
             m.showMenuAsync (PopupMenu::Options().withStandardItemHeight (20));
             return;
@@ -577,7 +577,7 @@ void TabbedComponentResizerBar::mouseDoubleClick (const MouseEvent& event)
     }
 }
 
-DataViewport::DataViewport() : shutdown (false)
+SNAPDataViewport::SNAPDataViewport() : shutdown (false)
 {
     DraggableTabComponent* c = new DraggableTabComponent (this);
     addAndMakeVisible (c);
@@ -591,7 +591,7 @@ DataViewport::DataViewport() : shutdown (false)
     addChildComponent (tabbedComponentResizer.get());
 }
 
-void DataViewport::resized()
+void SNAPDataViewport::resized()
 {
     int width = getWidth() / draggableTabComponents.size();
 
@@ -619,7 +619,7 @@ void DataViewport::resized()
         addTabbedComponentButton->setVisible (false);
 }
 
-void DataViewport::addTab (String name,
+void SNAPDataViewport::addTab (String name,
                            Component* component,
                            int nodeId)
 {
@@ -628,13 +628,13 @@ void DataViewport::addTab (String name,
     resized();
 }
 
-void DataViewport::selectTab (int nodeId)
+void SNAPDataViewport::selectTab (int nodeId)
 {
     for (auto draggableTabComponent : draggableTabComponents)
         draggableTabComponent->selectTab (nodeId);
 }
 
-void DataViewport::removeTab (int nodeId, bool sendNotification)
+void SNAPDataViewport::removeTab (int nodeId, bool sendNotification)
 {
     if (! shutdown)
     {
@@ -652,7 +652,7 @@ void DataViewport::removeTab (int nodeId, bool sendNotification)
     }
 }
 
-void DataViewport::buttonClicked (Button* button)
+void SNAPDataViewport::buttonClicked (Button* button)
 {
     if (button == addTabbedComponentButton.get())
     {
@@ -677,7 +677,7 @@ void DataViewport::buttonClicked (Button* button)
     }
 }
 
-Component* DataViewport::getContentComponentForNodeId (int nodeId)
+Component* SNAPDataViewport::getContentComponentForNodeId (int nodeId)
 {
     for (auto draggableTabComponent : draggableTabComponents)
     {
@@ -690,12 +690,12 @@ Component* DataViewport::getContentComponentForNodeId (int nodeId)
     return nullptr;
 }
 
-Component* DataViewport::getActiveTabContentComponent()
+Component* SNAPDataViewport::getActiveTabContentComponent()
 {
     return draggableTabComponents.getFirst()->getCurrentContentComponent();
 }
 
-void DataViewport::removeTabbedComponent (DraggableTabComponent* draggableTabComponent)
+void SNAPDataViewport::removeTabbedComponent (DraggableTabComponent* draggableTabComponent)
 {
     if (draggableTabComponents.size() > 1 && draggableTabComponent->getNumTabs() == 0)
     {
@@ -723,7 +723,7 @@ void DataViewport::removeTabbedComponent (DraggableTabComponent* draggableTabCom
     }
 }
 
-void DataViewport::saveStateToXml (XmlElement* xml)
+void SNAPDataViewport::saveStateToXml (XmlElement* xml)
 {
     XmlElement* dataViewportState = xml->createNewChildElement ("DATAVIEWPORT");
 
@@ -745,13 +745,13 @@ void DataViewport::saveStateToXml (XmlElement* xml)
     }
 }
 
-void DataViewport::loadStateFromXml (XmlElement* xml)
+void SNAPDataViewport::loadStateFromXml (XmlElement* xml)
 {
     auto* dvXml = xml->getChildByName ("DATAVIEWPORT");
 
     if (dvXml != nullptr)
     {
-        LOGD ("Loading DataViewport state from XML...");
+        LOGD ("Loading SNAPDataViewport state from XML...");
 
         // remove info, graph, and console tabs
         for (int i = 0; i < 3; i++)
@@ -797,15 +797,15 @@ void DataViewport::loadStateFromXml (XmlElement* xml)
 
                             if (nodeId == 0) // info tab
                             {
-                                AccessClass::getUIComponent()->addInfoTab();
+                                AccessClass::getSNAPUIComponent()->addInfoTab();
                             }
                             else if (nodeId == 1) // graph tab
                             {
-                                AccessClass::getUIComponent()->addGraphTab();
+                                AccessClass::getSNAPUIComponent()->addGraphTab();
                             }
                             else if (nodeId == 2) // console tab
                             {
-                                AccessClass::getUIComponent()->addConsoleTab();
+                                AccessClass::getSNAPUIComponent()->addConsoleTab();
                             }
                             else if (nodeId > 99) // visualizer tab
                             {
@@ -830,11 +830,11 @@ void DataViewport::loadStateFromXml (XmlElement* xml)
             }
         }
 
-        LOGD ("DataViewport state loaded.");
+        LOGD ("SNAPDataViewport state loaded.");
     }
 }
 
-void DataViewport::disableConnectionToEditorViewport()
+void SNAPDataViewport::disableConnectionToSNAPEditorViewport()
 {
     shutdown = true;
 }

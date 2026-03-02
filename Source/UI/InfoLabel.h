@@ -86,9 +86,9 @@ private:
 
   Displays info about the GUI.
 
-  Inhabits a tab in the DataViewport.
+  Inhabits a tab in the SNAPDataViewport.
 
-  @see UIComponent, DataViewport
+  @see SNAPUIComponent, SNAPDataViewport
 
 */
 

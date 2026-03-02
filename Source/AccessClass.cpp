@@ -26,36 +26,36 @@
 #include "Processors/MessageCenter/MessageCenter.h"
 #include "Processors/ProcessorGraph/ProcessorGraph.h"
 
-#include "UI/UIComponent.h"
+#include "UI/SNAPUIComponent.h"
 
 namespace AccessClass
 {
 namespace
 {
 
-    UIComponent* ui = nullptr;
-    EditorViewport* ev = nullptr;
-    ProcessorList* pl = nullptr;
-    DataViewport* dv = nullptr;
+    SNAPUIComponent* ui = nullptr;
+    SNAPEditorViewport* ev = nullptr;
+    SNAPProcessorList* pl = nullptr;
+    SNAPDataViewport* dv = nullptr;
     ProcessorGraph* pg = nullptr;
-    ControlPanel* cp = nullptr;
+    SNAPControlPanel* cp = nullptr;
     MessageCenter* mc = nullptr;
-    AudioComponent* ac = nullptr;
-    GraphViewer* gv = nullptr;
+    SNAPAudioComponent* ac = nullptr;
+    SNAPGraphViewer* gv = nullptr;
     PluginManager* pm = nullptr;
     std::unique_ptr<ActionBroadcaster> bc;
 } // namespace
 
-void setUIComponent (UIComponent* ui_)
+void setSNAPUIComponent (SNAPUIComponent* ui_)
 {
     if (ui != nullptr)
         return;
     ui = ui_;
 
-    ev = ui->getEditorViewport();
-    dv = ui->getDataViewport();
-    pl = ui->getProcessorList();
-    gv = ui->getGraphViewer();
+    ev = ui->getSNAPEditorViewport();
+    dv = ui->getSNAPDataViewport();
+    pl = ui->getSNAPProcessorList();
+    gv = ui->getSNAPGraphViewer();
 }
 
 void setProcessorGraph (ProcessorGraph* pg_)
@@ -71,14 +71,14 @@ void setProcessorGraph (ProcessorGraph* pg_)
     bc->addActionListener (mc);
 }
 
-void setAudioComponent (AudioComponent* ac_)
+void setSNAPAudioComponent (SNAPAudioComponent* ac_)
 {
     if (ac != nullptr)
         return;
     ac = ac_;
 }
 
-void setControlPanel (ControlPanel* cp_)
+void setSNAPControlPanel (SNAPControlPanel* cp_)
 {
     if (cp != nullptr)
         return;
@@ -90,20 +90,20 @@ void shutdownBroadcaster()
     bc = nullptr;
 }
 
-/** Returns a pointer to the application's EditorViewport. */
-EditorViewport* getEditorViewport()
+/** Returns a pointer to the application's SNAPEditorViewport. */
+SNAPEditorViewport* getSNAPEditorViewport()
 {
     return ev;
 }
 
-/** Returns a pointer to the application's DataViewport. */
-DataViewport* getDataViewport()
+/** Returns a pointer to the application's SNAPDataViewport. */
+SNAPDataViewport* getSNAPDataViewport()
 {
     return dv;
 }
 
-/** Returns a pointer to the application's ProcessorList. */
-ProcessorList* getProcessorList()
+/** Returns a pointer to the application's SNAPProcessorList. */
+SNAPProcessorList* getSNAPProcessorList()
 {
     return pl;
 }
@@ -114,8 +114,8 @@ ProcessorGraph* getProcessorGraph()
     return pg;
 }
 
-/** Returns a pointer to the application's DataViewport. */
-ControlPanel* getControlPanel()
+/** Returns a pointer to the application's SNAPDataViewport. */
+SNAPControlPanel* getSNAPControlPanel()
 {
     return cp;
 }
@@ -126,20 +126,20 @@ MessageCenter* getMessageCenter()
     return mc;
 }
 
-/** Returns a pointer to the application's UIComponent. */
-UIComponent* getUIComponent()
+/** Returns a pointer to the application's SNAPUIComponent. */
+SNAPUIComponent* getSNAPUIComponent()
 {
     return ui;
 }
 
-/** Returns a pointer to the application's AudioComponent. */
-AudioComponent* getAudioComponent()
+/** Returns a pointer to the application's SNAPAudioComponent. */
+SNAPAudioComponent* getSNAPAudioComponent()
 {
     return ac;
 }
 
-/** Returns a pointer to the application's GraphViewer. */
-GraphViewer* getGraphViewer()
+/** Returns a pointer to the application's SNAPGraphViewer. */
+SNAPGraphViewer* getSNAPGraphViewer()
 {
     return gv;
 }

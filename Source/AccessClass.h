@@ -27,60 +27,60 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "TestableExport.h"
 
-class UIComponent;
-class EditorViewport;
-class ProcessorList;
-class DataViewport;
+class SNAPUIComponent;
+class SNAPEditorViewport;
+class SNAPProcessorList;
+class SNAPDataViewport;
 class ProcessorGraph;
 class MessageCenter;
-class ControlPanel;
-class AudioComponent;
-class GraphViewer;
+class SNAPControlPanel;
+class SNAPAudioComponent;
+class SNAPGraphViewer;
 class PluginManager;
 class GenericProcessor;
 
 namespace AccessClass
 {
 
-/** Sets the object's UIComponent and copies all the necessary pointers 
- * from the UIComponent. */
-void setUIComponent (UIComponent*);
+/** Sets the object's SNAPUIComponent and copies all the necessary pointers 
+ * from the SNAPUIComponent. */
+void setSNAPUIComponent (SNAPUIComponent*);
 
 /** Sets the object's ProcessorGraph */
 void setProcessorGraph (ProcessorGraph*);
 
-/** Sets the object's AudioComponent */
-void setAudioComponent (AudioComponent*);
+/** Sets the object's SNAPAudioComponent */
+void setSNAPAudioComponent (SNAPAudioComponent*);
 
-/** Sets the object's ControlPanel */
-void setControlPanel (ControlPanel*);
+/** Sets the object's SNAPControlPanel */
+void setSNAPControlPanel (SNAPControlPanel*);
 
-/** Returns a pointer to the application's EditorViewport. */
-EditorViewport* getEditorViewport();
+/** Returns a pointer to the application's SNAPEditorViewport. */
+SNAPEditorViewport* getSNAPEditorViewport();
 
-/** Returns a pointer to the application's DataViewport. */
-DataViewport* getDataViewport();
+/** Returns a pointer to the application's SNAPDataViewport. */
+SNAPDataViewport* getSNAPDataViewport();
 
-/** Returns a pointer to the application's ProcessorList. */
-ProcessorList* getProcessorList();
+/** Returns a pointer to the application's SNAPProcessorList. */
+SNAPProcessorList* getSNAPProcessorList();
 
 /** Returns a pointer to the application's ProcessorGraph. */
 ProcessorGraph* getProcessorGraph();
 
-/** Returns a pointer to the application's DataViewport. */
-ControlPanel* getControlPanel();
+/** Returns a pointer to the application's SNAPDataViewport. */
+SNAPControlPanel* getSNAPControlPanel();
 
 /** Returns a pointer to the application's MessageCenter. */
 MessageCenter* getMessageCenter();
 
-/** Returns a pointer to the application's UIComponent. */
-UIComponent* getUIComponent();
+/** Returns a pointer to the application's SNAPUIComponent. */
+SNAPUIComponent* getSNAPUIComponent();
 
-/** Returns a pointer to the application's AudioComponent. */
-AudioComponent* getAudioComponent();
+/** Returns a pointer to the application's SNAPAudioComponent. */
+SNAPAudioComponent* getSNAPAudioComponent();
 
-/** Returns a pointer to the application's GraphViewer. */
-GraphViewer* getGraphViewer();
+/** Returns a pointer to the application's SNAPGraphViewer. */
+SNAPGraphViewer* getSNAPGraphViewer();
 
 /** Returns a pointer to the application's PluginManager. */
 PluginManager* getPluginManager();

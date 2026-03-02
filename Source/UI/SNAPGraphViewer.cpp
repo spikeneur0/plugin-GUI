@@ -21,7 +21,7 @@
  
  */
 
-#include "GraphViewer.h"
+#include "SNAPGraphViewer.h"
 #include "../Processors/Merger/Merger.h"
 #include "../Processors/Splitter/Splitter.h"
 #include "../Processors/Splitter/SplitterEditor.h"
@@ -37,7 +37,7 @@ const int NODE_HEIGHT = 50;
 const int X_BORDER_SIZE = 45;
 const int Y_BORDER_SIZE = 20;
 
-GraphViewport::GraphViewport (GraphViewer* gv)
+GraphViewport::GraphViewport (SNAPGraphViewer* gv)
 {
     viewport = std::make_unique<Viewport>();
     viewport->setViewedComponent (gv, false);
@@ -75,13 +75,13 @@ void GraphViewport::resized()
     viewport->setBounds (0, 0, getWidth(), getHeight());
 }
 
-GraphViewer::GraphViewer()
+SNAPGraphViewer::SNAPGraphViewer()
 {
     setBufferedToImage (true);
     graphViewport = std::make_unique<GraphViewport> (this);
 }
 
-void GraphViewer::updateBoundaries()
+void SNAPGraphViewer::updateBoundaries()
 {
     int maxHeight = graphViewport->getHeight() - 32;
     int maxWidth = graphViewport->getWidth() - 32;
@@ -98,7 +98,7 @@ void GraphViewer::updateBoundaries()
     setSize (maxWidth + 20, maxHeight + 20);
 }
 
-void GraphViewer::updateYPositions()
+void SNAPGraphViewer::updateYPositions()
 {
     levelStartY.clear();
 
@@ -119,7 +119,7 @@ void GraphViewer::updateYPositions()
     }
 }
 
-void GraphViewer::updateNodes (GenericProcessor* processor_, Array<GenericProcessor*> newRoots)
+void SNAPGraphViewer::updateNodes (GenericProcessor* processor_, Array<GenericProcessor*> newRoots)
 {
     // Remove nodes that are not needed anymore
     Array<GraphNode*> nodesToDelete;
@@ -257,7 +257,7 @@ void GraphViewer::updateNodes (GenericProcessor* processor_, Array<GenericProces
     repaint();
 }
 
-bool GraphViewer::nodeExists (GenericProcessor* p)
+bool SNAPGraphViewer::nodeExists (GenericProcessor* p)
 {
     if (p != nullptr && getNodeForEditor (p->getEditor()) != nullptr)
         return true;
@@ -265,7 +265,7 @@ bool GraphViewer::nodeExists (GenericProcessor* p)
     return false;
 }
 
-void GraphViewer::addNode (GenericEditor* editor, int level, int offset)
+void SNAPGraphViewer::addNode (GenericEditor* editor, int level, int offset)
 {
     GraphNode* gn = new GraphNode (editor, this);
     addAndMakeVisible (gn, 0);
@@ -276,7 +276,7 @@ void GraphViewer::addNode (GenericEditor* editor, int level, int offset)
     gn->updateBoundaries();
 }
 
-void GraphViewer::removeNode (GenericProcessor* p)
+void SNAPGraphViewer::removeNode (GenericProcessor* p)
 {
     auto node = getNodeForEditor (p->getEditor());
 
@@ -284,14 +284,14 @@ void GraphViewer::removeNode (GenericProcessor* p)
         node->stillNeeded = false;
 }
 
-void GraphViewer::removeAllNodes()
+void SNAPGraphViewer::removeAllNodes()
 {
     availableNodes.clear();
     updateBoundaries();
     repaint();
 }
 
-int GraphViewer::getIndexOfEditor (GenericEditor* editor) const
+int SNAPGraphViewer::getIndexOfEditor (GenericEditor* editor) const
 {
     int index = -1;
 
@@ -308,7 +308,7 @@ int GraphViewer::getIndexOfEditor (GenericEditor* editor) const
     return index;
 }
 
-GraphNode* GraphViewer::getNodeForEditor (GenericEditor* editor) const
+GraphNode* SNAPGraphViewer::getNodeForEditor (GenericEditor* editor) const
 {
     int indexOfEditor = getIndexOfEditor (editor);
 
@@ -318,7 +318,7 @@ GraphNode* GraphViewer::getNodeForEditor (GenericEditor* editor) const
         return nullptr;
 }
 
-int GraphViewer::getLevelStartY (int level) const
+int SNAPGraphViewer::getLevelStartY (int level) const
 {
     if (levelStartY.count (level) > 0)
         return levelStartY.at (level);
@@ -326,7 +326,7 @@ int GraphViewer::getLevelStartY (int level) const
         return 0;
 }
 
-void GraphViewer::paint (Graphics& g)
+void SNAPGraphViewer::paint (Graphics& g)
 {
     // Draw connections
     const int numAvailableNodes = availableNodes.size();
@@ -400,11 +400,11 @@ void GraphViewer::paint (Graphics& g)
     }
 }
 
-void GraphViewer::paintOverChildren (Graphics& g)
+void SNAPGraphViewer::paintOverChildren (Graphics& g)
 {
 }
 
-void GraphViewer::connectNodes (int node1, int node2, Graphics& g)
+void SNAPGraphViewer::connectNodes (int node1, int node2, Graphics& g)
 {
     juce::Point<float> start = availableNodes[node1]->getDestPoint();
     juce::Point<float> end = availableNodes[node2]->getSrcPoint();
@@ -454,7 +454,7 @@ void GraphViewer::connectNodes (int node1, int node2, Graphics& g)
     g.drawArrow (Line<float> (x2, y2, x2 + 14.0f, y2), 3.5f, 10.0f, 14.f);
 }
 
-void GraphViewer::saveStateToXml (XmlElement* xml)
+void SNAPGraphViewer::saveStateToXml (XmlElement* xml)
 {
     XmlElement* graphNodeStates = new XmlElement ("GRAPHVIEWER");
 
@@ -479,7 +479,7 @@ void GraphViewer::saveStateToXml (XmlElement* xml)
     xml->addChildElement (graphNodeStates);
 }
 
-void GraphViewer::loadStateFromXml (XmlElement* xml)
+void SNAPGraphViewer::loadStateFromXml (XmlElement* xml)
 {
     for (auto* nodeXml : xml->getChildIterator())
     {
@@ -772,7 +772,7 @@ void DataStreamButton::paintButton (Graphics& g, bool isHighlighted, bool isDown
 
 /// ------------------------------------------------------
 
-GraphNode::GraphNode (GenericEditor* ed, GraphViewer* g)
+GraphNode::GraphNode (GenericEditor* ed, SNAPGraphViewer* g)
     : editor (ed), processor (ed->getProcessor()), gv (g), isMouseOver (false), stillNeeded (true), nodeWidth (NODE_WIDTH)
 {
     nodeId = processor->getNodeId();
@@ -890,7 +890,7 @@ void GraphNode::mouseExit (const MouseEvent& m)
 
 void GraphNode::mouseDown (const MouseEvent& m)
 {
-    AccessClass::getEditorViewport()->highlightEditor (editor);
+    AccessClass::getSNAPEditorViewport()->highlightEditor (editor);
 
     if (processor->isMerger()
         || processor->isSplitter()

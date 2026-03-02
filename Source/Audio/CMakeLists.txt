@@ -1,9 +1,9 @@
-#Open Ephys GUI directory-specific file
+#SNAP directory-specific file
 
 #add files in this folder
-add_sources(open-ephys 
-	AudioComponent.h
-	AudioComponent.cpp
+add_sources(snap-gui 
+	SNAPAudioComponent.h
+	SNAPAudioComponent.cpp
 )
 
 #add nested directories

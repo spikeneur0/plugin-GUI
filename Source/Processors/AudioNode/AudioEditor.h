@@ -30,7 +30,7 @@
 #include <stdio.h>
 
 class AudioNode;
-class AudioComponent;
+class SNAPAudioComponent;
 
 /**
   Toggles audio output on and off.

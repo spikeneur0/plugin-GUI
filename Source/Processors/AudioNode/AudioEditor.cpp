@@ -23,8 +23,8 @@
 
 #include "AudioEditor.h"
 #include "../../AccessClass.h"
-#include "../../Audio/AudioComponent.h"
-#include "../../UI/EditorViewport.h"
+#include "../../Audio/SNAPAudioComponent.h"
+#include "../../UI/SNAPEditorViewport.h"
 #include "../../Utils/Utils.h"
 
 static const Colour COLOUR_SLIDER_TRACK (Colour::fromRGB (92, 92, 92));
@@ -145,7 +145,7 @@ void AudioEditor::resized()
 
 void AudioEditor::updateBufferSizeText()
 {
-    String t = String (AccessClass::getAudioComponent()->getBufferSizeMs());
+    String t = String (AccessClass::getSNAPAudioComponent()->getBufferSizeMs());
     t = t + " ms";
 
     audioWindowButton->setText (t);
@@ -195,12 +195,12 @@ void AudioEditor::buttonClicked (Button* button)
         {
             if (! audioConfigurationWindow)
             {
-                audioConfigurationWindow = std::make_unique<AudioConfigurationWindow> (AccessClass::getAudioComponent()->deviceManager,
+                audioConfigurationWindow = std::make_unique<AudioConfigurationWindow> (AccessClass::getSNAPAudioComponent()->deviceManager,
                                                                                        audioWindowButton.get());
                 audioConfigurationWindow->addComponentListener (this);
             }
 
-            AccessClass::getAudioComponent()->restartDevice();
+            AccessClass::getSNAPAudioComponent()->restartDevice();
             audioConfigurationWindow->setLookAndFeel (&getLookAndFeel());
             audioConfigurationWindow->setVisible (true);
             audioConfigurationWindow->toFront (true);
@@ -227,7 +227,7 @@ void AudioEditor::componentVisibilityChanged (Component& component)
     if (component.getName() == audioConfigurationWindow->getName() && ! component.isVisible())
     {
         updateBufferSizeText();
-        AccessClass::getAudioComponent()->stopDevice();
+        AccessClass::getSNAPAudioComponent()->stopDevice();
     }
 }
 

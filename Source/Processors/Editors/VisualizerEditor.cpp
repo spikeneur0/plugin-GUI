@@ -23,8 +23,8 @@
 
 #include "VisualizerEditor.h"
 #include "../../AccessClass.h"
-#include "../../UI/DataViewport.h"
-#include "../../UI/UIComponent.h"
+#include "../../UI/SNAPDataViewport.h"
+#include "../../UI/SNAPUIComponent.h"
 
 #include "../../Utils/Utils.h"
 
@@ -101,7 +101,7 @@ VisualizerEditor::~VisualizerEditor()
 {
     if (isOpenInTab)
     {
-        AccessClass::getDataViewport()->removeTab (nodeId, false);
+        AccessClass::getSNAPDataViewport()->removeTab (nodeId, false);
     }
 
     if (dataWindow != nullptr)
@@ -139,7 +139,7 @@ void VisualizerEditor::editorWasClicked()
     if (isOpenInTab)
     {
         LOGD ("Setting tab index to ", nodeId);
-        AccessClass::getDataViewport()->selectTab (nodeId);
+        AccessClass::getSNAPDataViewport()->selectTab (nodeId);
     }
 
     if (dataWindow && windowSelector->getToggleState())
@@ -285,7 +285,7 @@ void VisualizerEditor::loadCustomParametersFromXml (XmlElement* xml)
 
             if (tabState)
             {
-                /* NB: DataViewport::loadStateFromXml() will call addTab() for us 
+                /* NB: SNAPDataViewport::loadStateFromXml() will call addTab() for us 
                    to maintain tab configuration
                 */
                 checkForCanvas();
@@ -362,13 +362,13 @@ void VisualizerEditor::removeWindowListener (DataWindow* dataWindowToUse, DataWi
 
 Component* VisualizerEditor::getActiveTabContentComponent() const
 {
-    return AccessClass::getDataViewport()->getActiveTabContentComponent();
+    return AccessClass::getSNAPDataViewport()->getActiveTabContentComponent();
 }
 
 void VisualizerEditor::removeTab()
 {
     //std::cout << "Removing tab for " << nodeId << std::endl;
-    AccessClass::getDataViewport()->removeTab (nodeId);
+    AccessClass::getSNAPDataViewport()->removeTab (nodeId);
 }
 
 void VisualizerEditor::tabWasClosed()
@@ -387,7 +387,7 @@ void VisualizerEditor::addTab()
     checkForCanvas();
 
     LOGD ("ADDING TAB");
-    AccessClass::getDataViewport()->addTab (tabText, canvas.get(), nodeId);
+    AccessClass::getSNAPDataViewport()->addTab (tabText, canvas.get(), nodeId);
 
     if (! tabSelector->getToggleState())
         tabSelector->setToggleState (true, dontSendNotification);

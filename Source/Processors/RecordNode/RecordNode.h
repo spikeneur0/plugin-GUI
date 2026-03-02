@@ -195,7 +195,7 @@ public:
     /** Called by handleEvent() */
     void writeSpike (const Spike* spike, const SpikeChannel* spikeElectrode);
 
-    /** Called by the ControlPanel to determine the amount of space
+    /** Called by the SNAPControlPanel to determine the amount of space
       left in the current dataDirectory.
   */
     float getFreeSpace() const;
@@ -284,7 +284,7 @@ private:
     bool settingsNeeded;
     std::atomic<bool> shouldRecord;
 
-    File defaultRecordDirectory; // Default directory for saving data (set by the ControlPanel)
+    File defaultRecordDirectory; // Default directory for saving data (set by the SNAPControlPanel)
     File dataDirectory;
     File rootFolder;
 

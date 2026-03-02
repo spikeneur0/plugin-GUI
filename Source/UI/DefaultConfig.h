@@ -26,7 +26,7 @@
 
 #include "../../JuceLibraryCode/JuceHeader.h"
 
-class MainWindow;
+class SNAPMainWindow;
 
 /** 
 

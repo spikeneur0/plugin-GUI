@@ -26,7 +26,7 @@
 
 #include "../../JuceLibraryCode/JuceHeader.h"
 #include "../AccessClass.h"
-#include "../Audio/AudioComponent.h"
+#include "../Audio/SNAPAudioComponent.h"
 #include "../Processors/AudioNode/AudioEditor.h"
 #include "../Processors/Editors/GenericEditor.h" // for UtilityButton
 #include "../Processors/ProcessorGraph/ProcessorGraph.h"
@@ -98,14 +98,14 @@ public:
 
   Toggles data acquisition on and off.
 
-  The PlayButton is located in the ControlPanel. Clicking it toggles the state
+  The PlayButton is located in the SNAPControlPanel. Clicking it toggles the state
   of the ProcessorGraph to either begin the callbacks that drive data through
   the graph (acquisition on) or end these callbacks (acquisition off).
 
   Acquisition can also be started by pressing the RecordButton
   (assuming callbacks are not already active).
 
-  @see ControlPanel, ProcessorGraph
+  @see SNAPControlPanel, ProcessorGraph
 
 */
 class PlayButton : public DrawableButton
@@ -125,14 +125,14 @@ public:
 
   Toggles recording on and off.
 
-  The RecordButton is located in the ControlPanel. Clicking it toggles the
+  The RecordButton is located in the SNAPControlPanel. Clicking it toggles the
   state of the RecordNode to either begin saving data (recording on) or
   stop saving data (recording off).
 
   If the RecordButton is pressed while data acquisition is inactive, it
   will automatically start data acquisition before recording.
 
-  @see ControlPanel, RecordNode
+  @see SNAPControlPanel, RecordNode
 
 */
 
@@ -153,7 +153,7 @@ public:
 
   Displays the CPU load used up by the data processing callbacks.
 
-  The CPUMeter is located in the ControlPanel. Whenever acquisition is active,
+  The CPUMeter is located in the SNAPControlPanel. Whenever acquisition is active,
   it uses a built-in JUCE method to display the CPU load required to run the ProcessorGraph.
 
   It's not clear how accurate the meter is, nor how it deals with CPUs using multiple cores.
@@ -161,7 +161,7 @@ public:
   For a more accurate measurement of CPU load, it's recommended to use a graphical
   interface or type 'top' inside a terminal.
 
-  @see ControlPanel
+  @see SNAPControlPanel
 
 */
 
@@ -176,7 +176,7 @@ public:
     ~CPUMeter() {}
 
     /** Updates the load level displayed by the CPUMeter. Called by
-         the ControlPanel. */
+         the SNAPControlPanel. */
     void updateCPU (float usage);
 
     /** Draws the CPUMeter. */
@@ -193,12 +193,12 @@ private:
 
   Displays the amount of disk space left in the current data directory.
 
-  The DiskSpaceMeter is located in the ControlPanel. When the GUI is launched (or the data directory
+  The DiskSpaceMeter is located in the SNAPControlPanel. When the GUI is launched (or the data directory
   is changed), a built-in JUCE method is used to find the amount of free space.
 
   Note that the DiskSpaceMeter currently displays only relative, not absolute disk space.
 
-  @see ControlPanel
+  @see SNAPControlPanel
 
 */
 
@@ -213,7 +213,7 @@ public:
     ~DiskSpaceMeter() {}
 
     /** Updates the free disk space displayed by the DiskSpaceMeter. Called by
-    	the ControlPanel. */
+    	the SNAPControlPanel. */
     void updateDiskSpace (float percent);
 
     /** Draws the DiskSpaceMeter. */
@@ -230,7 +230,7 @@ private:
 
   Displays the time.
 
-  The Clock is located in the ControlPanel. If acquisition (but not recording) is
+  The Clock is located in the SNAPControlPanel. If acquisition (but not recording) is
   active, it displays (in yellow) the cumulative amount of time that the GUI has been acquiring data since
   the application was launched. If recording is active, the Clock displays (in red) the
   cumulative amount of time that recording has been active.
@@ -238,7 +238,7 @@ private:
   The Clock uses built-in JUCE functions for getting the system time. It does not
   currently interact with timestamps from ProcessorGraph sources.
 
-  @see ControlPanel
+  @see SNAPControlPanel
 
 */
 
@@ -325,19 +325,19 @@ class UtilityButton;
 
 /**
 
-  Provides general application controls along the top of the MainWindow.
+  Provides general application controls along the top of the SNAPMainWindow.
 
   Displays useful information and provides buttons to control acquisition and recording.
 
-  The ControlPanel contains the PlayButton, the RecordButton, the CPUMeter,
+  The SNAPControlPanel contains the PlayButton, the RecordButton, the CPUMeter,
   the DiskSpaceMeter, the Clock, the AudioEditor, and a FilenameComponent for switching the
   current data directory.
 
-  @see UIComponent
+  @see SNAPUIComponent
 
 */
 
-class TESTABLE ControlPanel : public Component,
+class TESTABLE SNAPControlPanel : public Component,
                               public Button::Listener,
                               public Timer,
                               public Label::Listener,
@@ -348,10 +348,10 @@ class TESTABLE ControlPanel : public Component,
 {
 public:
     /** Constructor */
-    ControlPanel (ProcessorGraph* graph, AudioComponent* audio, bool isConsoleApp);
+    SNAPControlPanel (ProcessorGraph* graph, SNAPAudioComponent* audio, bool isConsoleApp);
 
     /** Destructor */
-    ~ControlPanel();
+    ~SNAPControlPanel();
 
     /** Disables the callbacks of the ProcessorGraph (used to
         drive data acquisition).*/
@@ -542,7 +542,7 @@ private:
 
     /** Pointers to non-owned components */
     ProcessorGraph* graph;
-    AudioComponent* audio;
+    SNAPAudioComponent* audio;
     AudioEditor* audioEditor;
 
     /** Internal state variables */

@@ -18,7 +18,7 @@ if(MSVC)
 elseif(APPLE)
   set_target_properties(
     ${PLUGIN_NAME} PROPERTIES XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER
-                              "org.open-ephys.plugin.ArduinoOutput")
+                              "com.spikeneuro.plugin.ArduinoOutput")
 endif()
 
 if(BUILD_TESTS)

@@ -4,15 +4,15 @@
   <dict>
     <!-- Existing keys -->
     <key>CFBundleExecutable</key>
-    <string>open-ephys</string>
+    <string>SNAP</string>
     <key>CFBundleIconFile</key>
     <string>@MACOSX_BUNDLE_ICON_FILE@</string>
     <key>CFBundleIdentifier</key>
-    <string>org.open-ephys.gui</string>
+    <string>com.spikeneuro.snap</string>
     <key>CFBundleName</key>
-    <string>Open Ephys GUI</string>
+    <string>SNAP</string>
     <key>CFBundleDisplayName</key>
-    <string>Open Ephys GUI</string>
+    <string>Spike Neuro Acquisition Platform</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleSignature</key>
@@ -22,7 +22,7 @@
     <key>CFBundleVersion</key>
     <string>@GUI_VERSION@</string>
     <key>NSHumanReadableCopyright</key>
-    <string>Open Ephys</string>
+    <string>Spike Neuro</string>
     <key>NSHighResolutionCapable</key>
     <true/>
 

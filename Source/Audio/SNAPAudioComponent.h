@@ -38,19 +38,19 @@
   Determines the initial size of the sample buffer (crucial for
   real-time feedback latency).
 
-  @see MainWindow, ProcessorGraph
+  @see SNAPMainWindow, ProcessorGraph
 
 */
 
-class TESTABLE AudioComponent
+class TESTABLE SNAPAudioComponent
 {
 public:
     /** Constructor. Finds the audio component (if there is one), and sets the
     default sample rate and buffer size.*/
-    AudioComponent();
+    SNAPAudioComponent();
 
     /** Destructor. Ends the audio callbacks if they are active.*/
-    ~AudioComponent();
+    ~SNAPAudioComponent();
 
     /** Begins the audio callbacks that drive data acquisition. Returns true if a valid audio device was found*/
     bool beginCallbacks();
@@ -58,11 +58,11 @@ public:
     /** Stops the audio callbacks that drive data acquisition.*/
     void endCallbacks();
 
-    /** Connects the AudioComponent to the ProcessorGraph (crucial for any sort of
+    /** Connects the SNAPAudioComponent to the ProcessorGraph (crucial for any sort of
     data acquisition; done at startup).*/
     void connectToProcessorGraph (AudioProcessorGraph* processorGraph);
 
-    /** Disconnects the AudioComponent to the ProcessorGraph (only done when the application
+    /** Disconnects the SNAPAudioComponent to the ProcessorGraph (only done when the application
     is about to close).*/
     void disconnectProcessorGraph();
 
@@ -126,7 +126,7 @@ private:
 
     std::unique_ptr<AudioProcessorPlayer> graphPlayer;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioComponent);
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SNAPAudioComponent);
 };
 
 #endif

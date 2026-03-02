@@ -1,4 +1,4 @@
-#Open Ephys GUI main build file
+#SNAP (Spike Neuro Acquisition Platform) main build file
 cmake_minimum_required(VERSION 3.15)
 
 set(GUI_VERSION 1.0.2)
@@ -27,7 +27,7 @@ if ((NOT ${CMAKE_CURRENT_BINARY_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR}/Build 
 message(FATAL_ERROR "Please run cmake inside the Build folder to build the binaries in the predefined paths.\nSet the OE_DONT_CHECK_BUILD_PATH cmake variable to TRUE to disable this error")
 endif()
 
-project(open-ephys-GUI)
+project(snap-gui)
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
 	set(LINUX 1)
 	if(NOT CMAKE_BUILD_TYPE)
@@ -90,15 +90,15 @@ set(JUCE_SOURCE
 )
 
 #create executable and add JUCE components
-add_executable(open-ephys ${JUCE_SOURCE})
+add_executable(snap-gui ${JUCE_SOURCE})
  if(MSVC)
-	target_sources(open-ephys PRIVATE ${RESOURCES_DIRECTORY}/Build-files/resources.rc)
+	target_sources(snap-gui PRIVATE ${RESOURCES_DIRECTORY}/Build-files/resources.rc)
  endif()
 
 
 
-target_include_directories(open-ephys PRIVATE ${JUCE_DIRECTORY} ${JUCE_DIRECTORY}/modules)
-target_compile_features(open-ephys PUBLIC cxx_auto_type cxx_generalized_initializers cxx_std_17)
+target_include_directories(snap-gui PRIVATE ${JUCE_DIRECTORY} ${JUCE_DIRECTORY}/modules)
+target_compile_features(snap-gui PUBLIC cxx_auto_type cxx_generalized_initializers cxx_std_17)
 
 if(BUILD_TESTS)
 	enable_testing()
@@ -125,73 +125,74 @@ file(GLOB _bitfiles "${RESOURCES_DIRECTORY}/Bitfiles/*.bit")
 file(GLOB _xmlfiles "${RESOURCES_DIRECTORY}/Configs/*.xml")
 #output folders and specific options
 if (MSVC OR LINUX)
-	set(BIN_PLUGIN_DIR $<TARGET_FILE_DIR:open-ephys>/plugins)
-	set(BIN_SHARED_DIR $<TARGET_FILE_DIR:open-ephys>/shared)
-	add_custom_command(TARGET open-ephys POST_BUILD
+	set(BIN_PLUGIN_DIR $<TARGET_FILE_DIR:snap-gui>/plugins)
+	set(BIN_SHARED_DIR $<TARGET_FILE_DIR:snap-gui>/shared)
+	add_custom_command(TARGET snap-gui POST_BUILD
 			COMMAND ${CMAKE_COMMAND} -E make_directory "${BIN_SHARED_DIR}"
 			COMMAND ${CMAKE_COMMAND} -E make_directory "${BIN_PLUGIN_DIR}"
 			)
 
 	#copy bitfiles
-	add_custom_command(TARGET open-ephys POST_BUILD
+	add_custom_command(TARGET snap-gui POST_BUILD
 			COMMAND ${CMAKE_COMMAND} -E copy ${_bitfiles} "${BIN_SHARED_DIR}"
 			)
 
 	# copy default configs and their icons
-	add_custom_command(TARGET open-ephys POST_BUILD
-				COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:open-ephys>/configs
-				COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:open-ephys>/configs/icons
-				COMMAND ${CMAKE_COMMAND} -E copy ${_xmlfiles} $<TARGET_FILE_DIR:open-ephys>/configs
-				COMMAND ${CMAKE_COMMAND} -E copy_directory ${RESOURCES_DIRECTORY}/Configs/Icons $<TARGET_FILE_DIR:open-ephys>/configs/icons
+	add_custom_command(TARGET snap-gui POST_BUILD
+				COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:snap-gui>/configs
+				COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:snap-gui>/configs/icons
+				COMMAND ${CMAKE_COMMAND} -E copy ${_xmlfiles} $<TARGET_FILE_DIR:snap-gui>/configs
+				COMMAND ${CMAKE_COMMAND} -E copy_directory ${RESOURCES_DIRECTORY}/Configs/Icons $<TARGET_FILE_DIR:snap-gui>/configs/icons
 				)
 
 	#copy FileReader resources to output directory
-	add_custom_command(TARGET open-ephys POST_BUILD
-				COMMAND ${CMAKE_COMMAND} -E copy_directory ${RESOURCES_DIRECTORY}/FileReader/resources $<TARGET_FILE_DIR:open-ephys>/resources
+	add_custom_command(TARGET snap-gui POST_BUILD
+				COMMAND ${CMAKE_COMMAND} -E copy_directory ${RESOURCES_DIRECTORY}/FileReader/resources $<TARGET_FILE_DIR:snap-gui>/resources
 				)
 
 	#copy GUI icon to output directory
-	add_custom_command(TARGET open-ephys POST_BUILD
-			COMMAND ${CMAKE_COMMAND} -E copy ${RESOURCES_DIRECTORY}/Icons/icon-small.png $<TARGET_FILE_DIR:open-ephys>/
+	add_custom_command(TARGET snap-gui POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E copy ${RESOURCES_DIRECTORY}/Icons/icon-small.png $<TARGET_FILE_DIR:snap-gui>/
 			)
 elseif(APPLE)
-	set(BIN_PLUGIN_DIR $<TARGET_FILE_DIR:open-ephys>/../PlugIns)
-	set(BIN_SHARED_DIR $<TARGET_FILE_DIR:open-ephys>/../Resources/shared)
-	add_custom_command(TARGET open-ephys POST_BUILD
+	set(BIN_PLUGIN_DIR $<TARGET_FILE_DIR:snap-gui>/../PlugIns)
+	set(BIN_SHARED_DIR $<TARGET_FILE_DIR:snap-gui>/../Resources/shared)
+	add_custom_command(TARGET snap-gui POST_BUILD
 			COMMAND ${CMAKE_COMMAND} -E make_directory "${BIN_PLUGIN_DIR}"
 			COMMAND ${CMAKE_COMMAND} -E make_directory "${BIN_SHARED_DIR}"
 			)
 	
 	#copy bitfiles
-	add_custom_command(TARGET open-ephys POST_BUILD
+	add_custom_command(TARGET snap-gui POST_BUILD
 			COMMAND ${CMAKE_COMMAND} -E copy ${_bitfiles} "${BIN_SHARED_DIR}"
 			)
 
 	# copy default configs and their icons
-	add_custom_command(TARGET open-ephys POST_BUILD
-				COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:open-ephys>/../Resources/configs
-				COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:open-ephys>/../Resources/configs/icons
-				COMMAND ${CMAKE_COMMAND} -E copy ${_xmlfiles} $<TARGET_FILE_DIR:open-ephys>/../Resources/configs
-				COMMAND ${CMAKE_COMMAND} -E copy_directory ${RESOURCES_DIRECTORY}/Configs/Icons $<TARGET_FILE_DIR:open-ephys>/../Resources/configs/icons
+	add_custom_command(TARGET snap-gui POST_BUILD
+				COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:snap-gui>/../Resources/configs
+				COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:snap-gui>/../Resources/configs/icons
+				COMMAND ${CMAKE_COMMAND} -E copy ${_xmlfiles} $<TARGET_FILE_DIR:snap-gui>/../Resources/configs
+				COMMAND ${CMAKE_COMMAND} -E copy_directory ${RESOURCES_DIRECTORY}/Configs/Icons $<TARGET_FILE_DIR:snap-gui>/../Resources/configs/icons
 				)
 	
 	#copy FileReader resources to output directory
-	add_custom_command(TARGET open-ephys POST_BUILD
-				COMMAND ${CMAKE_COMMAND} -E copy_directory ${RESOURCES_DIRECTORY}/FileReader/resources $<TARGET_FILE_DIR:open-ephys>/../Resources/resources
+	add_custom_command(TARGET snap-gui POST_BUILD
+				COMMAND ${CMAKE_COMMAND} -E copy_directory ${RESOURCES_DIRECTORY}/FileReader/resources $<TARGET_FILE_DIR:snap-gui>/../Resources/resources
 				)
 	
 	#copy GUI icon to output directory
-	add_custom_command(TARGET open-ephys POST_BUILD
-			COMMAND ${CMAKE_COMMAND} -E copy ${RESOURCES_DIRECTORY}/Icons/icon-small.png $<TARGET_FILE_DIR:open-ephys>/../
+	add_custom_command(TARGET snap-gui POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E copy ${RESOURCES_DIRECTORY}/Icons/icon-small.png $<TARGET_FILE_DIR:snap-gui>/../
 			)
 endif()
 
 if(MSVC)
-	set_property(TARGET open-ephys APPEND PROPERTY COMPILE_DEFINITIONS "JUCE_API=__declspec(dllexport)")
-	target_compile_options(open-ephys PRIVATE /nologo /MP /W3 /bigobj)
-	target_link_libraries(open-ephys setupapi.lib opengl32.lib glu32.lib)
-	set_property(TARGET open-ephys APPEND PROPERTY VS_DEBUGGER_COMMAND "Debug\\open-ephys.exe")
-	set_property(TARGET open-ephys APPEND_STRING PROPERTY LINK_FLAGS_DEBUG " /NODEFAULTLIB:\"libcmt.lib\" /NODEFAULTLIB:\"msvcrt.lib\"")
+	set_property(TARGET snap-gui APPEND PROPERTY COMPILE_DEFINITIONS "JUCE_API=__declspec(dllexport)")
+	target_compile_options(snap-gui PRIVATE /nologo /MP /W3 /bigobj)
+	target_link_libraries(snap-gui setupapi.lib opengl32.lib glu32.lib)
+	set_target_properties(snap-gui PROPERTIES OUTPUT_NAME "SNAP")
+	set_property(TARGET snap-gui APPEND PROPERTY VS_DEBUGGER_COMMAND "Debug\\SNAP.exe")
+	set_property(TARGET snap-gui APPEND_STRING PROPERTY LINK_FLAGS_DEBUG " /NODEFAULTLIB:\"libcmt.lib\" /NODEFAULTLIB:\"msvcrt.lib\"")
 	if (CMAKE_SIZEOF_VOID_P EQUAL 8)
 		set(DLLARCH "Win64")
 	else()
@@ -199,15 +200,15 @@ if(MSVC)
 	endif()
 	set(DLLDIR ${RESOURCES_DIRECTORY}/DLLs/${DLLARCH})
 	file(GLOB _dllfiles "${DLLDIR}/*.dll")
-	add_custom_command(TARGET open-ephys POST_BUILD
+	add_custom_command(TARGET snap-gui POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy ${_dllfiles} ${BIN_SHARED_DIR}
 		)
 
 elseif(LINUX)
 	if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
-		target_compile_options(open-ephys PRIVATE -O0) #enable optimization for linux debug
+		target_compile_options(snap-gui PRIVATE -O0) #enable optimization for linux debug
 	elseif (${CMAKE_BUILD_TYPE} STREQUAL "Release")
-		target_compile_options(open-ephys PRIVATE -O3) #enable optimization for linux release
+		target_compile_options(snap-gui PRIVATE -O3) #enable optimization for linux release
 	else()
 		message(FATAL_ERROR "Invalid build type")
 	endif()
@@ -217,17 +218,18 @@ elseif(LINUX)
 
 	# pkg_check_modules(GTK REQUIRED gtk+-3.0)
 
-	target_include_directories(open-ephys PRIVATE
+	target_include_directories(snap-gui PRIVATE
 		/usr/include
 		/usr/include/freetype2
 		${CURL_INCLUDE_DIRS})
 
-	target_link_libraries(open-ephys GL X11 Xext Xinerama asound dl freetype pthread rt ${Fontconfig_LIBRARIES} ${CURL_LIBRARIES})
-	set_property(TARGET open-ephys APPEND_STRING PROPERTY LINK_FLAGS
+	target_link_libraries(snap-gui GL X11 Xext Xinerama asound dl freetype pthread rt ${Fontconfig_LIBRARIES} ${CURL_LIBRARIES})
+	set_property(TARGET snap-gui APPEND_STRING PROPERTY LINK_FLAGS
 		"-fvisibility=hidden -fPIC -rdynamic -Wl,-rpath,'$ORIGIN/shared'")
 
-	target_compile_options(open-ephys PRIVATE -fPIC -rdynamic -fvisibility=hidden)
-	set_property(TARGET open-ephys PROPERTY RUNTIME_OUTPUT_DIRECTORY ${BASE_BUILD_DIRECTORY}/${CMAKE_BUILD_TYPE})
+	target_compile_options(snap-gui PRIVATE -fPIC -rdynamic -fvisibility=hidden)
+	set_target_properties(snap-gui PROPERTIES OUTPUT_NAME "snap-neuro")
+	set_property(TARGET snap-gui PROPERTY RUNTIME_OUTPUT_DIRECTORY ${BASE_BUILD_DIRECTORY}/${CMAKE_BUILD_TYPE})
     if(BUILD_TESTS)
             target_include_directories(gui_testable_source PRIVATE
                 /usr/include
@@ -240,17 +242,17 @@ elseif(LINUX)
             target_compile_options(gui_testable_source PRIVATE -fPIC -rdynamic -fvisibility=hidden)
     endif()
 elseif(APPLE)
-	set_target_properties(open-ephys PROPERTIES
+	set_target_properties(snap-gui PROPERTIES
 		MACOSX_BUNDLE TRUE
-		OUTPUT_NAME "Open Ephys GUI"
+		OUTPUT_NAME "SNAP"
 		MACOSX_BUNDLE_VERSION ${GUI_VERSION}
 		MACOSX_BUNDLE_ICON_FILE "Icon.icns"
 		MACOSX_BUNDLE_INFO_PLIST "${RESOURCES_DIRECTORY}/Build-files/Info.plist.in"
 		)
-	target_compile_options(open-ephys PRIVATE -fPIC -Wpartial-availability -Wno-inconsistent-missing-override)
-	target_link_options(open-ephys PRIVATE -rdynamic)
-	target_link_libraries(open-ephys dl)
-	target_link_libraries(open-ephys
+	target_compile_options(snap-gui PRIVATE -fPIC -Wpartial-availability -Wno-inconsistent-missing-override)
+	target_link_options(snap-gui PRIVATE -rdynamic)
+	target_link_libraries(snap-gui dl)
+	target_link_libraries(snap-gui
 		"-framework Accelerate"
 		"-framework AudioToolbox"
 		"-framework AVKit"
@@ -294,14 +296,14 @@ if(BUILD_TESTS)
         "-framework WebKit"
     )
 endif()
-	set_target_properties(open-ephys PROPERTIES
+	set_target_properties(snap-gui PROPERTIES
 		XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY ""
 		XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED NO
 		XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT dwarf
 		XCODE_ATTRIBUTE_GCC_INLINES_ARE_PRIVATE_EXTERN YES
 		XCODE_ATTRIBUTE_CLANG_LINK_OBJC_RUNTIME NO
-		XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "org.open-ephys.gui"
-		XCODE_ATTRIBUTE_EXECUTABLE_NAME "open-ephys"
+		XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "com.spikeneuro.snap"
+		XCODE_ATTRIBUTE_EXECUTABLE_NAME "SNAP"
 		XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS "${CMAKE_CURRENT_SOURCE_DIR}/Resources/Build-files/entitlements.plist"
 		)
 
@@ -312,7 +314,7 @@ endif()
 			${RESOURCES_DIRECTORY}/Fonts/unibody-8.otf
 		)
 		set_source_files_properties(${MAC_RESOURCE_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
-		target_sources(open-ephys PRIVATE ${MAC_RESOURCE_FILES})
+		target_sources(snap-gui PRIVATE ${MAC_RESOURCE_FILES})
 
 
 else()
@@ -323,7 +325,7 @@ endif()
 add_subdirectory(Source)
 
 #create filters for vs and xcode
-get_target_property(SRC_FILES open-ephys SOURCES)
+get_target_property(SRC_FILES snap-gui SOURCES)
 
 foreach( src_file IN ITEMS ${SRC_FILES})
 	get_filename_component(src_path "${src_file}" PATH)
@@ -332,7 +334,7 @@ foreach( src_file IN ITEMS ${SRC_FILES})
 	source_group("${group_name}" FILES "${src_file}")
 endforeach()
 
-#remove Main.cpp from open_ephys sources and add to API library
+#remove Main.cpp from snap-gui sources and add to API library
 list(REMOVE_ITEM SRC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/Source/Main.cpp)
 
 

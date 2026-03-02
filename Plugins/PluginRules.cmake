@@ -28,7 +28,7 @@ if(BUILD_TESTS)
   add_executable(${PLUGIN_NAME}_tests)
   target_compile_features(${PLUGIN_NAME}_tests PRIVATE cxx_std_17)
 else()
-  add_dependencies(${PLUGIN_NAME} open-ephys)
+  add_dependencies(${PLUGIN_NAME} snap-gui)
 endif()
 
 target_include_directories(
@@ -46,7 +46,7 @@ if(MSVC)
     target_link_libraries(${PLUGIN_NAME} gui_testable_source)
   else()
     target_link_libraries(${PLUGIN_NAME}
-                          $<TARGET_FILE_DIR:open-ephys>/open-ephys.lib)
+                          $<TARGET_FILE_DIR:snap-gui>/SNAP.lib)
   endif()
   target_compile_options(${PLUGIN_NAME} PRIVATE /sdl- /W0)
 elseif(LINUX)
@@ -74,7 +74,7 @@ elseif(APPLE)
   set_target_properties(
     ${PLUGIN_NAME}
     PROPERTIES BUNDLE TRUE MACOSX_BUNDLE_GUI_IDENTIFIER
-                           "org.open-ephys.plugin.${PLUGIN_NAME}")
+                           "com.spikeneuro.plugin.${PLUGIN_NAME}")
 
   set_property(
     TARGET ${PLUGIN_NAME}

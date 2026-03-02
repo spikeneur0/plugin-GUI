@@ -29,7 +29,7 @@
 #include "../Processors/PluginManager/OpenEphysPlugin.h"
 #include "../Utils/Utils.h"
 
-class UIComponent;
+class SNAPUIComponent;
 class PopupComponent;
 
 /**

@@ -28,8 +28,8 @@
 #include <execinfo.h>
 #endif
 
-#include "../../UI/ControlPanel.h"
-#include "../../UI/ProcessorList.h"
+#include "../../UI/SNAPControlPanel.h"
+#include "../../UI/SNAPProcessorList.h"
 #include "PluginManager.h"
 
 #include "../../Utils/Utils.h"
@@ -102,15 +102,20 @@ PluginManager::PluginManager()
     //Shared directory at the same level as executable
     File sharedPath = File::getSpecialLocation (File::currentApplicationFile).getParentDirectory().getChildFile ("shared");
 
-    //Shared directory managed by Plugin Installer at %LOCALAPPDATA%
+    //Shared directory managed by Plugin Installer at %LOCALAPPDATA% (SNAP primary)
     File installSharedPath = File::getSpecialLocation (File::windowsLocalAppData)
-                                 .getChildFile ("Open Ephys")
+                                 .getChildFile ("SNAP")
                                  .getChildFile ("shared-api" + String (PLUGIN_API_VER));
+
+    //Legacy Open Ephys shared directory (fallback for community plugins)
+    File legacySharedPath = File::getSpecialLocation (File::windowsLocalAppData)
+                                .getChildFile ("Open Ephys")
+                                .getChildFile ("shared-api" + String (PLUGIN_API_VER));
 
     // Add executable level shared directory to DLL search path
     AddDllDirectory (sharedPath.getFullPathName().toWideCharPointer());
 
-    // Add LOCALAPPDATA level shared directory to DLL search path
+    // Add LOCALAPPDATA level shared directories to DLL search path
     if (! appDir.contains ("plugin-GUI\\Build\\"))
     {
         if (! installSharedPath.isDirectory())
@@ -119,26 +124,40 @@ PluginManager::PluginManager()
             installSharedPath.createDirectory();
         }
         AddDllDirectory (installSharedPath.getFullPathName().toWideCharPointer());
+
+        // Also add legacy Open Ephys path for backward compatibility
+        if (legacySharedPath.isDirectory())
+            AddDllDirectory (legacySharedPath.getFullPathName().toWideCharPointer());
     }
 
 #elif __linux__
     File installSharedPath = File::getSpecialLocation (File::userApplicationDataDirectory)
-                                 .getChildFile ("open-ephys")
+                                 .getChildFile ("snap")
                                  .getChildFile ("shared-api" + String (PLUGIN_API_VER));
 
     if (! installSharedPath.isDirectory())
     {
         installSharedPath.createDirectory();
     }
+
+    // Legacy Open Ephys shared path (fallback)
+    File legacySharedPath = File::getSpecialLocation (File::userApplicationDataDirectory)
+                                .getChildFile ("open-ephys")
+                                .getChildFile ("shared-api" + String (PLUGIN_API_VER));
 #else
     File installSharedPath = File::getSpecialLocation (File::userApplicationDataDirectory)
-                                 .getChildFile ("Application Support/open-ephys")
+                                 .getChildFile ("Application Support/snap")
                                  .getChildFile ("shared-api" + String (PLUGIN_API_VER));
 
     if (! installSharedPath.isDirectory())
     {
         installSharedPath.createDirectory();
     }
+
+    // Legacy Open Ephys shared path (fallback)
+    File legacySharedPath = File::getSpecialLocation (File::userApplicationDataDirectory)
+                                .getChildFile ("Application Support/open-ephys")
+                                .getChildFile ("shared-api" + String (PLUGIN_API_VER));
 #endif
 }
 
@@ -152,6 +171,11 @@ void PluginManager::loadAllPlugins()
 
 #ifdef __APPLE__
     paths.add (File::getSpecialLocation (File::currentApplicationFile).getChildFile ("Contents/PlugIns"));
+    // SNAP primary plugin path
+    paths.add (File::getSpecialLocation (File::userApplicationDataDirectory)
+                   .getChildFile ("Application Support/snap")
+                   .getChildFile ("plugins-api" + String (PLUGIN_API_VER)));
+    // Legacy Open Ephys plugin path (fallback for community plugins)
     paths.add (File::getSpecialLocation (File::userApplicationDataDirectory)
                    .getChildFile ("Application Support/open-ephys")
                    .getChildFile ("plugins-api" + String (PLUGIN_API_VER)));
@@ -161,6 +185,11 @@ void PluginManager::loadAllPlugins()
     String appDir = File::getSpecialLocation (File::currentApplicationFile).getFullPathName();
     if (! appDir.contains ("plugin-GUI\\Build\\"))
     {
+        // SNAP primary plugin path
+        paths.add (File::getSpecialLocation (File::windowsLocalAppData)
+                       .getChildFile ("SNAP")
+                       .getChildFile ("plugins-api" + String (PLUGIN_API_VER)));
+        // Legacy Open Ephys plugin path (fallback for community plugins)
         paths.add (File::getSpecialLocation (File::windowsLocalAppData)
                        .getChildFile ("Open Ephys")
                        .getChildFile ("plugins-api" + String (PLUGIN_API_VER)));
@@ -171,6 +200,11 @@ void PluginManager::loadAllPlugins()
     String appDir = File::getSpecialLocation (File::currentApplicationFile).getFullPathName();
     if (! appDir.contains ("plugin-GUI/Build/"))
     {
+        // SNAP primary plugin path
+        paths.add (File::getSpecialLocation (File::userApplicationDataDirectory)
+                       .getChildFile ("snap")
+                       .getChildFile ("plugins-api" + String (PLUGIN_API_VER)));
+        // Legacy Open Ephys plugin path (fallback for community plugins)
         paths.add (File::getSpecialLocation (File::userApplicationDataDirectory)
                        .getChildFile ("open-ephys")
                        .getChildFile ("plugins-api" + String (PLUGIN_API_VER)));
@@ -718,7 +752,7 @@ void PluginManager::Manager::insertListPlugin(PluginManager::Plugin *processor) 
 		return;
 	}
 	pluginList.push_back(processor);
-	AccessClass::getProcessorList()->addPluginItem(String("test"), size_t(0x1));
+	AccessClass::getSNAPProcessorList()->addPluginItem(String("test"), size_t(0x1));
 	LOGD("Size of list after is: ", pluginList.size());
 }
 

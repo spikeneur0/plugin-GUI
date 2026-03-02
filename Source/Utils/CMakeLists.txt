@@ -1,8 +1,8 @@
-# Open Ephys GUI directory-specific file
+# SNAP directory-specific file
 
 # add files in this folder
 add_sources(
-  open-ephys
+  snap-gui
   OpenEphysHttpServer.h
   ListSliceParser.h
   ListSliceParser.cpp

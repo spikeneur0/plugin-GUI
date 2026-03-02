@@ -23,8 +23,8 @@
 
 #include "MergerEditor.h"
 #include "../../AccessClass.h"
-#include "../../UI/EditorViewport.h"
-#include "../../UI/GraphViewer.h"
+#include "../../UI/SNAPEditorViewport.h"
+#include "../../UI/SNAPGraphViewer.h"
 #include "../MessageCenter/MessageCenterEditor.h"
 #include "../ProcessorGraph/ProcessorGraph.h"
 #include "Merger.h"
@@ -74,11 +74,11 @@ void MergerEditor::buttonClicked (Button* button)
 {
     if (button == pipelineSelectorA.get())
     {
-        AccessClass::getEditorViewport()->switchIO (getProcessor(), 0);
+        AccessClass::getSNAPEditorViewport()->switchIO (getProcessor(), 0);
     }
     else if (button == pipelineSelectorB.get())
     {
-        AccessClass::getEditorViewport()->switchIO (getProcessor(), 1);
+        AccessClass::getSNAPEditorViewport()->switchIO (getProcessor(), 1);
     }
 }
 

@@ -21,16 +21,16 @@
 
 */
 
-#ifndef __MAINWINDOW_H_BA75E17__
-#define __MAINWINDOW_H_BA75E17__
+#ifndef __SNAPMAINWINDOW_H_BA75E17__
+#define __SNAPMAINWINDOW_H_BA75E17__
 
 #include "../JuceLibraryCode/JuceHeader.h"
-#include "Audio/AudioComponent.h"
+#include "Audio/SNAPAudioComponent.h"
 #include "Processors/ProcessorGraph/ProcessorGraph.h"
-#include "UI/ControlPanel.h"
+#include "UI/SNAPControlPanel.h"
 #include "UI/DefaultConfig.h"
 #include "UI/LookAndFeel/CustomLookAndFeel.h"
-#include "UI/UIComponent.h"
+#include "UI/SNAPUIComponent.h"
 #include "UI/SplashScreen.h"
 #include "Utils/OpenEphysHttpServer.h"
 
@@ -48,8 +48,8 @@ public:
     /** Destructor */
     virtual ~MainDocumentWindow() {}
 
-    /** Called when the user hits the close button of the MainWindow. This destroys
-        the MainWindow and closes the application. */
+    /** Called when the user hits the close button of the SNAPMainWindow. This destroys
+        the SNAPMainWindow and closes the application. */
     void closeButtonPressed();
 
     /** Set the border thickness to 1 unit on all sides. */
@@ -62,25 +62,25 @@ public:
 /**
   The main window for the GUI application.
 
-  This object creates and destroys the AudioComponent, the ProcessorGraph,
-  and the UIComponent (which exists as the ContentComponent of this window).
+  This object creates and destroys the SNAPAudioComponent, the ProcessorGraph,
+  and the SNAPUIComponent (which exists as the ContentComponent of this window).
 
-  @see AudioComponent, ProcessorGraph, UIComponent
+  @see SNAPAudioComponent, ProcessorGraph, SNAPUIComponent
 
 */
 
-class MainWindow
+class SNAPMainWindow
 {
 public:
-    /** Initializes the MainWindow, creates the AudioComponent, ProcessorGraph,
-        and UIComponent, and sets the window boundaries. */
-    MainWindow (const File& fileToLoad = File(), bool isConsoleApp = false,
+    /** Initializes the SNAPMainWindow, creates the SNAPAudioComponent, ProcessorGraph,
+        and SNAPUIComponent, and sets the window boundaries. */
+    SNAPMainWindow (const File& fileToLoad = File(), bool isConsoleApp = false,
                 OpenEphysSplashScreen* splash = nullptr);
 
-    /** Destroys the AudioComponent, ProcessorGraph, and UIComponent, and saves the window boundaries. */
-    ~MainWindow();
+    /** Destroys the SNAPAudioComponent, ProcessorGraph, and SNAPUIComponent, and saves the window boundaries. */
+    ~SNAPMainWindow();
 
-    /** A JUCE class that allows the MainWindow to respond to keyboard and menubar
+    /** A JUCE class that allows the SNAPMainWindow to respond to keyboard and menubar
         commands. */
     ApplicationCommandManager commandManager;
 
@@ -123,11 +123,11 @@ private:
     /** Loads  the processor graph from a file*/
     void loadProcessorGraph (const File& file);
 
-    /** Saves the MainWindow's boundaries into the file "windowState.xml", located in the directory
+    /** Saves the SNAPMainWindow's boundaries into the file "windowState.xml", located in the directory
         from which the GUI is run. */
     void saveWindowBounds();
 
-    /** Loads the MainWindow's boundaries into the file "windowState.xml", located in the directory
+    /** Loads the SNAPMainWindow's boundaries into the file "windowState.xml", located in the directory
         from which the GUI is run. */
     void loadWindowBounds();
 
@@ -144,25 +144,25 @@ private:
     /** A pointer to the CustomLookAndFeel object (only instantiated if running in GUI mode). */
     std::unique_ptr<CustomLookAndFeel> customLookAndFeel;
 
-    /** A pointer to the application's AudioComponent (owned by the MainWindow). */
-    std::unique_ptr<AudioComponent> audioComponent;
+    /** A pointer to the application's SNAPAudioComponent (owned by the SNAPMainWindow). */
+    std::unique_ptr<SNAPAudioComponent> audioComponent;
 
-    /** A pointer to the application's ProcessorGraph (owned by the MainWindow). */
+    /** A pointer to the application's ProcessorGraph (owned by the SNAPMainWindow). */
     std::unique_ptr<ProcessorGraph> processorGraph;
 
-    /** A pointer to the application's ControlPanel (owned by the MainWindow). */
-    std::unique_ptr<ControlPanel> controlPanel;
+    /** A pointer to the application's SNAPControlPanel (owned by the SNAPMainWindow). */
+    std::unique_ptr<SNAPControlPanel> controlPanel;
 
     /** A weak reference to default config window. */
     std::unique_ptr<DefaultConfigWindow> defaultConfigWindow;
 
-    /** A pointer to the application's HttpServer (owned by the MainWindow). */
+    /** A pointer to the application's HttpServer (owned by the SNAPMainWindow). */
     std::unique_ptr<OpenEphysHttpServer> http_server_thread;
 
     /** Set to true if the application is running in console mode */
     bool isConsoleApp;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainWindow)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SNAPMainWindow)
 };
 
-#endif // __MAINWINDOW_H_BA75E17__
+#endif // __SNAPMAINWINDOW_H_BA75E17__

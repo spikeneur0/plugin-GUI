@@ -25,7 +25,7 @@
 #include "MergerEditor.h"
 
 #include "../../AccessClass.h"
-#include "../../UI/EditorViewport.h"
+#include "../../UI/SNAPEditorViewport.h"
 #include "../../Utils/Utils.h"
 
 #include "../Settings/ConfigurationObject.h"

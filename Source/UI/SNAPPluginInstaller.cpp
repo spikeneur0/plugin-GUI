@@ -21,7 +21,7 @@
 
 */
 
-#include "PluginInstaller.h"
+#include "SNAPPluginInstaller.h"
 #include <filesystem>
 #include <stdio.h>
 
@@ -29,8 +29,8 @@
 #include "../CoreServices.h"
 #include "../Processors/PluginManager/PluginManager.h"
 #include "../Processors/ProcessorGraph/ProcessorGraph.h"
-#include "ControlPanel.h"
-#include "ProcessorList.h"
+#include "SNAPControlPanel.h"
+#include "SNAPProcessorList.h"
 #ifdef _WIN32
 #include <Windows.h>
 #endif
@@ -63,7 +63,7 @@ static inline File getSharedDirectory()
 static String osType = String ("");
 StringArray updatablePlugins;
 
-PluginInstaller::PluginInstaller (bool loadComponents)
+SNAPPluginInstaller::SNAPPluginInstaller (bool loadComponents)
     : DocumentWindow (WINDOW_TITLE,
                       Colour (Colours::black),
                       DocumentWindow::closeButton)
@@ -113,27 +113,27 @@ PluginInstaller::PluginInstaller (bool loadComponents)
     CoreServices::sendStatusMessage ("Plugin Installer is ready!");
 }
 
-PluginInstaller::~PluginInstaller()
+SNAPPluginInstaller::~SNAPPluginInstaller()
 {
     masterReference.clear();
 }
 
-void PluginInstaller::closeButtonPressed()
+void SNAPPluginInstaller::closeButtonPressed()
 {
     setVisible (false);
     delete this;
 }
 
-void PluginInstaller::createXmlFile()
+void SNAPPluginInstaller::createXmlFile()
 {
     File file = getPluginsDirectory().getChildFile ("installedPlugins.xml");
 
     XmlDocument doc (file);
     std::unique_ptr<XmlElement> xml (doc.getDocumentElement());
 
-    if (xml == 0 || ! xml->hasTagName ("PluginInstaller"))
+    if (xml == 0 || ! xml->hasTagName ("SNAPPluginInstaller"))
     {
-        std::unique_ptr<XmlElement> baseTag (new XmlElement ("PluginInstaller"));
+        std::unique_ptr<XmlElement> baseTag (new XmlElement ("SNAPPluginInstaller"));
         baseTag->setAttribute ("gui_version", JUCEApplication::getInstance()->getApplicationVersion());
 
         std::unique_ptr<XmlElement> plugins (new XmlElement ("InstalledPlugins"));
@@ -171,7 +171,7 @@ void PluginInstaller::createXmlFile()
     }
 }
 
-int PluginInstaller::checkForPluginUpdates()
+int SNAPPluginInstaller::checkForPluginUpdates()
 {
     LOGD ("Checking for plugin updates...");
 
@@ -180,9 +180,9 @@ int PluginInstaller::checkForPluginUpdates()
     XmlDocument doc (xmlFile);
     std::unique_ptr<XmlElement> xml (doc.getDocumentElement());
 
-    if (xml == 0 || ! xml->hasTagName ("PluginInstaller"))
+    if (xml == 0 || ! xml->hasTagName ("SNAPPluginInstaller"))
     {
-        LOGD ("[PluginInstaller] installedPlugins.xml not found.");
+        LOGD ("[SNAPPluginInstaller] installedPlugins.xml not found.");
         return 0;
     }
 
@@ -249,7 +249,7 @@ int PluginInstaller::checkForPluginUpdates()
     return updatablePlugins.size();
 }
 
-void PluginInstaller::installPluginAndDependency (const String& plugin, String version)
+void SNAPPluginInstaller::installPluginAndDependency (const String& plugin, String version)
 {
     PluginInfoComponent tempInfoComponent;
 
@@ -513,9 +513,9 @@ void PluginInstallerComponent::run()
     XmlDocument doc (xmlFile);
     std::unique_ptr<XmlElement> xml (doc.getDocumentElement());
 
-    if (xml == 0 || ! xml->hasTagName ("PluginInstaller"))
+    if (xml == 0 || ! xml->hasTagName ("SNAPPluginInstaller"))
     {
-        LOGE ("[PluginInstaller] File not found.");
+        LOGE ("[SNAPPluginInstaller] File not found.");
         return;
     }
     else
@@ -899,7 +899,7 @@ bool PluginListBoxComponent::loadPluginInfo (const String& pluginName)
     XmlDocument doc (xmlFile);
     std::unique_ptr<XmlElement> xml (doc.getDocumentElement());
 
-    if (xml == 0 || ! xml->hasTagName ("PluginInstaller"))
+    if (xml == 0 || ! xml->hasTagName ("SNAPPluginInstaller"))
     {
         LOGE ("File not found.");
         return false;
@@ -1479,9 +1479,9 @@ bool PluginInfoComponent::uninstallPlugin (const String& plugin)
     String dllName;
     XmlElement* pluginElement;
 
-    if (xml == 0 || ! xml->hasTagName ("PluginInstaller"))
+    if (xml == 0 || ! xml->hasTagName ("SNAPPluginInstaller"))
     {
-        LOGD ("[PluginInstaller] InstalledPlugins.xml file not found.");
+        LOGD ("[SNAPPluginInstaller] InstalledPlugins.xml file not found.");
         return false;
     }
     else
@@ -1502,11 +1502,11 @@ bool PluginInfoComponent::uninstallPlugin (const String& plugin)
         LOGD ("Error! Couldn't write to installedPlugins.xml");
     }
 
-    AccessClass::getProcessorList()->fillItemList();
-    AccessClass::getProcessorList()->repaint();
+    AccessClass::getSNAPProcessorList()->fillItemList();
+    AccessClass::getSNAPProcessorList()->repaint();
 
     if (pInfo.type == "RecordEngine")
-        AccessClass::getControlPanel()->updateRecordEngineList();
+        AccessClass::getSNAPControlPanel()->updateRecordEngineList();
 
     uninstallButton.setVisible (false);
     downloadButton.setEnabled (true);
@@ -1619,9 +1619,9 @@ int PluginInfoComponent::downloadPlugin (const String& plugin, const String& ver
         pluginEntry->setAttribute ("version", version);
         pluginEntry->setAttribute ("dllName", dllName);
 
-        if (xml == 0 || ! xml->hasTagName ("PluginInstaller"))
+        if (xml == 0 || ! xml->hasTagName ("SNAPPluginInstaller"))
         {
-            LOGE ("[PluginInstaller] File not found.");
+            LOGE ("[SNAPPluginInstaller] File not found.");
             pluginFile.deleteFile();
             return 3;
         }
@@ -1658,7 +1658,7 @@ int PluginInfoComponent::downloadPlugin (const String& plugin, const String& ver
     }
 
     // Create temp directory to uncompress the plugin
-    File tempDir = File::getSpecialLocation (File::tempDirectory).getChildFile ("open-ephys");
+    File tempDir = File::getSpecialLocation (File::tempDirectory).getChildFile ("snap");
     tempDir.createDirectory();
 
     // Delete any existing files in temp directory
@@ -1791,11 +1791,11 @@ int PluginInfoComponent::downloadPlugin (const String& plugin, const String& ver
                                   {
                                     retCode = AccessClass::getPluginManager()->loadPlugin (pluginDllPath);
 
-                                    AccessClass::getProcessorList()->fillItemList();
-                                    AccessClass::getProcessorList()->repaint();
+                                    AccessClass::getSNAPProcessorList()->fillItemList();
+                                    AccessClass::getSNAPProcessorList()->repaint();
 
                                     if (pInfo.type == "RecordEngine")
-                                        AccessClass::getControlPanel()->updateRecordEngineList(); });
+                                        AccessClass::getSNAPControlPanel()->updateRecordEngineList(); });
 
         if (retCode == -1)
             return 6;

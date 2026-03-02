@@ -26,7 +26,7 @@
 
 #include "../JuceLibraryCode/JuceHeader.h"
 
-class MainWindow;
+class SNAPMainWindow;
 class DownloadThread;
 
 /** 
@@ -51,7 +51,7 @@ public:
     };
 
     /** Checks for a newer version of the GUI */
-    void checkForNewVersion (bool isBackgroundCheck, MainWindow* mw);
+    void checkForNewVersion (bool isBackgroundCheck, SNAPMainWindow* mw);
 
     JUCE_DECLARE_SINGLETON_SINGLETHREADED_MINIMAL (LatestVersionCheckerAndUpdater)
 
@@ -65,7 +65,7 @@ private:
 
     //==============================================================================
     bool backgroundCheck = false;
-    MainWindow* mainWindow;
+    SNAPMainWindow* mainWindow;
 
     std::unique_ptr<DownloadThread> downloader;
     std::unique_ptr<Component> dialogWindow;

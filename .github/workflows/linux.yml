@@ -62,23 +62,23 @@ jobs:
         fi
 
         cd Build
-        cp -r Release open-ephys
-        cp ../LICENSE open-ephys
-        zipfile=open-ephys-${gui_ver}-linux${version_suffix}.zip
-        zip -r $zipfile open-ephys
+        cp -r Release snap
+        cp ../LICENSE snap
+        zipfile=snap-${gui_ver}-linux${version_suffix}.zip
+        zip -r $zipfile snap
         user_info="X-JFrog-Art-Api:$ARTIFACTORY_ACCESS_TOKEN"
         curl -H $user_info -T $zipfile "https://openephys.jfrog.io/artifactory/GUI-binaries/${artifactory_repo}/linux/$zipfile"
 
         cd ../Resources/Installers/Linux/Open-Ephys_Installer
-        mkdir -p usr/local/bin/open-ephys-gui
-        cp -r ../../../../Build/Release/* usr/local/bin/open-ephys-gui
-        cp ../../../Icons/icon-large.png usr/local/bin/open-ephys-gui
-        cp ../../../Scripts/*.rules usr/local/bin/open-ephys-gui
+        mkdir -p usr/local/bin/snap-neuro
+        cp -r ../../../../Build/Release/* usr/local/bin/snap-neuro
+        cp ../../../Icons/icon-large.png usr/local/bin/snap-neuro
+        cp ../../../Scripts/*.rules usr/local/bin/snap-neuro
         mkdir -p usr/share/applications
-        cp open-ephys.desktop usr/share/applications
+        cp open-ephys.desktop usr/share/applications/snap-neuro.desktop
         cd ..
         dpkg-deb --build Open-Ephys_Installer
-        installer=open-ephys-gui-${gui_ver}${version_suffix}.deb
+        installer=snap-neuro-${gui_ver}${version_suffix}.deb
         mv -v Open-Ephys_Installer.deb $installer
         curl -H $user_info -T $installer "https://openephys.jfrog.io/artifactory/GUI-binaries/${artifactory_repo}-Installer/linux/$installer"
       shell: bash

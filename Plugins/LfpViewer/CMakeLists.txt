@@ -61,7 +61,7 @@ add_sources(
 if(APPLE)
   set_target_properties(
     ${PLUGIN_NAME} PROPERTIES XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER
-                              "org.open-ephys.plugin.LfpViewer")
+                              "com.spikeneuro.plugin.LfpViewer")
 endif()
 
 if(BUILD_TESTS)

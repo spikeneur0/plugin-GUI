@@ -22,8 +22,8 @@
 */
 
 #include "PopupComponent.h"
-#include "EditorViewport.h"
-#include "UIComponent.h"
+#include "SNAPEditorViewport.h"
+#include "SNAPUIComponent.h"
 
 #include "../CoreServices.h"
 
@@ -94,7 +94,7 @@ bool PopupComponent::keyPressed (const KeyPress& key)
             && undoManager->getUndoDescription().contains ("Disabled during acquisition"))
             return false;
 
-        if (AccessClass::getEditorViewport()->isSignalChainLocked())
+        if (AccessClass::getSNAPEditorViewport()->isSignalChainLocked())
             return false;
 
         undoManager->undo();
@@ -121,7 +121,7 @@ bool PopupComponent::keyPressed (const KeyPress& key)
             && undoManager->getRedoDescription().contains ("Disabled during acquisition"))
             return false;
 
-        if (AccessClass::getEditorViewport()->isSignalChainLocked())
+        if (AccessClass::getSNAPEditorViewport()->isSignalChainLocked())
             return false;
 
         undoManager->redo();

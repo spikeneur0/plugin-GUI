@@ -21,28 +21,28 @@
 
 */
 
-#include "UIComponent.h"
+#include "SNAPUIComponent.h"
 
 #include <stdio.h>
 
-#include "../Audio/AudioComponent.h"
+#include "../Audio/SNAPAudioComponent.h"
 #include "../AutoUpdater.h"
-#include "../MainWindow.h"
+#include "../SNAPMainWindow.h"
 #include "../Processors/MessageCenter/MessageCenter.h"
 #include "../Processors/ProcessorGraph/ProcessorGraph.h"
 #include "ConsoleViewer.h"
-#include "ControlPanel.h"
-#include "DataViewport.h"
-#include "EditorViewport.h"
-#include "GraphViewer.h"
+#include "SNAPControlPanel.h"
+#include "SNAPDataViewport.h"
+#include "SNAPEditorViewport.h"
+#include "SNAPGraphViewer.h"
 #include "InfoLabel.h"
 #include "MessageCenterButton.h"
-#include "ProcessorList.h"
+#include "SNAPProcessorList.h"
 
-UIComponent::UIComponent (MainWindow* mainWindow_,
+SNAPUIComponent::SNAPUIComponent (SNAPMainWindow* mainWindow_,
                           ProcessorGraph* processorGraph_,
-                          AudioComponent* audioComponent_,
-                          ControlPanel* controlPanel_,
+                          SNAPAudioComponent* audioComponent_,
+                          SNAPControlPanel* controlPanel_,
                           ConsoleViewer* consoleViewer_,
                           CustomLookAndFeel* customLookAndFeel_)
     : mainWindow (mainWindow_),
@@ -57,32 +57,32 @@ UIComponent::UIComponent (MainWindow* mainWindow_,
     infoLabel = std::make_unique<InfoLabel>();
     LOGD ("Created info label.");
 
-    graphViewer = std::make_unique<GraphViewer>();
+    graphViewer = std::make_unique<SNAPGraphViewer>();
     LOGD ("Created graph viewer.");
 
     consoleViewer.reset (consoleViewer_);
 
-    dataViewport = std::make_unique<DataViewport>();
+    dataViewport = std::make_unique<SNAPDataViewport>();
     addChildComponent (dataViewport.get());
     LOGD ("Created data viewport.");
 
     signalChainTabComponent = std::make_unique<SignalChainTabComponent>();
     addAndMakeVisible (signalChainTabComponent.get());
 
-    editorViewport = new EditorViewport (signalChainTabComponent.get());
+    editorViewport = new SNAPEditorViewport (signalChainTabComponent.get());
 
     LOGD ("Created editor viewport.");
 
-    showHideEditorViewportButton = std::make_unique<ShowHideEditorViewportButton>();
-    showHideEditorViewportButton->addListener (this);
-    showHideEditorViewportButton->setToggleState (true, dontSendNotification);
-    addAndMakeVisible (showHideEditorViewportButton.get());
+    showHideSNAPEditorViewportButton = std::make_unique<ShowHideEditorViewportButton>();
+    showHideSNAPEditorViewportButton->addListener (this);
+    showHideSNAPEditorViewportButton->setToggleState (true, dontSendNotification);
+    addAndMakeVisible (showHideSNAPEditorViewportButton.get());
 
     addAndMakeVisible (controlPanel);
 
     LOGD ("Created control panel.");
 
-    processorList = std::make_unique<ProcessorList> (&processorListViewport);
+    processorList = std::make_unique<SNAPProcessorList> (&processorListViewport);
     processorListViewport.setViewedComponent (processorList.get(), false);
     processorListViewport.setScrollBarsShown (false, false);
     addAndMakeVisible (&processorListViewport);
@@ -97,9 +97,9 @@ UIComponent::UIComponent (MainWindow* mainWindow_,
 
     setBounds (0, 0, 500, 400);
 
-    AccessClass::setUIComponent (this);
+    AccessClass::setSNAPUIComponent (this);
 
-    getProcessorList()->fillItemList();
+    getSNAPProcessorList()->fillItemList();
 
     addInfoTab();
     addGraphTab();
@@ -112,7 +112,7 @@ UIComponent::UIComponent (MainWindow* mainWindow_,
     addChildComponent (bubbleMsgComponent.get());
 }
 
-UIComponent::~UIComponent()
+SNAPUIComponent::~SNAPUIComponent()
 {
     //dataViewport->removeTab(0); // get rid of tab for InfoLabel
 
@@ -130,69 +130,69 @@ UIComponent::~UIComponent()
     // setLookAndFeel(nullptr);
 }
 
-/** Returns a pointer to the EditorViewport. */
-EditorViewport* UIComponent::getEditorViewport()
+/** Returns a pointer to the SNAPEditorViewport. */
+SNAPEditorViewport* SNAPUIComponent::getSNAPEditorViewport()
 {
     return editorViewport;
 }
 
-/** Returns a pointer to the ProcessorList. */
-ProcessorList* UIComponent::getProcessorList()
+/** Returns a pointer to the SNAPProcessorList. */
+SNAPProcessorList* SNAPUIComponent::getSNAPProcessorList()
 {
     return processorList.get();
 }
 
-/** Returns a pointer to the DataViewport. */
-DataViewport* UIComponent::getDataViewport()
+/** Returns a pointer to the SNAPDataViewport. */
+SNAPDataViewport* SNAPUIComponent::getSNAPDataViewport()
 {
     return dataViewport.get();
 }
 
 /** Returns a pointer to the ProcessorGraph. */
-ProcessorGraph* UIComponent::getProcessorGraph()
+ProcessorGraph* SNAPUIComponent::getProcessorGraph()
 {
     return processorGraph;
 }
 
-/** Returns a pointer to the GraphViewer. */
-GraphViewer* UIComponent::getGraphViewer()
+/** Returns a pointer to the SNAPGraphViewer. */
+SNAPGraphViewer* SNAPUIComponent::getSNAPGraphViewer()
 {
     return graphViewer.get();
 }
 
-/** Returns a pointer to the ControlPanel. */
-ControlPanel* UIComponent::getControlPanel()
+/** Returns a pointer to the SNAPControlPanel. */
+SNAPControlPanel* SNAPUIComponent::getSNAPControlPanel()
 {
     return controlPanel;
 }
 
-/** Returns a pointer to the UIComponent. */
-UIComponent* UIComponent::getUIComponent()
+/** Returns a pointer to the SNAPUIComponent. */
+SNAPUIComponent* SNAPUIComponent::getSNAPUIComponent()
 {
     return this;
 }
 
-/** Returns a pointer to the AudioComponent. */
-AudioComponent* UIComponent::getAudioComponent()
+/** Returns a pointer to the SNAPAudioComponent. */
+SNAPAudioComponent* SNAPUIComponent::getSNAPAudioComponent()
 {
     return audio;
 }
 
-PluginInstaller* UIComponent::getPluginInstaller()
+SNAPPluginInstaller* SNAPUIComponent::getSNAPPluginInstaller()
 {
     if (pluginInstaller == nullptr)
     {
-        pluginInstaller = new PluginInstaller (false);
+        pluginInstaller = new SNAPPluginInstaller (false);
     }
     return pluginInstaller;
 }
 
-PopupManager* UIComponent::getPopupManager()
+PopupManager* SNAPUIComponent::getPopupManager()
 {
     return popupManager.get();
 }
 
-void UIComponent::buttonClicked (Button* button)
+void SNAPUIComponent::buttonClicked (Button* button)
 {
     if (button == &messageCenterButton)
     {
@@ -202,30 +202,30 @@ void UIComponent::buttonClicked (Button* button)
 
         resized();
     }
-    else if (button == showHideEditorViewportButton.get())
+    else if (button == showHideSNAPEditorViewportButton.get())
     {
         resized();
     }
 }
 
-void UIComponent::resized()
+void SNAPUIComponent::resized()
 {
     int w = getWidth();
     int h = getHeight();
 
-    if (showHideEditorViewportButton != nullptr)
+    if (showHideSNAPEditorViewportButton != nullptr)
     {
-        showHideEditorViewportButton->setBounds (w - 230, h - 40, 225, 35);
+        showHideSNAPEditorViewportButton->setBounds (w - 230, h - 40, 225, 35);
     }
 
     if (signalChainTabComponent != nullptr)
     {
-        if (showHideEditorViewportButton->getToggleState() && ! signalChainTabComponent->isVisible())
+        if (showHideSNAPEditorViewportButton->getToggleState() && ! signalChainTabComponent->isVisible())
         {
             signalChainTabComponent->setVisible (true);
         }
 
-        else if (! showHideEditorViewportButton->getToggleState() && signalChainTabComponent->isVisible())
+        else if (! showHideSNAPEditorViewportButton->getToggleState() && signalChainTabComponent->isVisible())
         {
             signalChainTabComponent->setVisible (false);
         }
@@ -293,7 +293,7 @@ void UIComponent::resized()
 
             if (processorList->isOpen())
             {
-                if (showHideEditorViewportButton->getToggleState())
+                if (showHideSNAPEditorViewportButton->getToggleState())
                     processorListViewport.setBounds (5, 5, 195, h - 210);
                 else
                     processorListViewport.setBounds (5, 5, 195, h - 50);
@@ -325,7 +325,7 @@ void UIComponent::resized()
 
         top = controlPanel->getHeight() + 8;
 
-        if (showHideEditorViewportButton->getToggleState())
+        if (showHideSNAPEditorViewportButton->getToggleState())
             height = h - top - 205;
         else
             height = h - top - 45;
@@ -369,27 +369,27 @@ void UIComponent::resized()
         processorList->setVisible (false);
         messageCenterEditor->setVisible (false);
         controlPanel->setVisible (false);
-        showHideEditorViewportButton->setVisible (false);
+        showHideSNAPEditorViewportButton->setVisible (false);
     }
 }
 
-void UIComponent::disableCallbacks()
+void SNAPUIComponent::disableCallbacks()
 {
     //sendActionMessage("Data acquisition terminated.");
     controlPanel->disableCallbacks();
 }
 
-void UIComponent::disableDataViewport()
+void SNAPUIComponent::disableSNAPDataViewport()
 {
-    dataViewport->disableConnectionToEditorViewport();
+    dataViewport->disableConnectionToSNAPEditorViewport();
 }
 
-void UIComponent::childComponentChanged()
+void SNAPUIComponent::childComponentChanged()
 {
     resized();
 }
 
-void UIComponent::setTheme (ColourTheme t)
+void SNAPUIComponent::setTheme (ColourTheme t)
 {
     customLookAndFeel->setTheme (t);
 
@@ -401,12 +401,12 @@ void UIComponent::setTheme (ColourTheme t)
     processorList->repaint();
 }
 
-ColourTheme UIComponent::getTheme()
+ColourTheme SNAPUIComponent::getTheme()
 {
     return mainWindow->currentTheme;
 }
 
-void UIComponent::addInfoTab()
+void SNAPUIComponent::addInfoTab()
 {
     if (! infoTabIsOpen)
     {
@@ -415,7 +415,7 @@ void UIComponent::addInfoTab()
     }
 }
 
-void UIComponent::addGraphTab()
+void SNAPUIComponent::addGraphTab()
 {
     if (! graphViewerIsOpen)
     {
@@ -424,7 +424,7 @@ void UIComponent::addGraphTab()
     }
 }
 
-void UIComponent::addConsoleTab()
+void SNAPUIComponent::addConsoleTab()
 {
     if (consoleViewer != nullptr && ! consoleOpenInTab)
     {
@@ -438,7 +438,7 @@ void UIComponent::addConsoleTab()
     }
 }
 
-void UIComponent::openConsoleWindow()
+void SNAPUIComponent::openConsoleWindow()
 {
     if (consoleWindow == nullptr)
     {
@@ -461,7 +461,7 @@ void UIComponent::openConsoleWindow()
     consoleOpenInWindow = true;
 }
 
-void UIComponent::paintOverChildren (Graphics& g)
+void SNAPUIComponent::paintOverChildren (Graphics& g)
 {
     if (isBusy)
     {
@@ -470,18 +470,18 @@ void UIComponent::paintOverChildren (Graphics& g)
     }
 }
 
-void UIComponent::setUIBusy (bool busy)
+void SNAPUIComponent::setUIBusy (bool busy)
 {
     isBusy = busy;
     repaint();
 }
 
-void UIComponent::checkForPluginUpdates()
+void SNAPUIComponent::checkForPluginUpdates()
 {
     // Run the check on a background thread to avoid blocking the UI
     Thread::launch ([this]()
                     {
-                        int numUpdates = PluginInstaller::checkForPluginUpdates();
+                        int numUpdates = SNAPPluginInstaller::checkForPluginUpdates();
 
                         if (numUpdates > 0)
                         {
@@ -502,7 +502,7 @@ void UIComponent::checkForPluginUpdates()
                         } });
 }
 
-void UIComponent::showBubbleMessage (Component* component, const String& message)
+void SNAPUIComponent::showBubbleMessage (Component* component, const String& message)
 {
     AttributedString s;
     s.setText (message);
@@ -518,14 +518,14 @@ void UIComponent::showBubbleMessage (Component* component, const String& message
 
 // MENU BAR METHODS
 
-StringArray UIComponent::getMenuBarNames()
+StringArray SNAPUIComponent::getMenuBarNames()
 {
     const char* const names[] = { "File", "Edit", "View", "Help", 0 };
 
     return StringArray (names);
 }
 
-PopupMenu UIComponent::getMenuForIndex (int menuIndex, const String& menuName)
+PopupMenu SNAPUIComponent::getMenuForIndex (int menuIndex, const String& menuName)
 {
     ApplicationCommandManager* commandManager = &(mainWindow->commandManager);
 
@@ -544,7 +544,7 @@ PopupMenu UIComponent::getMenuForIndex (int menuIndex, const String& menuName)
         menu.addSeparator();
         menu.addCommandItem (commandManager, openDefaultConfigWindow);
         menu.addSeparator();
-        menu.addCommandItem (commandManager, openPluginInstaller);
+        menu.addCommandItem (commandManager, openSNAPPluginInstaller);
 
 #if ! JUCE_MAC
         menu.addSeparator();
@@ -578,11 +578,11 @@ PopupMenu UIComponent::getMenuForIndex (int menuIndex, const String& menuName)
         themeMenu.addCommandItem (commandManager, setColourThemeMedium);
         themeMenu.addCommandItem (commandManager, setColourThemeDark);
 
-        menu.addCommandItem (commandManager, toggleProcessorList);
+        menu.addCommandItem (commandManager, toggleSNAPProcessorList);
         menu.addCommandItem (commandManager, toggleSignalChain);
         menu.addCommandItem (commandManager, toggleFileInfo);
         menu.addCommandItem (commandManager, toggleInfoTab);
-        menu.addCommandItem (commandManager, toggleGraphViewer);
+        menu.addCommandItem (commandManager, toggleSNAPGraphViewer);
         menu.addCommandItem (commandManager, toggleConsoleViewer);
         menu.addCommandItem (commandManager, showMessageWindow);
         menu.addSeparator();
@@ -611,21 +611,21 @@ PopupMenu UIComponent::getMenuForIndex (int menuIndex, const String& menuName)
     return menu;
 }
 
-void UIComponent::menuItemSelected (int menuItemID, int topLevelMenuIndex)
+void SNAPUIComponent::menuItemSelected (int menuItemID, int topLevelMenuIndex)
 {
     //
 }
 
 // ApplicationCommandTarget methods
 
-ApplicationCommandTarget* UIComponent::getNextCommandTarget()
+ApplicationCommandTarget* SNAPUIComponent::getNextCommandTarget()
 {
     // this will return the next parent component that is an ApplicationCommandTarget (in this
     // case, there probably isn't one, but it's best to use this method anyway).
     return findFirstTargetParentComponent();
 }
 
-void UIComponent::getAllCommands (Array<CommandID>& commands)
+void SNAPUIComponent::getAllCommands (Array<CommandID>& commands)
 {
     const CommandID ids[] = { openSignalChain,
                               saveSignalChain,
@@ -639,12 +639,12 @@ void UIComponent::getAllCommands (Array<CommandID>& commands)
                               pasteSignalChain,
                               clearSignalChain,
                               lockSignalChain,
-                              toggleProcessorList,
+                              toggleSNAPProcessorList,
                               toggleSignalChain,
                               toggleHttpServer,
                               toggleFileInfo,
                               toggleInfoTab,
-                              toggleGraphViewer,
+                              toggleSNAPGraphViewer,
                               toggleConsoleViewer,
                               showMessageWindow,
                               setClockModeDefault,
@@ -654,7 +654,7 @@ void UIComponent::getAllCommands (Array<CommandID>& commands)
                               showHelp,
                               checkForUpdates,
                               resizeWindow,
-                              openPluginInstaller,
+                              openSNAPPluginInstaller,
                               openDefaultConfigWindow,
                               setColourThemeLight,
                               setColourThemeMedium,
@@ -665,9 +665,9 @@ void UIComponent::getAllCommands (Array<CommandID>& commands)
     commands.addArray (ids, numElementsInArray (ids));
 }
 
-void UIComponent::getCommandInfo (CommandID commandID, ApplicationCommandInfo& result)
+void SNAPUIComponent::getCommandInfo (CommandID commandID, ApplicationCommandInfo& result)
 {
-    bool acquisitionStarted = getAudioComponent()->callbacksAreActive();
+    bool acquisitionStarted = getSNAPAudioComponent()->callbacksAreActive();
 
     int renderer = 0;
 
@@ -720,7 +720,7 @@ void UIComponent::getCommandInfo (CommandID commandID, ApplicationCommandInfo& r
             result.setInfo ("Undo", "Undo the last action.", "General", 0);
             result.addDefaultKeypress ('Z', ModifierKeys::commandModifier);
             bool undoDisabled = acquisitionStarted && AccessClass::getUndoManager()->getUndoDescription().contains ("Disabled during acquisition");
-            result.setActive (! undoDisabled && AccessClass::getUndoManager()->canUndo() && ! getEditorViewport()->isSignalChainLocked());
+            result.setActive (! undoDisabled && AccessClass::getUndoManager()->canUndo() && ! getSNAPEditorViewport()->isSignalChainLocked());
             break;
         }
 
@@ -729,35 +729,35 @@ void UIComponent::getCommandInfo (CommandID commandID, ApplicationCommandInfo& r
             result.setInfo ("Redo", "Undo the last action.", "General", 0);
             result.addDefaultKeypress ('Z', ModifierKeys::commandModifier | ModifierKeys::shiftModifier);
             bool redoDisabled = acquisitionStarted && AccessClass::getUndoManager()->getRedoDescription().contains ("Disabled during acquisition");
-            result.setActive (! redoDisabled && AccessClass::getUndoManager()->canRedo() && ! getEditorViewport()->isSignalChainLocked());
+            result.setActive (! redoDisabled && AccessClass::getUndoManager()->canRedo() && ! getSNAPEditorViewport()->isSignalChainLocked());
             break;
         }
 
         case copySignalChain:
             result.setInfo ("Copy", "Copy selected processors.", "General", 0);
             result.addDefaultKeypress ('C', ModifierKeys::commandModifier);
-            result.setActive (! acquisitionStarted && getEditorViewport()->editorIsSelected() && ! getEditorViewport()->isSignalChainLocked());
+            result.setActive (! acquisitionStarted && getSNAPEditorViewport()->editorIsSelected() && ! getSNAPEditorViewport()->isSignalChainLocked());
             break;
 
         case pasteSignalChain:
             result.setInfo ("Paste", "Paste processors.", "General", 0);
             result.addDefaultKeypress ('V', ModifierKeys::commandModifier);
-            result.setActive (! acquisitionStarted && getEditorViewport()->canPaste() && ! getEditorViewport()->isSignalChainLocked());
+            result.setActive (! acquisitionStarted && getSNAPEditorViewport()->canPaste() && ! getSNAPEditorViewport()->isSignalChainLocked());
             break;
 
         case clearSignalChain:
             result.setInfo ("Clear signal chain", "Clear the current signal chain.", "General", 0);
             result.addDefaultKeypress (KeyPress::backspaceKey, ModifierKeys::commandModifier);
-            result.setActive (! getEditorViewport()->isSignalChainEmpty() && ! acquisitionStarted && ! getEditorViewport()->isSignalChainLocked());
+            result.setActive (! getSNAPEditorViewport()->isSignalChainEmpty() && ! acquisitionStarted && ! getSNAPEditorViewport()->isSignalChainLocked());
             break;
 
         case lockSignalChain:
             result.setInfo ("Lock signal chain", "Disable signal chain edits.", "General", 0);
             result.addDefaultKeypress ('L', ModifierKeys::commandModifier);
-            result.setTicked (getEditorViewport()->isSignalChainLocked());
+            result.setTicked (getSNAPEditorViewport()->isSignalChainLocked());
             break;
 
-        case toggleProcessorList:
+        case toggleSNAPProcessorList:
             result.setInfo ("Processor List", "Show/hide Processor List.", "General", 0);
             result.addDefaultKeypress ('P', ModifierKeys::shiftModifier);
             result.setActive (! editorViewport->isSignalChainLocked());
@@ -767,7 +767,7 @@ void UIComponent::getCommandInfo (CommandID commandID, ApplicationCommandInfo& r
         case toggleSignalChain:
             result.setInfo ("Signal Chain", "Show/hide Signal Chain.", "General", 0);
             result.addDefaultKeypress ('S', ModifierKeys::shiftModifier);
-            result.setTicked (showHideEditorViewportButton->getToggleState());
+            result.setTicked (showHideSNAPEditorViewportButton->getToggleState());
             break;
 
         case toggleFileInfo:
@@ -782,7 +782,7 @@ void UIComponent::getCommandInfo (CommandID commandID, ApplicationCommandInfo& r
             result.setTicked (infoTabIsOpen);
             break;
 
-        case toggleGraphViewer:
+        case toggleSNAPGraphViewer:
             result.setInfo ("Graph Viewer", "Show/hide Graph Viewer.", "General", 0);
             result.addDefaultKeypress ('G', ModifierKeys::shiftModifier);
             result.setTicked (graphViewerIsOpen);
@@ -838,7 +838,7 @@ void UIComponent::getCommandInfo (CommandID commandID, ApplicationCommandInfo& r
             result.setTicked (getTheme() == ColourTheme::DARK);
             break;
 
-        case openPluginInstaller:
+        case openSNAPPluginInstaller:
             result.setInfo ("Plugin Installer", "Launch the plugin installer.", "General", 0);
             result.addDefaultKeypress ('P', ModifierKeys::commandModifier);
             break;
@@ -846,7 +846,7 @@ void UIComponent::getCommandInfo (CommandID commandID, ApplicationCommandInfo& r
         case openDefaultConfigWindow:
             result.setInfo ("Load a default config", "Load a default configuration", "General", 0);
             result.addDefaultKeypress ('D', ModifierKeys::commandModifier);
-            result.setActive (! acquisitionStarted && ! getEditorViewport()->isSignalChainLocked());
+            result.setActive (! acquisitionStarted && ! getSNAPEditorViewport()->isSignalChainLocked());
             break;
 
         case showHelp:
@@ -878,7 +878,7 @@ void UIComponent::getCommandInfo (CommandID commandID, ApplicationCommandInfo& r
     };
 }
 
-bool UIComponent::perform (const InvocationInfo& info)
+bool SNAPUIComponent::perform (const InvocationInfo& info)
 {
     switch (info.commandID)
     {
@@ -892,7 +892,7 @@ bool UIComponent::perform (const InvocationInfo& info)
             if (fc.browseForFileToOpen())
             {
                 currentConfigFile = fc.getResult();
-                getEditorViewport()->loadState (currentConfigFile);
+                getSNAPEditorViewport()->loadState (currentConfigFile);
             }
             else
             {
@@ -905,7 +905,7 @@ bool UIComponent::perform (const InvocationInfo& info)
         {
             if (currentConfigFile.exists())
             {
-                sendActionMessage (getEditorViewport()->saveState (currentConfigFile));
+                sendActionMessage (getSNAPEditorViewport()->saveState (currentConfigFile));
             }
             else
             {
@@ -918,7 +918,7 @@ bool UIComponent::perform (const InvocationInfo& info)
                 {
                     currentConfigFile = fc.getResult();
                     LOGD (currentConfigFile.getFileName());
-                    sendActionMessage (getEditorViewport()->saveState (currentConfigFile));
+                    sendActionMessage (getSNAPEditorViewport()->saveState (currentConfigFile));
                 }
                 else
                 {
@@ -940,7 +940,7 @@ bool UIComponent::perform (const InvocationInfo& info)
             {
                 currentConfigFile = fc.getResult();
                 LOGD (currentConfigFile.getFileName());
-                sendActionMessage (getEditorViewport()->saveState (currentConfigFile));
+                sendActionMessage (getSNAPEditorViewport()->saveState (currentConfigFile));
             }
             else
             {
@@ -960,7 +960,7 @@ bool UIComponent::perform (const InvocationInfo& info)
             if (fc.browseForFileToOpen())
             {
                 currentConfigFile = fc.getResult();
-                sendActionMessage (getEditorViewport()->loadPluginState (currentConfigFile));
+                sendActionMessage (getSNAPEditorViewport()->loadPluginState (currentConfigFile));
             }
             else
             {
@@ -980,7 +980,7 @@ bool UIComponent::perform (const InvocationInfo& info)
             {
                 currentConfigFile = fc.getResult();
                 LOGD (currentConfigFile.getFileName());
-                sendActionMessage (getEditorViewport()->savePluginState (currentConfigFile));
+                sendActionMessage (getSNAPEditorViewport()->savePluginState (currentConfigFile));
             }
             else
             {
@@ -1024,33 +1024,33 @@ bool UIComponent::perform (const InvocationInfo& info)
 
         case copySignalChain:
         {
-            getEditorViewport()->copySelectedEditors();
+            getSNAPEditorViewport()->copySelectedEditors();
             break;
         }
 
         case pasteSignalChain:
         {
-            getEditorViewport()->paste();
+            getSNAPEditorViewport()->paste();
             break;
         }
 
         case clearSignalChain:
         {
-            getEditorViewport()->clearSignalChain();
+            getSNAPEditorViewport()->clearSignalChain();
             break;
         }
 
         case lockSignalChain:
         {
-            if (getEditorViewport()->isSignalChainLocked())
+            if (getSNAPEditorViewport()->isSignalChainLocked())
             {
-                getEditorViewport()->lockSignalChain (false);
+                getSNAPEditorViewport()->lockSignalChain (false);
                 resized();
                 //processorList->unlock();
             }
             else
             {
-                getEditorViewport()->lockSignalChain (true);
+                getSNAPEditorViewport()->lockSignalChain (true);
                 resized();
                 //processorList->lock();
             }
@@ -1071,7 +1071,7 @@ bool UIComponent::perform (const InvocationInfo& info)
             break;
         }
 
-        case toggleProcessorList:
+        case toggleSNAPProcessorList:
             processorList->toggleState();
             break;
 
@@ -1090,7 +1090,7 @@ bool UIComponent::perform (const InvocationInfo& info)
 
             break;
 
-        case toggleGraphViewer:
+        case toggleSNAPGraphViewer:
             if (graphViewerIsOpen)
                 dataViewport->removeTab (1);
             else
@@ -1126,7 +1126,7 @@ bool UIComponent::perform (const InvocationInfo& info)
             break;
 
         case toggleSignalChain:
-            showHideEditorViewportButton->setToggleState (! showHideEditorViewportButton->getToggleState(), sendNotification);
+            showHideSNAPEditorViewportButton->setToggleState (! showHideSNAPEditorViewportButton->getToggleState(), sendNotification);
             break;
 
         case resizeWindow:
@@ -1173,14 +1173,14 @@ bool UIComponent::perform (const InvocationInfo& info)
             break;
         }
 
-        case openPluginInstaller:
+        case openSNAPPluginInstaller:
         {
             if (pluginInstaller != nullptr)
             {
                 delete pluginInstaller;
             }
 
-            pluginInstaller = new PluginInstaller();
+            pluginInstaller = new SNAPPluginInstaller();
             pluginInstaller->setVisible (true);
             pluginInstaller->toFront (true);
             break;
@@ -1199,7 +1199,7 @@ bool UIComponent::perform (const InvocationInfo& info)
     return true;
 }
 
-void UIComponent::setRenderingEngine (int index)
+void SNAPUIComponent::setRenderingEngine (int index)
 {
 #if JUCE_WINDOWS
     for (int i = 0; i < TopLevelWindow::getNumTopLevelWindows(); i++)
@@ -1216,11 +1216,11 @@ void UIComponent::setRenderingEngine (int index)
 #endif
 }
 
-void UIComponent::saveStateToXml (XmlElement* xml)
+void SNAPUIComponent::saveStateToXml (XmlElement* xml)
 {
     XmlElement* uiComponentState = xml->createNewChildElement ("UICOMPONENT");
-    uiComponentState->setAttribute ("isProcessorListOpen", processorList->isOpen());
-    uiComponentState->setAttribute ("isEditorViewportOpen", showHideEditorViewportButton->getToggleState());
+    uiComponentState->setAttribute ("isSNAPProcessorListOpen", processorList->isOpen());
+    uiComponentState->setAttribute ("isSNAPEditorViewportOpen", showHideSNAPEditorViewportButton->getToggleState());
     uiComponentState->setAttribute ("consoleOpenInWindow", consoleOpenInWindow);
 
     if (consoleOpenInWindow)
@@ -1229,19 +1229,19 @@ void UIComponent::saveStateToXml (XmlElement* xml)
     }
 }
 
-void UIComponent::loadStateFromXml (XmlElement* xml)
+void SNAPUIComponent::loadStateFromXml (XmlElement* xml)
 {
     for (auto* xmlNode : xml->getChildWithTagNameIterator ("UICOMPONENT"))
     {
-        bool isProcessorListOpen = xmlNode->getBoolAttribute ("isProcessorListOpen");
-        bool isEditorViewportOpen = xmlNode->getBoolAttribute ("isEditorViewportOpen");
+        bool isSNAPProcessorListOpen = xmlNode->getBoolAttribute ("isSNAPProcessorListOpen");
+        bool isSNAPEditorViewportOpen = xmlNode->getBoolAttribute ("isSNAPEditorViewportOpen");
 
-        if (! isProcessorListOpen)
+        if (! isSNAPProcessorListOpen)
         {
             processorList->toggleState();
         }
 
-        showHideEditorViewportButton->setToggleState (isEditorViewportOpen, sendNotification);
+        showHideSNAPEditorViewportButton->setToggleState (isSNAPEditorViewportOpen, sendNotification);
 
         bool consoleWindowState = xmlNode->getBoolAttribute ("consoleOpenInWindow");
 
@@ -1253,17 +1253,17 @@ void UIComponent::loadStateFromXml (XmlElement* xml)
     }
 }
 
-Array<String> UIComponent::getRecentlyUsedFilenames()
+Array<String> SNAPUIComponent::getRecentlyUsedFilenames()
 {
     return controlPanel->getRecentlyUsedFilenames();
 }
 
-void UIComponent::setRecentlyUsedFilenames (const Array<String>& filenames)
+void SNAPUIComponent::setRecentlyUsedFilenames (const Array<String>& filenames)
 {
     controlPanel->setRecentlyUsedFilenames (filenames);
 }
 
-void UIComponent::windowClosed (const String& windowName)
+void SNAPUIComponent::windowClosed (const String& windowName)
 {
     if (windowName == consoleWindow->getName())
     {
@@ -1271,7 +1271,7 @@ void UIComponent::windowClosed (const String& windowName)
     }
 }
 
-Component* UIComponent::findComponentByIDRecursive (Component* parent, const String& componentID)
+Component* SNAPUIComponent::findComponentByIDRecursive (Component* parent, const String& componentID)
 {
     if (! parent)
         return nullptr;

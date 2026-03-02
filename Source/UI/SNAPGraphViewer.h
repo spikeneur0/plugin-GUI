@@ -27,19 +27,19 @@
 #include "../AccessClass.h"
 #include "../Processors/Editors/GenericEditor.h"
 #include "../Processors/Visualization/Visualizer.h"
-#include "EditorViewport.h"
+#include "SNAPEditorViewport.h"
 
 #include "../../JuceLibraryCode/JuceHeader.h"
 
 class DataStream;
-class GraphViewer;
+class SNAPGraphViewer;
 class GraphNode;
 class DataStreamButton;
 
 /**
  Represents a DataStream handled by a given processor.
 
- @see GraphViewer, GraphNode
+ @see SNAPGraphViewer, GraphNode
 */
 
 class DataStreamInfo : public Component,
@@ -117,7 +117,7 @@ private:
 /**
  Represents a DataStream handled by a given processor.
 
- @see GraphViewer, GraphNode
+ @see SNAPGraphViewer, GraphNode
 */
 
 class DataStreamButton : public Button
@@ -145,9 +145,9 @@ private:
 };
 
 /**
- Represents an individual processor/plugin in the GraphViewer.
+ Represents an individual processor/plugin in the SNAPGraphViewer.
  
- @see GraphViewer
+ @see SNAPGraphViewer
 */
 
 class GraphNode : public Component,
@@ -155,7 +155,7 @@ class GraphNode : public Component,
 {
 public:
     /** Constructor */
-    GraphNode (GenericEditor* editor, GraphViewer* g);
+    GraphNode (GenericEditor* editor, SNAPGraphViewer* g);
 
     /** Destructor */
     ~GraphNode();
@@ -265,7 +265,7 @@ public:
 private:
     GenericEditor* editor;
     GenericProcessor* processor;
-    GraphViewer* gv;
+    SNAPGraphViewer* gv;
 
     String getInfoString();
 
@@ -294,14 +294,14 @@ private:
 };
 
 /**
-    Allows the GraphViewer to be scrolled
+    Allows the SNAPGraphViewer to be scrolled
 
  */
 class GraphViewport : public Visualizer
 {
 public:
     /** Constructor */
-    GraphViewport (GraphViewer* gv);
+    GraphViewport (SNAPGraphViewer* gv);
 
     /** Destructor */
     ~GraphViewport() {}
@@ -331,21 +331,21 @@ private:
 
  Displays the full processor graph for a given session.
 
- Inhabits a tab in the DataViewport, and allows the user to select processor editors by clicking on their icons inside the graph.
+ Inhabits a tab in the SNAPDataViewport, and allows the user to select processor editors by clicking on their icons inside the graph.
 
-@see UIComponent, DataViewport, ProcessorGraph, EditorViewport
+@see SNAPUIComponent, SNAPDataViewport, ProcessorGraph, SNAPEditorViewport
 
 */
-class GraphViewer : public Component
+class SNAPGraphViewer : public Component
 {
 public:
     /** Constructor */
-    GraphViewer();
+    SNAPGraphViewer();
 
     /** Destructor */
-    ~GraphViewer() {}
+    ~SNAPGraphViewer() {}
 
-    /** Draws the GraphViewer.*/
+    /** Draws the SNAPGraphViewer.*/
     void paint (Graphics& g) override;
 
     /** Draws the drop shadows for nodes.*/
@@ -401,7 +401,7 @@ private:
 
     std::unique_ptr<GraphViewport> graphViewport;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (GraphViewer);
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SNAPGraphViewer);
 };
 
 #endif // __GRAPHVIEWER_H_4E971BF9__

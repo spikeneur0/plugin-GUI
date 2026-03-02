@@ -11,7 +11,7 @@ add_sources(${PLUGIN_NAME} RecordControl.cpp RecordControl.h
 if(APPLE)
   set_target_properties(
     ${PLUGIN_NAME} PROPERTIES XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER
-                              "org.open-ephys.plugin.RecordControl")
+                              "com.spikeneuro.plugin.RecordControl")
 endif()
 
 if(BUILD_TESTS)

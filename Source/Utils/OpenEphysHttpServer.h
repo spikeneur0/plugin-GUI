@@ -34,8 +34,8 @@
 #include <sstream>
 
 #include "../AccessClass.h"
-#include "../MainWindow.h"
-#include "../UI/ProcessorList.h"
+#include "../SNAPMainWindow.h"
+#include "../UI/SNAPProcessorList.h"
 
 #include "Utils.h"
 
@@ -1288,7 +1288,7 @@ public:
 
 private:
     std::unique_ptr<httplib::Server> svr_;
-    MainWindow* main_;
+    SNAPMainWindow* main_;
     ProcessorGraph* graph_;
 
     var json_to_var (const json& value)

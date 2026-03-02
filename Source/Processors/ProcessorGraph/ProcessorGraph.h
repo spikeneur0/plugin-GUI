@@ -57,9 +57,9 @@ struct ChannelKey
   all of the processors that handle data, and holds the rules for connecting
   them prior to data acquisition.
 
-  The user is able to modify the ProcessGraph through the EditorViewport
+  The user is able to modify the ProcessGraph through the SNAPEditorViewport
 
-  @see EditorViewport, GenericProcessor, GenericEditor, RecordNode,
+  @see SNAPEditorViewport, GenericProcessor, GenericEditor, RecordNode,
        AudioNode, Configuration, MessageCenter
 */
 
@@ -118,7 +118,7 @@ public:
     /* Updates the settings of all processors downstream of the specified processor*/
     void updateSettings (GenericProcessor* processor, bool signalChainIsLoading = false);
 
-    /* Updates the views (EditorViewport and GraphView) of all processors downstream of the specified processor*/
+    /* Updates the views (SNAPEditorViewport and GraphView) of all processors downstream of the specified processor*/
     void updateViews (GenericProcessor* processor, bool updateGraphViewer = false);
 
     /* Clears the signal chain.*/

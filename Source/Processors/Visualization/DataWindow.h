@@ -30,7 +30,7 @@
 
   Allows visualizers to be placed in their own window.
 
-  @see DataViewport
+  @see SNAPDataViewport
 
 */
 

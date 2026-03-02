@@ -26,7 +26,7 @@
 #include "FileReaderActions.h"
 
 #include "../../AccessClass.h"
-#include "../../Audio/AudioComponent.h"
+#include "../../Audio/SNAPAudioComponent.h"
 #include "../PluginManager/PluginManager.h"
 #include "BinaryFileSource/BinaryFileSource.h"
 #include <stdio.h>
@@ -586,7 +586,7 @@ void FileReader::updateSettings()
     isEnabled = true;
 
     /* Setup internal buffer based on audio device settings */
-    AudioDeviceManager& adm = AccessClass::getAudioComponent()->deviceManager;
+    AudioDeviceManager& adm = AccessClass::getSNAPAudioComponent()->deviceManager;
     AudioDeviceManager::AudioDeviceSetup ads;
     adm.getAudioDeviceSetup (ads);
     m_sysSampleRate = ads.sampleRate;
@@ -641,7 +641,7 @@ void FileReader::updateSettings()
 void FileReader::checkAudioDevice()
 {
     /* Setup internal buffer based on audio device settings */
-    AudioDeviceManager& adm = AccessClass::getAudioComponent()->deviceManager;
+    AudioDeviceManager& adm = AccessClass::getSNAPAudioComponent()->deviceManager;
     AudioDeviceManager::AudioDeviceSetup ads;
     adm.getAudioDeviceSetup (ads);
     if (ads.sampleRate != m_sysSampleRate || ads.bufferSize != m_bufferSize)

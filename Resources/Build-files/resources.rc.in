@@ -13,10 +13,10 @@ BEGIN
   BEGIN
     BLOCK "040904E4"
     BEGIN
-      VALUE "CompanyName",  "Open Ephys\0"
-      VALUE "FileDescription",  "open-ephys\0"
+      VALUE "CompanyName",  "Spike Neuro\0"
+      VALUE "FileDescription",  "SNAP - Spike Neuro Acquisition Platform\0"
       VALUE "FileVersion",  "@GUI_VERSION@\0"
-      VALUE "ProductName",  "open-ephys\0"
+      VALUE "ProductName",  "SNAP\0"
       VALUE "ProductVersion",  "@GUI_VERSION@\0"
     END
   END

@@ -33,46 +33,46 @@
 
 #include "../Processors/PluginManager/OpenEphysPlugin.h"
 
-#include "ControlPanel.h"
-#include "DataViewport.h"
-#include "UIComponent.h"
+#include "SNAPControlPanel.h"
+#include "SNAPDataViewport.h"
+#include "SNAPUIComponent.h"
 
 class GenericEditor;
 class SignalChainTabButton;
 class SignalChainTabComponent;
 class SignalChainScrollButton;
-class ControlPanel;
-class UIComponent;
+class SNAPControlPanel;
+class SNAPUIComponent;
 class AddProcessor;
 
 /**
 
   Allows the user to view and edit the signal chain.
 
-  The EditorViewport is one of the most important classes in the GUI application.
-  Dragging processors from the ProcessorList into the EditorViewport adds them to the signal chain. The
-  newly added processors appear an editors in the EditorViewport. Deleting the editor from the
-  EditorViewport removes its associated processor from the signal chain. Moving an editor (by dragging
-  and dropping within the EditorViewport) rearranges the order of processing.
+  The SNAPEditorViewport is one of the most important classes in the GUI application.
+  Dragging processors from the SNAPProcessorList into the SNAPEditorViewport adds them to the signal chain. The
+  newly added processors appear an editors in the SNAPEditorViewport. Deleting the editor from the
+  SNAPEditorViewport removes its associated processor from the signal chain. Moving an editor (by dragging
+  and dropping within the SNAPEditorViewport) rearranges the order of processing.
 
-  The EditorViewport can be used to browse through multiple parallel signal chains
+  The SNAPEditorViewport can be used to browse through multiple parallel signal chains
   (by clicking the buttons on the far left), or to navigate around branching
   signal chains.
 
-  @see UIComponent, ProcessorGraph
+  @see SNAPUIComponent, ProcessorGraph
 
 */
 
-class EditorViewport : public Component,
+class SNAPEditorViewport : public Component,
                        public DragAndDropTarget,
                        public Label::Listener
 {
 public:
     /** Constructor. Adds the buttons for browsing through the signal chains.*/
-    EditorViewport (SignalChainTabComponent*);
+    SNAPEditorViewport (SignalChainTabComponent*);
 
     /** Destructor. */
-    ~EditorViewport();
+    ~SNAPEditorViewport();
 
     /** Highlights the given editor. */
     void highlightEditor (GenericEditor* editor);
@@ -86,40 +86,40 @@ public:
     /** Removes all processors from the signal chain(s).*/
     void clearSignalChain();
 
-    /** Determines whether or not the EditorViewport should respond to
+    /** Determines whether or not the SNAPEditorViewport should respond to
     the component that is currently being dragged. */
     bool isInterestedInDragSource (const SourceDetails& dragSourceDetails);
 
-    /** Called when a dragged item (usually a name from the ProcessorList) enters the
-       boundaries of the EditorViewport. Causes the background of the EditorViewport to change colour.*/
+    /** Called when a dragged item (usually a name from the SNAPProcessorList) enters the
+       boundaries of the SNAPEditorViewport. Causes the background of the SNAPEditorViewport to change colour.*/
     void itemDragEnter (const SourceDetails& dragSourceDetails);
 
-    /** Called when a dragged item (usually a name from the ProcessorList) moves within the
-       boundaries of the EditorViewport. Causes existing editors (if any) to shift their position
+    /** Called when a dragged item (usually a name from the SNAPProcessorList) moves within the
+       boundaries of the SNAPEditorViewport. Causes existing editors (if any) to shift their position
        to make room for the new processor that could be dropped.*/
     void itemDragMove (const SourceDetails& dragSourceDetails);
 
-    /** Called when a dragged item (usually a name from the ProcessorList) leaves the
-       boundaries of the EditorViewport. Causes the background of the EditorViewport to change colour.*/
+    /** Called when a dragged item (usually a name from the SNAPProcessorList) leaves the
+       boundaries of the SNAPEditorViewport. Causes the background of the SNAPEditorViewport to change colour.*/
     void itemDragExit (const SourceDetails& dragSourceDetails);
 
-    /** Called when a dragged item (usually a name from the ProcessorList) is released within the
-       boundaries of the EditorViewport. Adds the dropped processor to the signal chain.*/
+    /** Called when a dragged item (usually a name from the SNAPProcessorList) is released within the
+       boundaries of the SNAPEditorViewport. Adds the dropped processor to the signal chain.*/
     void itemDropped (const SourceDetails& dragSourceDetails);
 
-    /** Called when a mouse click begins within the EditorViewport. Usually used to select editors.*/
+    /** Called when a mouse click begins within the SNAPEditorViewport. Usually used to select editors.*/
     void mouseDown (const MouseEvent& e);
 
-    /** Called when a mouse drag occurs within the EditorViewport. Usually used to move editors around in the signal chain.*/
+    /** Called when a mouse drag occurs within the SNAPEditorViewport. Usually used to move editors around in the signal chain.*/
     void mouseDrag (const MouseEvent& e);
 
-    /** Called when a mouse click ends within the EditorViewport. Usually used to indicate that a moving editor has been dropped.*/
+    /** Called when a mouse click ends within the SNAPEditorViewport. Usually used to indicate that a moving editor has been dropped.*/
     void mouseUp (const MouseEvent& e);
 
-    /** Called when the mouse leaves the boundaries of the EditorViewport.*/
+    /** Called when the mouse leaves the boundaries of the SNAPEditorViewport.*/
     void mouseExit (const MouseEvent& e);
 
-    /** Called when a key is pressed an the EditorViewport has keyboard focus.*/
+    /** Called when a key is pressed an the SNAPEditorViewport has keyboard focus.*/
     bool keyPressed (const KeyPress& key);
 
     /** Changes which editor is selected, depending on the keypress (and modifier keys).*/
@@ -135,7 +135,7 @@ public:
     const String saveState (File filename, String& xmlText);
 
     /** Saves the viewport-specific settings (e.g. processor order) */
-    void saveEditorViewportSettingsToXml (XmlElement* xml);
+    void saveSNAPEditorViewportSettingsToXml (XmlElement* xml);
 
     /** Save the current configuration as an XML file. Reference wrapper*/
     std::unique_ptr<XmlElement> createSettingsXml();
@@ -147,7 +147,7 @@ public:
     const String loadStateFromXml (XmlElement* xml);
 
     /** Loads the viewport-specific settings (e.g. processor order) */
-    void loadEditorViewportSettingsFromXml (XmlElement* xml);
+    void loadSNAPEditorViewportSettingsFromXml (XmlElement* xml);
 
     /** Load a saved plugin configuration from an XML file. */
     const String loadPluginState (File filename, GenericEditor* selectedEditor = nullptr);
@@ -201,7 +201,7 @@ public:
     /** Flag to check whether config is being loaded */
     bool loadingConfig;
 
-    /** Draws the EditorViewport background */
+    /** Draws the SNAPEditorViewport background */
     void paint (Graphics& g);
 
     /** Returns the width of the viewport (for scrolling purposes) */
@@ -251,14 +251,14 @@ private:
 
     OwnedArray<AddProcessor> orphanedActions;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EditorViewport);
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SNAPEditorViewport);
 };
 
 /**
 
   Clicking the tab button makes the editors for its signal chain visible.
 
-  @see EditorViewport
+  @see SNAPEditorViewport
 
 */
 
@@ -286,9 +286,9 @@ private:
 
   Allows the user to scroll through signal chains when
   there are more than can fit within the boundaries of the
-  EditorViewport.
+  SNAPEditorViewport.
 
-  @see EditorViewport.
+  @see SNAPEditorViewport.
 
 */
 
@@ -322,11 +322,11 @@ private:
 
   Allows the user to navigate between multiple parallel signal chains.
 
-  Each SignalChainTabButton sits on the left-hand side of the EditorViewport
+  Each SignalChainTabButton sits on the left-hand side of the SNAPEditorViewport
   and is associated with a given signal chain. Clicking the tab button makes
   the editors for its signal chain visible.
 
-  @see EditorViewport
+  @see SNAPEditorViewport
 
 */
 
@@ -342,18 +342,18 @@ public:
 
     void resized();
 
-    /** Draws the background of the EditorViewport. */
+    /** Draws the background of the SNAPEditorViewport. */
     void paint (Graphics& g) override;
 
-    /** Draws the outline of the EditorViewport. */
+    /** Draws the outline of the SNAPEditorViewport. */
     void paintOverChildren (Graphics& g) override;
 
-    /** Called when one of the buttons the EditorViewport listens to has been clicked.*/
+    /** Called when one of the buttons the SNAPEditorViewport listens to has been clicked.*/
     void buttonClicked (Button* button);
 
     int offset;
 
-    void setEditorViewport (EditorViewport*);
+    void setSNAPEditorViewport (SNAPEditorViewport*);
 
     Viewport* getViewport() { return viewport.get(); }
 
@@ -380,7 +380,7 @@ private:
     std::unique_ptr<SignalChainScrollButton> downButton;
 
     std::unique_ptr<Viewport> viewport;
-    EditorViewport* editorViewport;
+    SNAPEditorViewport* editorViewport;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SignalChainTabComponent);
 };

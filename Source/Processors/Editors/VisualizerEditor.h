@@ -105,7 +105,7 @@ public:
     /** Called after tab has been closed. */
     void tabWasClosed();
 
-    /** Adds a new tab to the DataViewport. */
+    /** Adds a new tab to the SNAPDataViewport. */
     void addTab();
 
     /** Calls Visualizer's beginAnimation() method */
@@ -121,7 +121,7 @@ public:
     //                     OTHER METHODS
     // ------------------------------------------------------------
 
-    /** Returns a pointer to the visualizer (used by the DataViewport) */
+    /** Returns a pointer to the visualizer (used by the SNAPDataViewport) */
     Component* getVisualizerComponent();
 
     /** Sets the location of the window + tab buttons*/
@@ -182,7 +182,7 @@ protected:
     */
     Component* getActiveTabContentComponent() const;
 
-    /** Removes the tab from the DataViewport. */
+    /** Removes the tab from the SNAPDataViewport. */
     void removeTab();
 
     /** Checks and creates a canvas if one doesn't exist. Also, updates the canvas */

@@ -11,7 +11,7 @@ add_sources(${PLUGIN_NAME} CommonAvgRef.cpp CommonAvgRef.h
 if(APPLE)
   set_target_properties(
     ${PLUGIN_NAME} PROPERTIES XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER
-                              "org.open-ephys.plugin.CommonAvgRef")
+                              "com.spikeneuro.plugin.CommonAvgRef")
 endif()
 
 if(BUILD_TESTS)

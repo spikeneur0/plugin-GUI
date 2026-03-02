@@ -52,9 +52,9 @@
 #include <time.h>
 #include <unordered_map>
 
-class EditorViewport;
-class DataViewport;
-class UIComponent;
+class SNAPEditorViewport;
+class SNAPDataViewport;
+class SNAPUIComponent;
 class GenericEditor;
 class Parameter;
 class GenericProcessorBase;

@@ -1,38 +1,38 @@
-#Open Ephys GUI directory-specific file
+#SNAP directory-specific file
 
 #add files in this folder
-add_sources(open-ephys 
+add_sources(snap-gui 
 	ConsoleViewer.cpp
 	ConsoleViewer.h
-	ControlPanel.cpp
-	ControlPanel.h
+	SNAPControlPanel.cpp
+	SNAPControlPanel.h
 	CustomArrowButton.cpp
 	CustomArrowButton.h
 	MessageCenterButton.h
-	DataViewport.cpp
-	DataViewport.h
+	SNAPDataViewport.cpp
+	SNAPDataViewport.h
 	DefaultConfig.cpp
 	DefaultConfig.h
 	MessageWindow.cpp
 	MessageWindow.h
-	EditorViewport.cpp
-	EditorViewport.h
+	SNAPEditorViewport.cpp
+	SNAPEditorViewport.h
 	FilenameConfigWindow.cpp
 	FilenameConfigWindow.h
-	GraphViewer.cpp
-	GraphViewer.h
+	SNAPGraphViewer.cpp
+	SNAPGraphViewer.h
 	InfoLabel.cpp
 	InfoLabel.h
-	PluginInstaller.cpp 
-	PluginInstaller.h
+	SNAPPluginInstaller.cpp 
+	SNAPPluginInstaller.h
 	PopupComponent.cpp
 	PopupComponent.h
-	ProcessorList.cpp
-	ProcessorList.h
+	SNAPProcessorList.cpp
+	SNAPProcessorList.h
 	SplashScreen.cpp
 	SplashScreen.h
-	UIComponent.cpp
-	UIComponent.h
+	SNAPUIComponent.cpp
+	SNAPUIComponent.h
 )
 
 #add nested directories

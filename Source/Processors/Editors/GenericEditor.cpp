@@ -28,9 +28,9 @@
 #include "../GenericProcessor/GenericProcessor.h"
 
 #include "../../AccessClass.h"
-#include "../../UI/EditorViewport.h"
-#include "../../UI/GraphViewer.h"
-#include "../../UI/ProcessorList.h"
+#include "../../UI/SNAPEditorViewport.h"
+#include "../../UI/SNAPGraphViewer.h"
+#include "../../UI/SNAPProcessorList.h"
 #include "../ProcessorGraph/ProcessorGraph.h"
 #include "../RecordNode/RecordNode.h"
 #include "../Settings/InfoObject.h"
@@ -393,7 +393,7 @@ void GenericEditor::makeVisible()
 {
     isSelected = true;
     repaint();
-    AccessClass::getEditorViewport()->makeEditorVisible (this);
+    AccessClass::getSNAPEditorViewport()->makeEditorVisible (this);
 }
 
 bool GenericEditor::getSelectionState()
@@ -592,7 +592,7 @@ bool GenericEditor::checkDrawerButton (Button* button)
     {
         drawerOpen = drawerButton->getToggleState();
 
-        AccessClass::getEditorViewport()->refreshEditors();
+        AccessClass::getSNAPEditorViewport()->refreshEditors();
 
         return true;
     }
@@ -736,7 +736,7 @@ void GenericEditor::setCollapsedState (bool state)
 
         collapsedStateChanged();
 
-        AccessClass::getEditorViewport()->refreshEditors();
+        AccessClass::getSNAPEditorViewport()->refreshEditors();
     }
 }
 

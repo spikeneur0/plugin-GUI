@@ -30,24 +30,24 @@
 #include "CustomArrowButton.h"
 
 class ProcessorListItem;
-class UIComponent;
+class SNAPUIComponent;
 
 /**
 
   Holds a list of processors that can be used to build the signal
   chain.
 
-  The signal chain is created by dragging names of processors from the ProcessorList
-  and dropping them in the appropriate order on the EditorViewport.
+  The signal chain is created by dragging names of processors from the SNAPProcessorList
+  and dropping them in the appropriate order on the SNAPEditorViewport.
 
-  The ProcessorList be manually updated every time a new processor is created,
+  The SNAPProcessorList be manually updated every time a new processor is created,
   and the names must match those recognized by the ProcessorGraph.
 
-  @see EditorViewport, ProcessorGraph
+  @see SNAPEditorViewport, ProcessorGraph
 
 */
 
-class ProcessorList : public Component,
+class SNAPProcessorList : public Component,
                       public DragAndDropContainer,
                       public ChangeListener,
                       public Timer
@@ -55,21 +55,21 @@ class ProcessorList : public Component,
 {
 public:
     /** Constructor**/
-    ProcessorList (Viewport* v);
+    SNAPProcessorList (Viewport* v);
 
     /** Destructor*/
-    ~ProcessorList() {}
+    ~SNAPProcessorList() {}
 
-    /** Switches the open/closed state of the ProcessorList.*/
+    /** Switches the open/closed state of the SNAPProcessorList.*/
     void toggleState();
 
     /** Called when the user requests a colour change using a ColourSelector.*/
     void changeListenerCallback (ChangeBroadcaster* source);
 
-    /** Returns the open/closed state of the ProcessorList.*/
+    /** Returns the open/closed state of the SNAPProcessorList.*/
     bool isOpen();
 
-    /** Draws the ProcessorList. */
+    /** Draws the SNAPProcessorList. */
     void paint (Graphics& g);
 
     /** Gets the colours of the different types of processors.*/
@@ -78,10 +78,10 @@ public:
     /** Sets the colours of the different types of processors.*/
     void setColours (Array<Colour>);
 
-    /** Saves the ProcessorList state. */
+    /** Saves the SNAPProcessorList state. */
     void saveStateToXml (XmlElement*);
 
-    /** Loads the ProcessorList state. */
+    /** Loads the SNAPProcessorList state. */
     void loadStateFromXml (XmlElement*);
 
     /** Fill item list **/
@@ -98,7 +98,7 @@ public:
     /** Used to animate list item location */
     void timerCallback();
 
-    /** Returns the height requested by the ProcessorList. Determines whether or not
+    /** Returns the height requested by the SNAPProcessorList. Determines whether or not
     to draw scroll bars.*/
     int getTotalHeight();
 
@@ -106,13 +106,13 @@ public:
     void lookAndFeelChanged() override;
 
 private:
-    /** The main method for drawing the ProcessorList.*/
+    /** The main method for drawing the SNAPProcessorList.*/
     void drawItems (Graphics& g);
 
-    /** Draws a single item within the ProcessorList.*/
+    /** Draws a single item within the SNAPProcessorList.*/
     void drawItem (Graphics& g, ProcessorListItem*);
 
-    /** Draws the name of a single item within the ProcessorList.*/
+    /** Draws the name of a single item within the SNAPProcessorList.*/
     void drawItemName (Graphics& g, ProcessorListItem*);
 
     /** Returns the ProcessorListItem that sits at a given y coordinate.*/
@@ -123,7 +123,7 @@ private:
 
     int currentColour;
 
-    /** Deselects all items within the ProcessorList.*/
+    /** Deselects all items within the SNAPProcessorList.*/
     void clearSelectionState();
 
     bool isDragging;
@@ -132,16 +132,16 @@ private:
 
     String category;
 
-    /** Called when the mouse moves within the boundaries of the ProcessorList.*/
+    /** Called when the mouse moves within the boundaries of the SNAPProcessorList.*/
     void mouseMove (const MouseEvent& e);
 
-    /** Called when the mouse exits the boundaries of the ProcessorList.*/
+    /** Called when the mouse exits the boundaries of the SNAPProcessorList.*/
     void mouseExit (const MouseEvent& e);
 
-    /** Called when a mouse click begins within the boundaries of the ProcessorList.*/
+    /** Called when a mouse click begins within the boundaries of the SNAPProcessorList.*/
     void mouseDown (const MouseEvent& e);
 
-    /** Called when a mouse drag occurs within the boundaries of the ProcessorList.*/
+    /** Called when a mouse drag occurs within the boundaries of the SNAPProcessorList.*/
     void mouseDrag (const MouseEvent& e);
 
     /** The base item in the list.*/
@@ -163,19 +163,19 @@ private:
     std::unique_ptr<TextEditor> searchField;
     String searchText;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ProcessorList);
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SNAPProcessorList);
 };
 
 /**
 
-  An item within the ProcessorList.
+  An item within the SNAPProcessorList.
 
   If a ProcessorListItem has sub-items, it acts as a button that can
-  be used to show/hide segments of the ProcessorList. If it has no
+  be used to show/hide segments of the SNAPProcessorList. If it has no
   sub-items, then it holds the name of a processor which can be dragged
-  onto the EditorViewport to construct the signal chain.
+  onto the SNAPEditorViewport to construct the signal chain.
 
-  @see ProcessorList
+  @see SNAPProcessorList
 
 */
 

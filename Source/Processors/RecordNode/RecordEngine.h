@@ -122,7 +122,7 @@ public:
     /** Sets the pointer to Record Node for this engine*/
     void registerRecordNode (RecordNode* node);
 
-    /** Sets the pointer to the RecordEngineManager (called by ControlPanel) */
+    /** Sets the pointer to the RecordEngineManager (called by SNAPControlPanel) */
     void registerManager (RecordEngineManager* engineManager);
 
     /** Sets RecordEngine parameters (if available) at the start of acquisition*/

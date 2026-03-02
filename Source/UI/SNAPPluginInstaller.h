@@ -28,22 +28,22 @@
 
 #define WINDOW_TITLE "Plugin Installer"
 
-class MainWindow;
+class SNAPMainWindow;
 class PluginInstallerComponent;
 
-class PluginInstaller : public DocumentWindow
+class SNAPPluginInstaller : public DocumentWindow
 {
 public:
     /** Creates and launches Plugin Installer window with its components */
-    PluginInstaller (bool loadComponents = true);
+    SNAPPluginInstaller (bool loadComponents = true);
 
     /** Destructor*/
-    ~PluginInstaller();
+    ~SNAPPluginInstaller();
 
-    /** Called when the user hits the close button of the PluginInstaller. */
+    /** Called when the user hits the close button of the SNAPPluginInstaller. */
     void closeButtonPressed();
 
-    /** A JUCE class that allows the PluginInstaller to respond to keyboard and menubar
+    /** A JUCE class that allows the SNAPPluginInstaller to respond to keyboard and menubar
         commands. */
     ApplicationCommandManager commandManager;
 
@@ -55,12 +55,12 @@ public:
     static int checkForPluginUpdates();
 
 private:
-    WeakReference<PluginInstaller>::Master masterReference;
-    friend class WeakReference<PluginInstaller>;
+    WeakReference<SNAPPluginInstaller>::Master masterReference;
+    friend class WeakReference<SNAPPluginInstaller>;
 
     void createXmlFile();
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PluginInstaller);
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SNAPPluginInstaller);
 };
 
 /*

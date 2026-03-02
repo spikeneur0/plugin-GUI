@@ -21,18 +21,18 @@
 
 */
 
-#include "ProcessorList.h"
+#include "SNAPProcessorList.h"
 #include <stdio.h>
 
 #include "../AccessClass.h"
 #include "../Processors/ProcessorGraph/ProcessorGraph.h"
 #include "../Processors/ProcessorManager/ProcessorManager.h"
-#include "UIComponent.h"
+#include "SNAPUIComponent.h"
 
 #include "../Utils/Utils.h"
 #include "LookAndFeel/CustomLookAndFeel.h"
 
-ProcessorList::ProcessorList (Viewport* v) : viewport (v),
+SNAPProcessorList::SNAPProcessorList (Viewport* v) : viewport (v),
                                              isDragging (false),
                                              totalHeight (800),
                                              itemHeight (32),
@@ -114,7 +114,7 @@ ProcessorList::ProcessorList (Viewport* v) : viewport (v),
     addChildComponent (searchField.get());
 }
 
-void ProcessorList::resized()
+void SNAPProcessorList::resized()
 {
     setBounds (0, 0, 195, getTotalHeight());
     searchField->setBounds (0, 0, getWidth(), itemHeight);
@@ -122,30 +122,30 @@ void ProcessorList::resized()
     arrowButton->setBounds (getWidth() - 25, (itemHeight / 2) - 10, 20, 20);
 }
 
-void ProcessorList::timerCallback()
+void SNAPProcessorList::timerCallback()
 {
     maximumNameOffset += 1;
 
     repaint();
 }
 
-void ProcessorList::lookAndFeelChanged()
+void SNAPProcessorList::lookAndFeelChanged()
 {
     searchButton->setOutline (findColour (ThemeColours::controlPanelText), 1.0f);
 }
 
-bool ProcessorList::isOpen()
+bool SNAPProcessorList::isOpen()
 {
     return baseItem->isOpen();
 }
 
-void ProcessorList::paint (Graphics& g)
+void SNAPProcessorList::paint (Graphics& g)
 {
     g.fillAll (findColour (ThemeColours::windowBackground));
     drawItems (g);
 }
 
-void ProcessorList::drawItems (Graphics& g)
+void SNAPProcessorList::drawItems (Graphics& g)
 {
     totalHeight = yBuffer + itemHeight;
 
@@ -181,7 +181,7 @@ void ProcessorList::drawItems (Graphics& g)
     }
 }
 
-void ProcessorList::drawItem (Graphics& g, ProcessorListItem* item)
+void SNAPProcessorList::drawItem (Graphics& g, ProcessorListItem* item)
 {
     Colour c = getLookAndFeel().findColour (item->colourId);
 
@@ -222,7 +222,7 @@ void ProcessorList::drawItem (Graphics& g, ProcessorListItem* item)
     drawItemName (g, item);
 }
 
-void ProcessorList::drawItemName (Graphics& g, ProcessorListItem* item)
+void SNAPProcessorList::drawItemName (Graphics& g, ProcessorListItem* item)
 {
     float offsetX, offsetY;
 
@@ -301,7 +301,7 @@ void ProcessorList::drawItemName (Graphics& g, ProcessorListItem* item)
     }
 }
 
-void ProcessorList::clearSelectionState()
+void SNAPProcessorList::clearSelectionState()
 {
     baseItem->setSelected (false);
 
@@ -316,7 +316,7 @@ void ProcessorList::clearSelectionState()
     }
 }
 
-ProcessorListItem* ProcessorList::getListItemForYPos (int y)
+ProcessorListItem* SNAPProcessorList::getListItemForYPos (int y)
 {
     int bottom = (yBuffer + itemHeight);
 
@@ -360,7 +360,7 @@ ProcessorListItem* ProcessorList::getListItemForYPos (int y)
     return 0;
 }
 
-void ProcessorList::setViewport (Graphics& g, bool hasSubItems)
+void SNAPProcessorList::setViewport (Graphics& g, bool hasSubItems)
 {
     int height;
 
@@ -378,23 +378,23 @@ void ProcessorList::setViewport (Graphics& g, bool hasSubItems)
     totalHeight += yBuffer + height;
 }
 
-int ProcessorList::getTotalHeight()
+int SNAPProcessorList::getTotalHeight()
 {
     return totalHeight;
 }
 
-void ProcessorList::toggleState()
+void SNAPProcessorList::toggleState()
 {
     ProcessorListItem* fli = getListItemForYPos (0);
     fli->reverseOpenState();
     LOGC ("Processor List - Toggling state of ", fli->getName());
     arrowButton->setToggleState (fli->isOpen(), dontSendNotification);
     searchButton->setVisible (fli->isOpen());
-    AccessClass::getUIComponent()->childComponentChanged();
+    AccessClass::getSNAPUIComponent()->childComponentChanged();
     repaint();
 }
 
-void ProcessorList::mouseDown (const MouseEvent& e)
+void SNAPProcessorList::mouseDown (const MouseEvent& e)
 {
     isDragging = false;
 
@@ -478,14 +478,14 @@ void ProcessorList::mouseDown (const MouseEvent& e)
         {
             arrowButton->setToggleState (listItem->isOpen(), dontSendNotification);
             searchButton->setVisible (listItem->isOpen());
-            AccessClass::getUIComponent()->childComponentChanged();
+            AccessClass::getSNAPUIComponent()->childComponentChanged();
         }
     }
 
     repaint();
 }
 
-void ProcessorList::changeListenerCallback (ChangeBroadcaster* source)
+void SNAPProcessorList::changeListenerCallback (ChangeBroadcaster* source)
 {
     ColourSelector* cs = dynamic_cast<ColourSelector*> (source);
 
@@ -494,7 +494,7 @@ void ProcessorList::changeListenerCallback (ChangeBroadcaster* source)
     repaint();
 }
 
-void ProcessorList::mouseMove (const MouseEvent& e)
+void SNAPProcessorList::mouseMove (const MouseEvent& e)
 {
     if (e.getMouseDownX() < getWidth() && ! (isDragging))
     {
@@ -509,7 +509,7 @@ void ProcessorList::mouseMove (const MouseEvent& e)
     }
 }
 
-void ProcessorList::mouseExit (const MouseEvent& e)
+void SNAPProcessorList::mouseExit (const MouseEvent& e)
 {
     hoverItem = nullptr;
     maximumNameOffset = 0;
@@ -519,7 +519,7 @@ void ProcessorList::mouseExit (const MouseEvent& e)
     repaint();
 }
 
-void ProcessorList::mouseDrag (const MouseEvent& e)
+void SNAPProcessorList::mouseDrag (const MouseEvent& e)
 {
     if (e.getMouseDownX() < getWidth() && ! (isDragging))
     {
@@ -556,7 +556,7 @@ void ProcessorList::mouseDrag (const MouseEvent& e)
                         juce::Point<int> imageOffset (20, 10);
 
                         Array<var> dragData;
-                        dragData.add (true); // fromProcessorList
+                        dragData.add (true); // fromSNAPProcessorList
                         dragData.add (listItem->getName()); // pluginName
                         dragData.add (listItem->index); // processorIndex
                         dragData.add (listItem->pluginType); // pluginType
@@ -570,7 +570,7 @@ void ProcessorList::mouseDrag (const MouseEvent& e)
     }
 }
 
-void ProcessorList::saveStateToXml (XmlElement* xml)
+void SNAPProcessorList::saveStateToXml (XmlElement* xml)
 {
     XmlElement* processorListState = xml->createNewChildElement ("PROCESSORLIST");
 
@@ -617,7 +617,7 @@ void ProcessorList::saveStateToXml (XmlElement* xml)
     }
 }
 
-void ProcessorList::loadStateFromXml (XmlElement* xml)
+void SNAPProcessorList::loadStateFromXml (XmlElement* xml)
 {
     for (auto* xmlNode : xml->getChildIterator())
     {
@@ -645,7 +645,7 @@ void ProcessorList::loadStateFromXml (XmlElement* xml)
     AccessClass::getProcessorGraph()->refreshColours();
 }
 
-Array<Colour> ProcessorList::getColours()
+Array<Colour> SNAPProcessorList::getColours()
 {
     Array<Colour> c;
 
@@ -659,7 +659,7 @@ Array<Colour> ProcessorList::getColours()
     return c;
 }
 
-void ProcessorList::setColours (Array<Colour> c)
+void SNAPProcessorList::setColours (Array<Colour> c)
 {
     for (int i = 0; i < c.size(); i++)
     {
@@ -690,9 +690,9 @@ void ProcessorList::setColours (Array<Colour> c)
     }
 }
 
-void ProcessorList::fillItemList()
+void SNAPProcessorList::fillItemList()
 {
-    LOGD ("ProcessorList::fillItemList()");
+    LOGD ("SNAPProcessorList::fillItemList()");
 
     baseItem->getSubItem (0)->clearSubItems(); //Sources
     baseItem->getSubItem (1)->clearSubItems(); //Filters
@@ -751,7 +751,7 @@ void ProcessorList::fillItemList()
     }
 }
 
-Array<String> ProcessorList::getItemList()
+Array<String> SNAPProcessorList::getItemList()
 {
     Array<String> listOfProcessors;
 
@@ -770,7 +770,7 @@ Array<String> ProcessorList::getItemList()
     return listOfProcessors;
 }
 
-Plugin::Description ProcessorList::getItemDescriptionfromList (const String& name)
+Plugin::Description SNAPProcessorList::getItemDescriptionfromList (const String& name)
 {
     Plugin::Description description;
 
@@ -784,7 +784,7 @@ Plugin::Description ProcessorList::getItemDescriptionfromList (const String& nam
         {
             if (name.equalsIgnoreCase (subItem->getSubItem (j)->getName()))
             {
-                description.fromProcessorList = true;
+                description.fromSNAPProcessorList = true;
                 description.index = subItem->getSubItem (j)->index;
                 description.name = subItem->getSubItem (j)->getName();
                 description.type = subItem->getSubItem (j)->pluginType;
