@@ -262,7 +262,7 @@ bool DraggableTabComponent::removeTabForNodeId (int nodeId, bool sendNotificatio
                 if (nodeId == 0)
                     AccessClass::getSNAPUIComponent()->closeInfoTab();
                 else if (nodeId == 1)
-                    AccessClass::getSNAPUIComponent()->closeGraphViewer();
+                    AccessClass::getSNAPUIComponent()->closeSNAPGraphViewer();
                 else if (nodeId == 2)
                     AccessClass::getSNAPUIComponent()->closeConsoleViewer();
             }
