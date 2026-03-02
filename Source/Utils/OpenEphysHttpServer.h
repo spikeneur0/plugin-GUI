@@ -38,6 +38,7 @@
 #include "../UI/SNAPProcessorList.h"
 
 #include "Utils.h"
+#include "PluginManifest.h"
 
 using json = nlohmann::json;
 
@@ -1263,6 +1264,74 @@ public:
                        res.set_content (ret.dump(), "application/json");
                    });
 
+        // ---------------------------------------------------------------
+        //  JSON-RPC 2.0 endpoint — POST /api/rpc
+        // ---------------------------------------------------------------
+        svr_->Post ("/api/rpc", [this] (const httplib::Request& req, httplib::Response& res)
+                    {
+            res.set_header ("Content-Type", "application/json");
+
+            json request_json;
+            json response_json;
+
+            // Parse the request
+            try
+            {
+                request_json = json::parse (req.body);
+            }
+            catch (json::exception& e)
+            {
+                response_json["jsonrpc"] = "2.0";
+                response_json["error"] = { { "code", -32700 }, { "message", "Parse error" } };
+                response_json["id"] = nullptr;
+                res.set_content (response_json.dump(), "application/json");
+                return;
+            }
+
+            // Validate JSON-RPC 2.0 structure
+            if (! request_json.contains ("method") || ! request_json["method"].is_string())
+            {
+                response_json["jsonrpc"] = "2.0";
+                response_json["error"] = { { "code", -32600 }, { "message", "Invalid Request: missing 'method'" } };
+                response_json["id"] = request_json.contains ("id") ? request_json["id"] : json (nullptr);
+                res.set_content (response_json.dump(), "application/json");
+                return;
+            }
+
+            std::string method = request_json["method"];
+            json params = request_json.contains ("params") ? request_json["params"] : json::object();
+            json id = request_json.contains ("id") ? request_json["id"] : json (nullptr);
+
+            // Log to message center
+            LOGC ("[RPC] ", method);
+
+            // Dispatch method
+            json result;
+            json error;
+            bool hasError = false;
+
+            try
+            {
+                hasError = ! dispatchRpcMethod (method, params, result, error);
+            }
+            catch (const std::exception& e)
+            {
+                hasError = true;
+                error = { { "code", -32603 }, { "message", std::string ("Internal error: ") + e.what() } };
+            }
+
+            // Build response
+            response_json["jsonrpc"] = "2.0";
+            response_json["id"] = id;
+
+            if (hasError)
+                response_json["error"] = error;
+            else
+                response_json["result"] = result;
+
+            res.set_content (response_json.dump(), "application/json");
+        });
+
         LOGC ("Beginning HTTP server on port ", PORT);
         svr_->listen ("127.0.0.1", PORT);
     }
@@ -1290,6 +1359,398 @@ private:
     std::unique_ptr<httplib::Server> svr_;
     SNAPMainWindow* main_;
     ProcessorGraph* graph_;
+
+    // ---------------------------------------------------------------
+    //  JSON-RPC 2.0 method dispatcher
+    // ---------------------------------------------------------------
+
+    /** Returns the ProcessorState as a string */
+    static std::string processorStateToString (GenericProcessor::ProcessorState state)
+    {
+        switch (state)
+        {
+            case GenericProcessor::ProcessorState::IDLE:        return "IDLE";
+            case GenericProcessor::ProcessorState::CONFIGURING: return "CONFIGURING";
+            case GenericProcessor::ProcessorState::ACTIVE:      return "ACTIVE";
+            case GenericProcessor::ProcessorState::ERRORED:     return "ERRORED";
+            case GenericProcessor::ProcessorState::DISABLED:    return "DISABLED";
+            default:                                            return "UNKNOWN";
+        }
+    }
+
+    /**
+        Dispatches a JSON-RPC method call. Returns true on success (result populated),
+        false on error (error populated). All JUCE-state-touching operations are dispatched
+        to the message thread via promise/future with a 5-second timeout.
+    */
+    bool dispatchRpcMethod (const std::string& method, const json& params, json& result, json& error)
+    {
+        // ----- acquisition.start -----
+        if (method == "acquisition.start")
+        {
+            if (CoreServices::getAcquisitionStatus())
+            {
+                result["status"] = "already_running";
+                return true;
+            }
+
+            std::promise<bool> done;
+            auto future = done.get_future();
+
+            MessageManager::callAsync ([&done]
+            {
+                CoreServices::setAcquisitionStatus (true);
+                done.set_value (CoreServices::getAcquisitionStatus());
+            });
+
+            if (future.wait_for (std::chrono::seconds (5)) == std::future_status::timeout)
+            {
+                error = { { "code", -32000 }, { "message", "Timeout waiting for acquisition to start" } };
+                return false;
+            }
+
+            result["status"] = future.get() ? "started" : "failed";
+            return true;
+        }
+
+        // ----- acquisition.stop -----
+        if (method == "acquisition.stop")
+        {
+            if (! CoreServices::getAcquisitionStatus())
+            {
+                result["status"] = "already_stopped";
+                return true;
+            }
+
+            std::promise<void> done;
+            auto future = done.get_future();
+
+            MessageManager::callAsync ([&done]
+            {
+                CoreServices::setRecordingStatus (false);
+                CoreServices::setAcquisitionStatus (false);
+                done.set_value();
+            });
+
+            if (future.wait_for (std::chrono::seconds (5)) == std::future_status::timeout)
+            {
+                error = { { "code", -32000 }, { "message", "Timeout waiting for acquisition to stop" } };
+                return false;
+            }
+
+            result["status"] = "stopped";
+            return true;
+        }
+
+        // ----- status.get -----
+        if (method == "status.get")
+        {
+            result["acquiring"] = CoreServices::getAcquisitionStatus();
+            result["recording"] = CoreServices::getRecordingStatus();
+            result["processorCount"] = (int) graph_->getListOfProcessors().size();
+
+            if (CoreServices::getRecordingStatus())
+                result["mode"] = "RECORD";
+            else if (CoreServices::getAcquisitionStatus())
+                result["mode"] = "ACQUIRE";
+            else
+                result["mode"] = "IDLE";
+
+            return true;
+        }
+
+        // ----- processors.list -----
+        if (method == "processors.list")
+        {
+            auto processors = graph_->getListOfProcessors();
+            std::vector<json> list;
+
+            for (auto* p : processors)
+            {
+                json pj;
+                pj["id"] = p->getNodeId();
+                pj["name"] = p->getName().toStdString();
+                pj["state"] = processorStateToString (p->getProcessorState());
+                pj["type"] = p->getProcessorTypeString().toStdString();
+
+                if (p->getSourceNode() != nullptr)
+                    pj["predecessor"] = p->getSourceNode()->getNodeId();
+                else
+                    pj["predecessor"] = nullptr;
+
+                pj["streamCount"] = (int) p->getDataStreams().size();
+                list.push_back (pj);
+            }
+
+            result["processors"] = list;
+            return true;
+        }
+
+        // ----- processors.get -----
+        if (method == "processors.get")
+        {
+            if (! params.contains ("id"))
+            {
+                error = { { "code", -32602 }, { "message", "Missing required param: 'id'" } };
+                return false;
+            }
+
+            int procId = params["id"];
+            auto* processor = graph_->getProcessorWithNodeId (procId);
+
+            if (processor == nullptr)
+            {
+                error = { { "code", -32602 }, { "message", "Processor not found: " + std::to_string (procId) } };
+                return false;
+            }
+
+            json pj;
+            processor_to_json (processor, &pj);
+            pj["state"] = processorStateToString (processor->getProcessorState());
+            result = pj;
+            return true;
+        }
+
+        // ----- signalchain.load -----
+        if (method == "signalchain.load")
+        {
+            if (! params.contains ("path"))
+            {
+                error = { { "code", -32602 }, { "message", "Missing required param: 'path'" } };
+                return false;
+            }
+
+            if (CoreServices::getAcquisitionStatus())
+            {
+                error = { { "code", -32000 }, { "message", "Cannot load signal chain while acquisition is active" } };
+                return false;
+            }
+
+            std::string path = params["path"];
+
+            std::promise<void> done;
+            auto future = done.get_future();
+
+            MessageManager::callAsync ([path, &done]
+            {
+                CoreServices::loadSignalChain (String (path));
+                done.set_value();
+            });
+
+            if (future.wait_for (std::chrono::seconds (5)) == std::future_status::timeout)
+            {
+                error = { { "code", -32000 }, { "message", "Timeout loading signal chain" } };
+                return false;
+            }
+
+            result["status"] = "loaded";
+            result["path"] = path;
+            return true;
+        }
+
+        // ----- signalchain.save -----
+        if (method == "signalchain.save")
+        {
+            if (! params.contains ("path"))
+            {
+                error = { { "code", -32602 }, { "message", "Missing required param: 'path'" } };
+                return false;
+            }
+
+            std::string path = params["path"];
+            File writePath (path);
+
+            if (writePath.existsAsFile())
+            {
+                error = { { "code", -32000 }, { "message", "File already exists: " + path } };
+                return false;
+            }
+
+            std::promise<bool> done;
+            auto future = done.get_future();
+
+            MessageManager::callAsync ([this, writePath, &done]
+            {
+                auto xmlElement = std::make_unique<XmlElement> ("SETTINGS");
+                graph_->saveToXml (xmlElement.get());
+                done.set_value (xmlElement->writeTo (writePath));
+            });
+
+            if (future.wait_for (std::chrono::seconds (5)) == std::future_status::timeout)
+            {
+                error = { { "code", -32000 }, { "message", "Timeout saving signal chain" } };
+                return false;
+            }
+
+            result["status"] = future.get() ? "saved" : "write_failed";
+            result["path"] = path;
+            return true;
+        }
+
+        // ----- signalchain.clear -----
+        if (method == "signalchain.clear")
+        {
+            if (CoreServices::getAcquisitionStatus())
+            {
+                error = { { "code", -32000 }, { "message", "Cannot clear signal chain while acquisition is active" } };
+                return false;
+            }
+
+            std::promise<void> done;
+            auto future = done.get_future();
+
+            MessageManager::callAsync ([this, &done]
+            {
+                graph_->clearSignalChain();
+                done.set_value();
+            });
+
+            if (future.wait_for (std::chrono::seconds (5)) == std::future_status::timeout)
+            {
+                error = { { "code", -32000 }, { "message", "Timeout clearing signal chain" } };
+                return false;
+            }
+
+            result["status"] = "cleared";
+            return true;
+        }
+
+        // ----- recording.start -----
+        if (method == "recording.start")
+        {
+            if (params.contains ("path"))
+            {
+                std::string dir = params["path"];
+                const MessageManagerLock mml;
+                CoreServices::setRecordingParentDirectory (String (dir));
+            }
+
+            if (params.contains ("createNewDirectory") && params["createNewDirectory"].get<bool>())
+            {
+                const MessageManagerLock mml;
+                CoreServices::createNewRecordingDirectory();
+            }
+
+            std::promise<void> done;
+            auto future = done.get_future();
+
+            MessageManager::callAsync ([&done]
+            {
+                CoreServices::setRecordingStatus (true);
+                done.set_value();
+            });
+
+            if (future.wait_for (std::chrono::seconds (5)) == std::future_status::timeout)
+            {
+                error = { { "code", -32000 }, { "message", "Timeout starting recording" } };
+                return false;
+            }
+
+            result["status"] = "recording";
+            result["directory"] = CoreServices::getRecordingParentDirectory().getFullPathName().toStdString();
+            return true;
+        }
+
+        // ----- recording.stop -----
+        if (method == "recording.stop")
+        {
+            if (! CoreServices::getRecordingStatus())
+            {
+                result["status"] = "already_stopped";
+                return true;
+            }
+
+            std::promise<void> done;
+            auto future = done.get_future();
+
+            MessageManager::callAsync ([&done]
+            {
+                CoreServices::setRecordingStatus (false);
+                done.set_value();
+            });
+
+            if (future.wait_for (std::chrono::seconds (5)) == std::future_status::timeout)
+            {
+                error = { { "code", -32000 }, { "message", "Timeout stopping recording" } };
+                return false;
+            }
+
+            result["status"] = "stopped";
+            return true;
+        }
+
+        // ----- plugins.manifest -----
+        if (method == "plugins.manifest")
+        {
+            auto* pm = AccessClass::getPluginManager();
+            if (pm == nullptr)
+            {
+                error = { { "code", -32000 }, { "message", "PluginManager not available" } };
+                return false;
+            }
+
+            // Build a temporary XML manifest and convert to JSON
+            XmlElement tempRoot ("TEMP");
+            PluginManifest::generate (&tempRoot);
+
+            auto* manifestXml = tempRoot.getChildByName ("PLUGIN_MANIFEST");
+            if (manifestXml == nullptr)
+            {
+                result["plugins"] = json::array();
+                return true;
+            }
+
+            result["snap_version"] = manifestXml->getStringAttribute ("snap_version").toStdString();
+            result["api_version"] = manifestXml->getIntAttribute ("api_version");
+
+            std::vector<json> plugins;
+            for (auto* pluginXml : manifestXml->getChildIterator())
+            {
+                if (pluginXml->hasTagName ("PLUGIN"))
+                {
+                    json pj;
+                    pj["name"] = pluginXml->getStringAttribute ("name").toStdString();
+                    pj["version"] = pluginXml->getStringAttribute ("version").toStdString();
+                    pj["type"] = pluginXml->getStringAttribute ("type").toStdString();
+                    pj["api_version"] = pluginXml->getIntAttribute ("api_version");
+
+                    if (pluginXml->hasAttribute ("library"))
+                        pj["library"] = pluginXml->getStringAttribute ("library").toStdString();
+
+                    plugins.push_back (pj);
+                }
+            }
+
+            result["plugins"] = plugins;
+            return true;
+        }
+
+        // ----- message.send -----
+        if (method == "message.send")
+        {
+            if (! params.contains ("text"))
+            {
+                error = { { "code", -32602 }, { "message", "Missing required param: 'text'" } };
+                return false;
+            }
+
+            if (! CoreServices::getAcquisitionStatus())
+            {
+                error = { { "code", -32000 }, { "message", "Acquisition must be active to send broadcast messages" } };
+                return false;
+            }
+
+            std::string text = params["text"];
+            graph_->broadcastMessage (String (text));
+
+            result["status"] = "sent";
+            return true;
+        }
+
+        // ----- Method not found -----
+        error = { { "code", -32601 }, { "message", "Method not found: " + method } };
+        return false;
+    }
 
     var json_to_var (const json& value)
     {
