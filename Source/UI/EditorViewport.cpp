@@ -70,7 +70,7 @@ EditorViewport::~EditorViewport()
 void EditorViewport::paint (Graphics& g)
 {
     g.setColour (findColour (ThemeColours::componentParentBackground));
-    g.fillRoundedRectangle (1, 1, getWidth() - 2, getHeight() - 14, 5.0f);
+    g.fillRoundedRectangle (1, 1, getWidth() - 2, getHeight() - 14, 6.0f);
 
     // Draw drop shadow for each editor
     for (int i = 0; i < editorArray.size(); i++)
@@ -78,7 +78,7 @@ void EditorViewport::paint (Graphics& g)
         if (editorArray[i]->getProcessor()->isEmpty())
             continue;
 
-        DropShadow (findColour (ThemeColours::dropShadowColour), 10, Point<int> (4, 2))
+        DropShadow (findColour (ThemeColours::dropShadowColour).withAlpha (0.3f), 6, Point<int> (1, 2))
             .drawForRectangle (g, editorArray[i]->getBounds().reduced (1, 1));
     }
 
@@ -100,8 +100,8 @@ void EditorViewport::paint (Graphics& g)
             insertionX += editorArray[insertionPoint - 1]->getRight() + (BORDER_SIZE) * 1.5f;
         }
 
-        g.setColour (Colours::yellow);
-        g.fillRect (insertionX, (float) BORDER_SIZE + 5, 3.0f, (float) (getHeight() - 3 * (BORDER_SIZE + 5)));
+        g.setColour (findColour (ThemeColours::highlightedFill));
+        g.fillRoundedRectangle (insertionX, (float) BORDER_SIZE + 5, 3.0f, (float) (getHeight() - 3 * (BORDER_SIZE + 5)), 1.5f);
     }
 }
 
@@ -1158,7 +1158,7 @@ SignalChainTabButton::SignalChainTabButton (int index) : Button ("Signal Chain T
     setRadioGroupId (99);
     setClickingTogglesState (true);
 
-    buttonFont = FontOptions ("Silkscreen", 10, Font::plain).withHeight (14);
+    buttonFont = FontOptions ("Inter", "Medium", 13);
 
     offset = 0;
 }

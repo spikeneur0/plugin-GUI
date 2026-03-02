@@ -199,51 +199,47 @@ void MessageCenterEditor::collapse()
 
 void MessageCenterEditor::paint (Graphics& g)
 {
-    g.setColour (findColour (ThemeColours::outline).withAlpha (0.5f)); // edge colour
-
-    g.drawRoundedRectangle (1, 1, getWidth() - 2, getHeight() - 2, 6.0f, 2.0f);
-
+    // Clean background with subtle border
     if (isExpanded)
-        g.setColour (findColour (ThemeColours::widgetBackground).withAlpha (0.85f));
-    else
         g.setColour (findColour (ThemeColours::componentBackground));
+    else
+        g.setColour (findColour (ThemeColours::controlPanelBackground));
 
-    g.fillRoundedRectangle (2, 2, getWidth() - 4, getHeight() - 4, 6.0f);
+    g.fillRoundedRectangle (1, 1, getWidth() - 2, getHeight() - 2, 6.0f);
+
+    // Top border
+    g.setColour (findColour (ThemeColours::outline).withAlpha (0.2f));
+    g.drawRoundedRectangle (1, 1, getWidth() - 2, getHeight() - 2, 6.0f, 1.0f);
 
     g.setColour (backgroundColour);
     g.fillRoundedRectangle (2, 2, getWidth() - 4, getHeight() - 4, 6.0f);
 
-    g.setColour (findColour (ThemeColours::outline).withAlpha (0.5f)); // dividing line
-
+    // Dividing line when expanded
     if (isExpanded)
-        g.fillRect (getWidth() / 2 + 9, 10, 2, getHeight() - 30);
+    {
+        g.setColour (findColour (ThemeColours::outline).withAlpha (0.2f));
+        g.fillRect (getWidth() / 2 + 9, 10, 1, getHeight() - 30);
+    }
 
-    g.setColour (incomingBackground); // incoming background
+    // Incoming message flash
+    g.setColour (incomingBackground);
+    g.fillRoundedRectangle (4, getHeight() - 25, getWidth() / 2 - 12, 20, 4.0f);
 
-    g.fillRoundedRectangle (4,
-                            getHeight() - 25,
-                            getWidth() / 2 - 12,
-                            20,
-                            5.0f);
-
-    g.setColour (outgoingBackground); // outgoing background
-
-    g.fillRoundedRectangle (getWidth() / 2 + 26,
-                            getHeight() - 25,
-                            getWidth() / 2 - 82,
-                            20,
-                            5.0f);
+    // Outgoing message flash
+    g.setColour (outgoingBackground);
+    g.fillRoundedRectangle (getWidth() / 2 + 26, getHeight() - 25, getWidth() / 2 - 82, 20, 4.0f);
 
     if (isExpanded)
     {
-        g.setFont (FontOptions ("CP Mono", "Bold", 80));
-        g.setColour (findColour (ThemeColours::defaultFill).withAlpha (0.25f));
+        g.setFont (FontOptions ("Inter", "Semi Bold", 48));
+        g.setColour (findColour (ThemeColours::defaultFill).withAlpha (0.12f));
         g.drawText ("INCOMING", 4, 25, getWidth() / 2 - 11, getHeight() - 60, Justification::centred);
         g.drawText ("OUTGOING", getWidth() / 2 + 26, 25, getWidth() / 2 - 34, getHeight() - 60, Justification::centred);
     }
 
-    g.setColour (findColour (ThemeColours::outline).withAlpha (0.5f));
-    g.drawRect (getWidth() / 2 + 26, getHeight() - 25, getWidth() / 2 - 80, 20);
+    // Outgoing text field outline
+    g.setColour (findColour (ThemeColours::outline).withAlpha (0.2f));
+    g.drawRoundedRectangle ((float) (getWidth() / 2 + 26), (float) (getHeight() - 25), (float) (getWidth() / 2 - 80), 20.0f, 4.0f, 1.0f);
 
     sendMessageButton->setColour (TextButton::buttonColourId, findColour (ThemeColours::highlightedFill));
 }
@@ -319,7 +315,7 @@ MessageLabel::MessageLabel (const String& componentName, const String& labelText
     : Label (componentName, labelText)
 {
     setJustificationType (Justification::bottomLeft);
-    setFont (FontOptions ("CP Mono", "Plain", 16));
+    setFont (FontOptions ("Inter", "Regular", 14));
     setBorderSize (BorderSize<int> (0, 7, 2, 0));
     setMinimumHorizontalScale (1.0f);
 

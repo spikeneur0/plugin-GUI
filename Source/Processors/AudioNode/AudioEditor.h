@@ -161,13 +161,13 @@ private:
 
     bool isEnabled;
 
-    ScopedPointer<MuteButton> muteButton;
-    ScopedPointer<AudioWindowButton> audioWindowButton;
+    std::unique_ptr<MuteButton> muteButton;
+    std::unique_ptr<AudioWindowButton> audioWindowButton;
 
-    ScopedPointer<AudioConfigurationWindow> audioConfigurationWindow;
+    std::unique_ptr<AudioConfigurationWindow> audioConfigurationWindow;
 
-    ScopedPointer<Slider> volumeSlider;
-    ScopedPointer<Slider> noiseGateSlider;
+    std::unique_ptr<Slider> volumeSlider;
+    std::unique_ptr<Slider> noiseGateSlider;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioEditor);
 };

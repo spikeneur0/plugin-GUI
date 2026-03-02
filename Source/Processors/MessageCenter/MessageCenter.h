@@ -108,7 +108,7 @@ public:
 
 private:
     /** A pointer to the Message Center editor. */
-    ScopedPointer<MessageCenterEditor> messageCenterEditor;
+    std::unique_ptr<MessageCenterEditor> messageCenterEditor;
 
     /** Holds a message string, plus the system time at
     which the message was created */
@@ -123,7 +123,7 @@ private:
 
     bool newEventAvailable;
 
-    ScopedPointer<EventChannel> eventChannel;
+    std::unique_ptr<EventChannel> eventChannel;
 
     Array<String> savedMessages;
 

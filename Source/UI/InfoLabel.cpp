@@ -33,7 +33,7 @@ void InfoLabelTabButton::paintButton (Graphics& g, bool isMouseOver, bool isButt
 {
     g.setColour (findColour (ThemeColours::defaultText));
 
-    g.setFont (FontOptions { "Nimbus Sans", "Regular", 20.0f });
+    g.setFont (FontOptions { "Inter", "Regular", 20.0f });
     g.drawText (getName(), 0, 0, getWidth(), getHeight(), Justification::centred);
 
     if (isMouseOver)
@@ -239,21 +239,21 @@ void InfoLabel::setAboutText()
 
     aboutText.clear();
 
-    aboutText.append ("Welcome to the Open Ephys GUI!\n\n", FontOptions { "Nimbus Sans", "Regular", 20.0f });
+    aboutText.append ("Welcome to the Open Ephys GUI!\n\n", FontOptions { "Inter", "Regular", 20.0f });
 
-    aboutText.append (infoString, FontOptions { "Nimbus Sans", "Regular", 16.0f });
+    aboutText.append (infoString, FontOptions { "Inter", "Regular", 16.0f });
 
-    aboutText.append ("Documentation\n\n", FontOptions { "Nimbus Sans", "Regular", 20.0f });
-    aboutText.append ("The Open Ephys GUI User Manual can be found at: ", FontOptions { "Nimbus Sans", "Regular", 16.0f });
+    aboutText.append ("Documentation\n\n", FontOptions { "Inter", "Regular", 20.0f });
+    aboutText.append ("The Open Ephys GUI User Manual can be found at: ", FontOptions { "Inter", "Regular", 16.0f });
 
     aboutText.append ("open-ephys.github.io/gui-docs\n\n\n", FontOptions { "Fira Code", "Regular", 16.0f });
 
-    aboutText.append ("Source Code\n\n", FontOptions { "Nimbus Sans", "Regular", 20.0f });
-    aboutText.append ("GitHub repository: ", FontOptions { "Nimbus Sans", "Regular", 16.0f });
+    aboutText.append ("Source Code\n\n", FontOptions { "Inter", "Regular", 20.0f });
+    aboutText.append ("GitHub repository: ", FontOptions { "Inter", "Regular", 16.0f });
 
     aboutText.append ("github.com/open-ephys/plugin-gui\n\n\n", FontOptions { "Fira Code", "Regular", 16.0f });
 
-    aboutText.append ("Publications\n\n", FontOptions { "Nimbus Sans", "Regular", 20.0f });
+    aboutText.append ("Publications\n\n", FontOptions { "Inter", "Regular", 20.0f });
     aboutText.append ("Any publications based on data collected with this software should "
                       "cite the following article: \n\n"
                       "   Open Ephys : an open-source, plugin-based platform for "
@@ -262,14 +262,14 @@ void InfoLabel::setAboutText()
                       "Citations remain essential for measuring the impact of scientific "
                       "software, so be sure to include references to any open-source tools "
                       "that you use in your research! \n\n\n",
-                      FontOptions { "Nimbus Sans", "Regular", 16.0f });
+                      FontOptions { "Inter", "Regular", 16.0f });
 
-    aboutText.append ("Contact\n\n", FontOptions { "Nimbus Sans", "Regular", 20.0f });
-    aboutText.append ("For questions, email ", FontOptions { "Nimbus Sans", "Regular", 16.0f });
+    aboutText.append ("Contact\n\n", FontOptions { "Inter", "Regular", 20.0f });
+    aboutText.append ("For questions, email ", FontOptions { "Inter", "Regular", 16.0f });
 
     aboutText.append ("gui@open-ephys.org", FontOptions { "Fira Code", "Regular", 16.0f });
 
-    aboutText.append (" or post an issue at ", FontOptions { "Nimbus Sans", "Regular", 16.0f });
+    aboutText.append (" or post an issue at ", FontOptions { "Inter", "Regular", 16.0f });
     aboutText.append ("github.com/open-ephys/plugin-gui/Issues", FontOptions { "Fira Code", "Regular", 16.0f });
 }
 
@@ -277,16 +277,16 @@ void InfoLabel::setAuthorsText()
 {
     authorsText.clear();
 
-    authorsText.append ("Core development team\n\n", FontOptions { "Nimbus Sans", "Regular", 18.0f });
+    authorsText.append ("Core development team\n\n", FontOptions { "Inter", "Regular", 18.0f });
 
     authorsText.append ("Josh Siegle\n"
                         "Aaron Cuevas Lopez\n"
                         "Jakob Voigts\n"
                         "Pavel Kulik\n"
                         "Anjal Doshi\n\n",
-                        FontOptions { "Nimbus Sans", "Regular", 16.0f });
+                        FontOptions { "Inter", "Regular", 16.0f });
 
-    authorsText.append ("Other contributors\n\n", FontOptions { "Nimbus Sans", "Regular", 18.0f });
+    authorsText.append ("Other contributors\n\n", FontOptions { "Inter", "Regular", 18.0f });
 
     String otherDevString = "Kirill Abramov\n"
                             "Ben Acland\n"
@@ -329,15 +329,15 @@ void InfoLabel::setAuthorsText()
                             "Ben Mao\n"
                             "Brandon Parks\n\n";
 
-    authorsText.append (otherDevString, FontOptions { "Nimbus Sans", "Regular", 16.0f });
+    authorsText.append (otherDevString, FontOptions { "Inter", "Regular", 16.0f });
 }
 
 void InfoLabel::setLicenseText()
 {
     licenseText.clear();
 
-    licenseText.append ("GNU GENERAL PUBLIC LICENSE\n\n", FontOptions { "Nimbus Sans", "Regular", 24.0f });
-    licenseText.append ("Version 3, 29 June 2007\n\n\n", FontOptions { "Nimbus Sans", "Regular", 15.0f });
+    licenseText.append ("GNU GENERAL PUBLIC LICENSE\n\n", FontOptions { "Inter", "Regular", 24.0f });
+    licenseText.append ("Version 3, 29 June 2007\n\n\n", FontOptions { "Inter", "Regular", 15.0f });
 
     licenseText.append ("Copyright (c) 2007 Free Software Foundation, Inc. "
                         "<https://fsf.org/>\n\n\n");
@@ -345,7 +345,7 @@ void InfoLabel::setLicenseText()
     licenseText.append ("Everyone is permitted to copy and distribute verbatim copies of this "
                         "license document, but changing it is not allowed.\n\n\n");
 
-    licenseText.append ("Preamble\n\n", FontOptions { "Nimbus Sans", "Regular", 20.0f });
+    licenseText.append ("Preamble\n\n", FontOptions { "Inter", "Regular", 20.0f });
 
     licenseText.append (
         "The GNU General Public License is a free, copyleft license for "
@@ -411,11 +411,11 @@ void InfoLabel::setLicenseText()
 
         "The precise terms and conditions for copying, distribution and "
         "modification follow.\n\n\n",
-        FontOptions { "Nimbus Sans", "Regular", 15.0f });
+        FontOptions { "Inter", "Regular", 15.0f });
 
-    licenseText.append ("TERMS AND CONDITIONS\n\n", FontOptions { "Nimbus Sans", "Regular", 20.0f });
+    licenseText.append ("TERMS AND CONDITIONS\n\n", FontOptions { "Inter", "Regular", 20.0f });
 
-    licenseText.append ("0. Definitions.\n\n", FontOptions { "Nimbus Sans", "Regular", 18.0f });
+    licenseText.append ("0. Definitions.\n\n", FontOptions { "Inter", "Regular", 18.0f });
 
     licenseText.append (
         "\"This License\" refers to version 3 of the GNU General "
@@ -459,9 +459,9 @@ void InfoLabel::setLicenseText()
         "view a copy of this License. If the interface presents a list of "
         "user commands or options, such as a menu, a prominent item in the "
         "list meets this criterion.\n\n",
-        FontOptions { "Nimbus Sans", "Regular", 15.0f });
+        FontOptions { "Inter", "Regular", 15.0f });
 
-    licenseText.append ("1. Source Code.\n\n", FontOptions { "Nimbus Sans", "Regular", 18.0f });
+    licenseText.append ("1. Source Code.\n\n", FontOptions { "Inter", "Regular", 18.0f });
 
     licenseText.append (
 
@@ -507,9 +507,9 @@ void InfoLabel::setLicenseText()
 
         "The Corresponding Source for a work in source code form is that same "
         "work. \n\n",
-        FontOptions { "Nimbus Sans", "Regular", 15.0f });
+        FontOptions { "Inter", "Regular", 15.0f });
 
-    licenseText.append ("2. Basic Permissions.\n\n", FontOptions { "Nimbus Sans", "Regular", 18.0f });
+    licenseText.append ("2. Basic Permissions.\n\n", FontOptions { "Inter", "Regular", 18.0f });
 
     licenseText.append (
 
@@ -537,10 +537,10 @@ void InfoLabel::setLicenseText()
         "Conveying under any other circumstances is permitted solely under "
         "the conditions stated below. Sublicensing is not allowed; section 10 "
         "makes it unnecessary.\n\n",
-        FontOptions { "Nimbus Sans", "Regular", 15.0f });
+        FontOptions { "Inter", "Regular", 15.0f });
 
     licenseText.append ("3. Protecting Users' Legal Rights From Anti-Circumvention Law.\n\n",
-                        FontOptions { "Nimbus Sans", "Regular", 18.0f });
+                        FontOptions { "Inter", "Regular", 18.0f });
 
     licenseText.append (
 
@@ -557,10 +557,10 @@ void InfoLabel::setLicenseText()
         "limit operation or modification of the work as a means of enforcing, "
         "against the work's users, your or third parties' legal rights to "
         "forbid circumvention of technological measures.\n\n",
-        FontOptions { "Nimbus Sans", "Regular", 15.0f });
+        FontOptions { "Inter", "Regular", 15.0f });
 
     licenseText.append ("4. Conveying Verbatim Copies.\n\n",
-                        FontOptions { "Nimbus Sans", "Regular", 18.0f });
+                        FontOptions { "Inter", "Regular", 18.0f });
 
     licenseText.append (
 
@@ -574,10 +574,10 @@ void InfoLabel::setLicenseText()
 
         "You may charge any price or no price for each copy that you convey, "
         "and you may offer support or warranty protection for a fee.\n\n",
-        FontOptions { "Nimbus Sans", "Regular", 15.0f });
+        FontOptions { "Inter", "Regular", 15.0f });
 
     licenseText.append ("5. Conveying Modified Source Versions.\n\n",
-                        FontOptions { "Nimbus Sans", "Regular", 18.0f });
+                        FontOptions { "Inter", "Regular", 18.0f });
 
     licenseText.append (
 
@@ -616,10 +616,10 @@ void InfoLabel::setLicenseText()
         "compilation's users beyond what the individual works permit. "
         "Inclusion of a covered work in an aggregate does not cause this "
         "License to apply to the other parts of the aggregate.\n\n",
-        FontOptions { "Nimbus Sans", "Regular", 15.0f });
+        FontOptions { "Inter", "Regular", 15.0f });
 
     licenseText.append ("6. Conveying Non-Source Forms.\n\n",
-                        FontOptions { "Nimbus Sans", "Regular", 18.0f });
+                        FontOptions { "Inter", "Regular", 18.0f });
 
     licenseText.append (
         "You may convey a covered work in object code form under the terms of "
@@ -719,9 +719,9 @@ void InfoLabel::setLicenseText()
         "publicly documented (and with an implementation available to the "
         "public in source code form), and must require no special password or "
         "key for unpacking, reading or copying.\n\n",
-        FontOptions { "Nimbus Sans", "Regular", 15.0f });
+        FontOptions { "Inter", "Regular", 15.0f });
 
-    licenseText.append ("7. Additional Terms\n\n", FontOptions { "Nimbus Sans", "Regular", 18.0f });
+    licenseText.append ("7. Additional Terms\n\n", FontOptions { "Inter", "Regular", 18.0f });
 
     licenseText.append (
 
@@ -789,9 +789,9 @@ void InfoLabel::setLicenseText()
         "Additional terms, permissive or non - permissive, may be stated in the "
         "form of a separately written license, or stated as exceptions; the "
         "above requirements apply either way.\n\n",
-        FontOptions { "Nimbus Sans", "Regular", 15.0f });
+        FontOptions { "Inter", "Regular", 15.0f });
 
-    licenseText.append ("8. Termination.\n\n", FontOptions { "Nimbus Sans", "Regular", 18.0f });
+    licenseText.append ("8. Termination.\n\n", FontOptions { "Inter", "Regular", 18.0f });
 
     licenseText.append (
 
@@ -820,10 +820,10 @@ void InfoLabel::setLicenseText()
         "under this License. If your rights have been terminated and not "
         "permanently reinstated, you do not qualify to receive new licenses "
         "for the same material under section 10.\n\n",
-        FontOptions { "Nimbus Sans", "Regular", 15.0f });
+        FontOptions { "Inter", "Regular", 15.0f });
 
     licenseText.append ("9. Acceptance Not Required for Having Copies.\n\n",
-                        FontOptions { "Nimbus Sans", "Regular", 18.0f });
+                        FontOptions { "Inter", "Regular", 18.0f });
 
     licenseText.append (
 
@@ -835,10 +835,10 @@ void InfoLabel::setLicenseText()
         "or modify any covered work. These actions infringe copyright if you "
         "do not accept this License. Therefore, by modifying or propagating a "
         "covered work, you indicate your acceptance of this License to do so.\n\n",
-        FontOptions { "Nimbus Sans", "Regular", 15.0f });
+        FontOptions { "Inter", "Regular", 15.0f });
 
     licenseText.append ("10. Automatic Licensing of Downstream Recipients.\n\n",
-                        FontOptions { "Nimbus Sans", "Regular", 18.0f });
+                        FontOptions { "Inter", "Regular", 18.0f });
 
     licenseText.append (
         "Each time you convey a covered work, the recipient automatically "
@@ -866,9 +866,9 @@ void InfoLabel::setLicenseText()
         "alleging that any patent claim is infringed by making, using, "
         "selling, offering for sale, or importing the Program or any portion "
         "of it.\n\n",
-        FontOptions { "Nimbus Sans", "Regular", 15.0f });
+        FontOptions { "Inter", "Regular", 15.0f });
 
-    licenseText.append ("11. Patents.\n\n", FontOptions { "Nimbus Sans", "Regular", 18.0f });
+    licenseText.append ("11. Patents.\n\n", FontOptions { "Inter", "Regular", 18.0f });
 
     licenseText.append (
         "A \"contributor\" is a copyright holder who authorizes use "
@@ -941,10 +941,10 @@ void InfoLabel::setLicenseText()
         "Nothing in this License shall be construed as excluding or limiting "
         "any implied license or other defenses to infringement that may "
         "otherwise be available to you under applicable patent law.\n\n",
-        FontOptions { "Nimbus Sans", "Regular", 15.0f });
+        FontOptions { "Inter", "Regular", 15.0f });
 
     licenseText.append ("12. No Surrender of Others' Freedom.\n\n",
-                        FontOptions { "Nimbus Sans", "Regular", 18.0f });
+                        FontOptions { "Inter", "Regular", 18.0f });
 
     licenseText.append (
         "If conditions are imposed on you (whether by court order, agreement "
@@ -957,10 +957,10 @@ void InfoLabel::setLicenseText()
         "further conveying from those to whom you convey the Program, the "
         "only way you could satisfy both those terms and this License would "
         "be to refrain entirely from conveying the Program.\n\n",
-        FontOptions { "Nimbus Sans", "Regular", 15.0f });
+        FontOptions { "Inter", "Regular", 15.0f });
 
     licenseText.append ("13. Use with the GNU Affero General Public License.\n\n",
-                        FontOptions { "Nimbus Sans", "Regular", 18.0f });
+                        FontOptions { "Inter", "Regular", 18.0f });
 
     licenseText.append (
         "Notwithstanding any other provision of this License, you have "
@@ -971,10 +971,10 @@ void InfoLabel::setLicenseText()
         "work, but the special requirements of the GNU Affero General Public "
         "License, section 13, concerning interaction through a network will "
         "apply to the combination as such.\n\n",
-        FontOptions { "Nimbus Sans", "Regular", 15.0f });
+        FontOptions { "Inter", "Regular", 15.0f });
 
     licenseText.append ("14. Revised Versions of this License.\n\n",
-                        FontOptions { "Nimbus Sans", "Regular", 18.0f });
+                        FontOptions { "Inter", "Regular", 18.0f });
 
     licenseText.append (
         "The Free Software Foundation may publish revised and/or new versions "
@@ -1000,10 +1000,10 @@ void InfoLabel::setLicenseText()
         "permissions.However, no additional obligations are imposed on any "
         "author or copyright holder as a result of your choosing to follow a "
         "later version.\n\n",
-        FontOptions { "Nimbus Sans", "Regular", 15.0f });
+        FontOptions { "Inter", "Regular", 15.0f });
 
     licenseText.append ("15. Disclaimer of Warranty.\n\n",
-                        FontOptions { "Nimbus Sans", "Regular", 18.0f });
+                        FontOptions { "Inter", "Regular", 18.0f });
 
     licenseText.append (
         "THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY "
@@ -1015,10 +1015,10 @@ void InfoLabel::setLicenseText()
         "RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM IS WITH YOU. "
         "SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL "
         "NECESSARY SERVICING, REPAIR OR CORRECTION.\n\n",
-        FontOptions { "Nimbus Sans", "Regular", 15.0f });
+        FontOptions { "Inter", "Regular", 15.0f });
 
     licenseText.append ("16. Limitation of Liability.\n\n",
-                        FontOptions { "Nimbus Sans", "Regular", 18.0f });
+                        FontOptions { "Inter", "Regular", 18.0f });
 
     licenseText.append (
 
@@ -1032,10 +1032,10 @@ void InfoLabel::setLicenseText()
         "OF THE PROGRAM TO OPERATE WITH ANY OTHER PROGRAMS), EVEN IF SUCH "
         "HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH "
         "DAMAGES.\n\n",
-        FontOptions { "Nimbus Sans", "Regular", 15.0f });
+        FontOptions { "Inter", "Regular", 15.0f });
 
     licenseText.append ("17. Interpretation of Sections 15 and 16.\n\n",
-                        FontOptions { "Nimbus Sans", "Regular", 18.0f });
+                        FontOptions { "Inter", "Regular", 18.0f });
 
     licenseText.append (
 
@@ -1047,10 +1047,10 @@ void InfoLabel::setLicenseText()
         "accompanies a copy of the Program in return for a fee. \n\n"
 
         "END OF TERMS AND CONDITIONS\n\n",
-        FontOptions { "Nimbus Sans", "Regular", 15.0f });
+        FontOptions { "Inter", "Regular", 15.0f });
 
     licenseText.append ("How to Apply These Terms to Your New Programs\n\n",
-                        FontOptions { "Nimbus Sans", "Regular", 20.0f });
+                        FontOptions { "Inter", "Regular", 20.0f });
 
     licenseText.append (
         "If you develop a new program, and you want it to be of the greatest "
@@ -1063,7 +1063,7 @@ void InfoLabel::setLicenseText()
         "state the exclusion of warranty; and each file should have at least "
         "the \"copyright\" line and a pointer to where the full "
         "notice is found.\n\n",
-        FontOptions { "Nimbus Sans", "Regular", 15.0f });
+        FontOptions { "Inter", "Regular", 15.0f });
 
     licenseText.append (
         "<one line to give the program's name and a brief idea of what it does.>\n\n"
@@ -1087,7 +1087,7 @@ void InfoLabel::setLicenseText()
 
         "If the program does terminal interaction, make it output a short "
         "notice like this when it starts in an interactive mode:\n\n",
-        FontOptions { "Nimbus Sans", "Regular", 15.0f });
+        FontOptions { "Inter", "Regular", 15.0f });
 
     licenseText.append (
         "<program> Copyright (C) <year> <name of author>\n\n"
@@ -1114,7 +1114,7 @@ void InfoLabel::setLicenseText()
         "to do, use the GNU Lesser General Public License instead of this "
         "License. But first, please read "
         "https://www.gnu.org/licenses/why-not-lgpl.html \n\n",
-        FontOptions { "Nimbus Sans", "Regular", 15.0f });
+        FontOptions { "Inter", "Regular", 15.0f });
 }
 
 void InfoLabel::createHyperlinks()

@@ -76,9 +76,9 @@ void MessageCenter::addSpecialProcessorChannels()
 
 AudioProcessorEditor* MessageCenter::createEditor()
 {
-    messageCenterEditor = new MessageCenterEditor (this);
+    messageCenterEditor = std::make_unique<MessageCenterEditor> (this);
 
-    return messageCenterEditor;
+    return messageCenterEditor.get();
 }
 
 bool MessageCenter::startAcquisition()

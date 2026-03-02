@@ -214,12 +214,12 @@ public:
     void checkForPluginUpdates();
 
 private:
-    ScopedPointer<DataViewport> dataViewport;
-    ScopedPointer<SignalChainTabComponent> signalChainTabComponent;
-    ScopedPointer<ShowHideEditorViewportButton> showHideEditorViewportButton;
-    ScopedPointer<ProcessorList> processorList;
-    ScopedPointer<InfoLabel> infoLabel;
-    ScopedPointer<GraphViewer> graphViewer;
+    std::unique_ptr<DataViewport> dataViewport;
+    std::unique_ptr<SignalChainTabComponent> signalChainTabComponent;
+    std::unique_ptr<ShowHideEditorViewportButton> showHideEditorViewportButton;
+    std::unique_ptr<ProcessorList> processorList;
+    std::unique_ptr<InfoLabel> infoLabel;
+    std::unique_ptr<GraphViewer> graphViewer;
     std::unique_ptr<ConsoleViewer> consoleViewer;
     std::unique_ptr<DataWindow> consoleWindow;
 

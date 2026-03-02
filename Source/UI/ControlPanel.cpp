@@ -54,7 +54,7 @@ void NewDirectoryButton::paintButton (Graphics& g, bool isMouseOver, bool isButt
     if (getToggleState())
     {
         backgroundColour = findColour (ThemeColours::highlightedFill);
-        iconColour = Colours::black;
+        iconColour = Colours::white;
     }
     else
     {
@@ -63,23 +63,24 @@ void NewDirectoryButton::paintButton (Graphics& g, bool isMouseOver, bool isButt
     }
 
     if (isMouseOver)
-    {
-        backgroundColour = backgroundColour.contrasting (0.1f);
-        iconColour = iconColour.contrasting (0.1f);
-    }
+        backgroundColour = backgroundColour.brighter (0.1f);
+    if (isButtonDown)
+        backgroundColour = backgroundColour.darker (0.1f);
 
-    g.setColour (findColour (ThemeColours::outline));
-    g.fillRoundedRectangle (0, 0, getWidth(), getHeight(), 5);
     g.setColour (backgroundColour);
-    g.fillRoundedRectangle (1, 1, getWidth() - 2, getHeight() - 2, 3);
+    g.fillRoundedRectangle (0, 0, getWidth(), getHeight(), 4);
 
-    g.setColour (Colours::black);
+    g.setColour (findColour (ThemeColours::outline).withAlpha (0.3f));
+    g.drawRoundedRectangle (0.5f, 0.5f, getWidth() - 1.0f, getHeight() - 1.0f, 4, 1.0f);
+
     newDirectoryIcon->replaceColour (Colours::black, iconColour);
     newDirectoryIcon->drawWithin (g, juce::Rectangle<float> (2, 2.5, 18, 18), RectanglePlacement::centred, 1.0f);
     newDirectoryIcon->replaceColour (iconColour, Colours::black);
-    g.setColour (backgroundColour);
-    g.drawRect (10, 9, 2, 6);
-    g.drawRect (8, 11, 6, 2);
+
+    // Plus icon
+    g.setColour (iconColour.withAlpha (0.7f));
+    g.fillRect (10, 9, 2, 6);
+    g.fillRect (8, 11, 6, 2);
 }
 
 ForceNewDirectoryButton::ForceNewDirectoryButton() : Button ("ForceNewDirectory")
@@ -132,7 +133,7 @@ void PlayButton::updateImages (bool acquisitionIsActive)
 {
     DrawablePath normal, over, down;
 
-    Colour buttonColour = acquisitionIsActive ? Colours::yellow : findColour (ThemeColours::controlPanelText);
+    Colour buttonColour = acquisitionIsActive ? Colour (120, 220, 120) : findColour (ThemeColours::controlPanelText);
 
     Path p;
     p.addTriangle (0.0f, 0.0f, 0.0f, 20.0f, 18.0f, 10.0f);
@@ -143,14 +144,12 @@ void PlayButton::updateImages (bool acquisitionIsActive)
     normal.setStrokeThickness (0.0f);
 
     over.setPath (p);
-    over.setFill (buttonColour);
-    over.setStrokeThickness (2.0f);
-    over.setStrokeFill (buttonColour);
+    over.setFill (buttonColour.brighter (0.3f));
+    over.setStrokeThickness (0.0f);
 
     down.setPath (p);
     down.setFill (Colours::white);
-    down.setStrokeThickness (2.0f);
-    down.setStrokeFill (Colours::white);
+    down.setStrokeThickness (0.0f);
 
     setImages (&normal, &over, &down);
 }
@@ -170,7 +169,7 @@ void RecordButton::updateImages (bool recordingIsActive)
 {
     DrawablePath normal, over, down;
 
-    Colour buttonColour = recordingIsActive ? Colours::yellow : findColour (ThemeColours::controlPanelText);
+    Colour buttonColour = recordingIsActive ? Colour (220, 80, 80) : findColour (ThemeColours::controlPanelText);
 
     Path p;
     p.addEllipse (0.0, 0.0, 20.0, 20.0);
@@ -181,14 +180,12 @@ void RecordButton::updateImages (bool recordingIsActive)
     normal.setStrokeThickness (0.0f);
 
     over.setPath (p);
-    over.setFill (buttonColour);
-    over.setStrokeThickness (2.0f);
-    over.setStrokeFill (buttonColour);
+    over.setFill (buttonColour.brighter (0.3f));
+    over.setStrokeThickness (0.0f);
 
     down.setPath (p);
     down.setFill (Colours::white);
-    down.setStrokeThickness (2.0f);
-    down.setStrokeFill (Colours::white);
+    down.setStrokeThickness (0.0f);
 
     setImages (&normal, &over, &down);
 }
@@ -196,7 +193,7 @@ void RecordButton::updateImages (bool recordingIsActive)
 CPUMeter::CPUMeter() : Component ("CPU Meter"),
                        cpu (0.0f)
 {
-    font = FontOptions ("Silkscreen", "Regular", 14);
+    font = FontOptions ("Inter", "Medium", 11);
 
     setTooltip ("CPU usage");
 }
@@ -210,17 +207,28 @@ void CPUMeter::updateCPU (float usage)
 
 void CPUMeter::paint (Graphics& g)
 {
-    g.fillAll (findColour (ThemeColours::defaultFill));
+    auto bounds = getLocalBounds().toFloat();
+    auto radius = bounds.getHeight() * 0.35f;
 
-    g.setColour (Colours::yellow);
-    g.fillRect (0.0f, 0.0f, getWidth() * cpu, float (getHeight()));
+    // Track background
+    g.setColour (findColour (ThemeColours::windowBackground));
+    g.fillRoundedRectangle (bounds, radius);
 
-    g.setColour (findColour (ThemeColours::outline));
-    g.drawRect (0, 0, getWidth(), getHeight(), 1);
+    if (cpu > 0.0f)
+    {
+        auto fillColour = cpu < 0.7f ? Colour (80, 180, 120) : (cpu < 0.9f ? Colour (230, 180, 60) : Colour (220, 70, 70));
+        g.setColour (fillColour.withAlpha (0.5f));
+        g.fillRoundedRectangle (0.0f, 0.0f, getWidth() * cpu, (float) getHeight(), radius);
+    }
 
-    g.setColour (findColour (ThemeColours::defaultText));
+    g.setColour (findColour (ThemeColours::outline).withAlpha (0.35f));
+    g.drawRoundedRectangle (bounds.reduced (0.5f), radius, 1.0f);
+
+    // Label inside the bar
+    g.setColour (findColour (ThemeColours::defaultText).withAlpha (0.85f));
     g.setFont (font);
-    g.drawSingleLineText ("CPU", 65, 12);
+    String cpuText = "CPU " + String ((int) (cpu * 100)) + "%";
+    g.drawText (cpuText, bounds, Justification::centred, false);
 }
 
 void CPUMeter::mouseUp (const MouseEvent& e)
@@ -237,7 +245,7 @@ DiskSpaceMeter::DiskSpaceMeter() : Component ("Disk Space Meter"),
                                    diskFree (0.0f)
 
 {
-    font = FontOptions ("Silkscreen", "Regular", 14);
+    font = FontOptions ("Inter", "Medium", 11);
 
     setTooltip ("Disk space available");
 }
@@ -251,22 +259,30 @@ void DiskSpaceMeter::updateDiskSpace (float percent)
 
 void DiskSpaceMeter::paint (Graphics& g)
 {
-    g.fillAll (findColour (ThemeColours::defaultFill));
+    auto bounds = getLocalBounds().toFloat();
+    auto radius = bounds.getHeight() * 0.35f;
 
-    g.setColour (findColour (ThemeColours::widgetBackground));
+    // Track background
+    g.setColour (findColour (ThemeColours::windowBackground));
+    g.fillRoundedRectangle (bounds, radius);
+
     if (diskFree > 0)
     {
         if (diskFree > 1.0)
             diskFree = 1.0;
-        g.fillRect (0.0f, 0.0f, getWidth() * diskFree, float (getHeight()));
+        auto fillColour = diskFree > 0.3f ? Colour (80, 140, 220).withAlpha (0.4f) : Colour (220, 70, 70).withAlpha (0.5f);
+        g.setColour (fillColour);
+        g.fillRoundedRectangle (0.0f, 0.0f, getWidth() * diskFree, (float) getHeight(), radius);
     }
 
-    g.setColour (findColour (ThemeColours::outline));
-    g.drawRect (0, 0, getWidth(), getHeight(), 1);
+    g.setColour (findColour (ThemeColours::outline).withAlpha (0.35f));
+    g.drawRoundedRectangle (bounds.reduced (0.5f), radius, 1.0f);
 
-    g.setColour (findColour (ThemeColours::defaultText));
+    // Label inside the bar
+    g.setColour (findColour (ThemeColours::defaultText).withAlpha (0.85f));
     g.setFont (font);
-    g.drawSingleLineText ("DF", 75, 12);
+    String diskText = "Disk " + String ((int) (diskFree * 100)) + "%";
+    g.drawText (diskText, bounds, Justification::centred, false);
 }
 
 void DiskSpaceMeter::mouseUp (const MouseEvent& e)
@@ -281,7 +297,7 @@ void DiskSpaceMeter::mouseUp (const MouseEvent& e)
 
 Clock::Clock()
 {
-    clockFont = FontOptions ("CP Mono", "Light", 30.0f);
+    clockFont = FontOptions ("Fira Code", "Light", 26.0f);
 }
 
 void Clock::paint (Graphics& g)
@@ -330,7 +346,7 @@ void Clock::drawTime (Graphics& g)
 
     if (isRecording)
     {
-        g.setColour (Colours::black);
+        g.setColour (Colours::white);
     }
     else
     {
@@ -835,12 +851,29 @@ void ControlPanel::createPaths()
 
 void ControlPanel::paint (Graphics& g)
 {
-    if (! getRecordingState())
-        g.setColour (findColour (ThemeColours::controlPanelBackground));
-    else
-        g.setColour (Colour (255, 0, 0));
+    auto panelBg = findColour (ThemeColours::controlPanelBackground);
 
-    g.fillRect (0, 0, getWidth(), getHeight());
+    if (! getRecordingState())
+    {
+        g.setColour (panelBg);
+        g.fillRect (0, 0, getWidth(), getHeight());
+
+        // Bottom separator
+        g.setColour (findColour (ThemeColours::outline).withAlpha (0.15f));
+        g.fillRect (0, getHeight() - 1, getWidth(), 1);
+    }
+    else
+    {
+        // Softer recording indicator — dark red gradient
+        ColourGradient recordGradient (Colour (130, 30, 30), 0.0f, 0.0f,
+                                       Colour (100, 20, 20), 0.0f, (float) getHeight(), false);
+        g.setGradientFill (recordGradient);
+        g.fillRect (0, 0, getWidth(), getHeight());
+
+        // Subtle pulsing top bar
+        g.setColour (Colour (220, 50, 50));
+        g.fillRect (0, 0, getWidth(), 2);
+    }
 
     if (open)
     {
@@ -848,10 +881,9 @@ void ControlPanel::paint (Graphics& g)
         g.fillPath (p1);
         g.fillPath (p2);
 
-        // Fill record engine selector background area with control panel background colour
-        g.setColour (findColour (ThemeColours::controlPanelBackground));
-        g.fillRoundedRectangle (recordSelector->getBounds().toFloat(), 3.0f);
-        g.fillRoundedRectangle (filenameComponent->getBounds().toFloat(), 3.0f);
+        g.setColour (panelBg);
+        g.fillRoundedRectangle (recordSelector->getBounds().toFloat(), 5.0f);
+        g.fillRoundedRectangle (filenameComponent->getBounds().toFloat(), 5.0f);
     }
 }
 

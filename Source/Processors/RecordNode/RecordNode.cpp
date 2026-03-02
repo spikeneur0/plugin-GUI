@@ -96,7 +96,7 @@ RecordNode::RecordNode()
 
     recordThread = std::make_unique<RecordThread> (this, recordEngine.get());
 
-    eventMonitor = new EventMonitor();
+    eventMonitor = std::make_unique<EventMonitor>();
 
     diskSpaceChecker = std::make_unique<DiskSpaceChecker> (this);
 }

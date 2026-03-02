@@ -59,7 +59,7 @@ GenericEditor::GenericEditor (GenericProcessor* owner) : AudioProcessorEditor (o
 
     nodeId = owner->getNodeId();
 
-    titleFont = FontOptions ("CP Mono", "Plain", 16);
+    titleFont = FontOptions ("Inter", "Semi Bold", 14);
 
     drawerButton = std::make_unique<DrawerButton> (getNameAndId() + " Drawer Button");
     drawerButton->addListener (&drawerButtonListener);
@@ -552,8 +552,8 @@ void GenericEditor::paint (Graphics& g)
     // draw title
     if (! isCollapsed)
     {
-        g.setColour (isEnabled ? Colours::white : findColour (ThemeColours::defaultText).withAlpha (0.5f));
-        g.setFont (FontOptions ("Fira Mono", "Plain", 13));
+        g.setColour (isEnabled ? Colours::white.withAlpha (0.5f) : findColour (ThemeColours::defaultText).withAlpha (0.3f));
+        g.setFont (FontOptions ("Fira Code", "Regular", 11));
         g.drawText (String (nodeId), 8, 5, 30, 15, Justification::left, false);
         g.setFont (titleFont);
 
@@ -561,13 +561,14 @@ void GenericEditor::paint (Graphics& g)
         if (isVisualizerEditor())
             titleWidth = getWidth() - 78;
 
+        g.setColour (isEnabled ? Colours::white : findColour (ThemeColours::defaultText).withAlpha (0.5f));
         g.drawText (displayName.toUpperCase(), 35, 4, titleWidth, 15, Justification::left, true);
     }
     else
     {
         g.addTransform (AffineTransform::rotation (-M_PI / 2.0));
         g.setColour (isEnabled ? Colours::white : findColour (ThemeColours::defaultText).withAlpha (0.5f));
-        g.setFont (FontOptions ("CP Mono", "Plain", 14));
+        g.setFont (FontOptions ("Inter", "Medium", 12));
         g.drawText (displayName.toUpperCase(), -getHeight() + 6, 5, getHeight() - 8, 15, Justification::left, true);
         g.addTransform (AffineTransform::rotation (M_PI / 2.0));
     }
@@ -575,7 +576,7 @@ void GenericEditor::paint (Graphics& g)
     if (isSelected)
     {
         // draw highlight box
-        g.setColour (Colours::yellow);
+        g.setColour (findColour (ThemeColours::highlightedFill));
         g.drawRoundedRectangle (1, 1, getWidth() - 2, getHeight() - 2, 5.0f, 2.0f);
     }
 }
@@ -1085,7 +1086,7 @@ void GenericEditor::setBackgroundColour (Colour c)
 
 ColourGradient GenericEditor::getBackgroundGradient()
 {
-    backgroundGradient = ColourGradient::vertical (findColour (ThemeColours::componentBackground).darker (0.1f), 0.0f, findColour (ThemeColours::componentBackground).brighter (0.1f), 120.0f);
+    backgroundGradient = ColourGradient::vertical (findColour (ThemeColours::componentBackground).darker (0.02f), 0.0f, findColour (ThemeColours::componentBackground).brighter (0.02f), 120.0f);
 
     return backgroundGradient;
 }

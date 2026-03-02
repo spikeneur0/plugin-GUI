@@ -42,8 +42,8 @@ ProcessorList::ProcessorList (Viewport* v) : viewport (v),
                                              hoverItem (nullptr),
                                              maximumNameOffset (0)
 {
-    listFontLight = FontOptions ("CP Mono", "Light", 25);
-    listFontPlain = FontOptions ("CP Mono", "Plain", 20);
+    listFontLight = FontOptions ("Inter", "Semi Bold", 16);
+    listFontPlain = FontOptions ("Inter", "Regular", 14);
 
     ProcessorListItem* sources = new ProcessorListItem ("Sources");
     ProcessorListItem* filters = new ProcessorListItem ("Filters");
@@ -141,7 +141,7 @@ bool ProcessorList::isOpen()
 
 void ProcessorList::paint (Graphics& g)
 {
-    g.fillAll (Colours::black);
+    g.fillAll (findColour (ThemeColours::windowBackground));
     drawItems (g);
 }
 
@@ -185,46 +185,72 @@ void ProcessorList::drawItem (Graphics& g, ProcessorListItem* item)
 {
     Colour c = getLookAndFeel().findColour (item->colourId);
 
-    g.setColour (c);
-
     if (item->hasSubItems())
-        g.fillRect (1, 0, getWidth() - 2, itemHeight);
+    {
+        if (item->getName().equalsIgnoreCase ("Processors"))
+        {
+            // Top-level header: subtle dark background
+            g.setColour (findColour (ThemeColours::controlPanelBackground));
+            g.fillRoundedRectangle (2.0f, 1.0f, (float) getWidth() - 4.0f, (float) itemHeight - 2.0f, 4.0f);
+        }
+        else
+        {
+            // Category headers: subtle background with left accent bar
+            g.setColour (findColour (ThemeColours::componentBackground).withAlpha (0.6f));
+            g.fillRoundedRectangle (2.0f, 1.0f, (float) getWidth() - 4.0f, (float) itemHeight - 2.0f, 4.0f);
+
+            // Left accent bar
+            g.setColour (c);
+            g.fillRoundedRectangle (2.0f, 3.0f, 3.0f, (float) itemHeight - 6.0f, 1.5f);
+        }
+    }
     else
-        g.fillRect (1, 10, getWidth() - 2, subItemHeight);
+    {
+        // Sub-items: subtle hover highlight
+        bool isHovered = (item == hoverItem);
+        if (isHovered)
+        {
+            g.setColour (findColour (ThemeColours::widgetBackground).withAlpha (0.5f));
+            g.fillRoundedRectangle (8.0f, 10.0f, (float) getWidth() - 12.0f, (float) subItemHeight - 1.0f, 3.0f);
+        }
+
+        // Left accent dot for sub-items
+        g.setColour (c.withAlpha (isHovered ? 0.9f : 0.4f));
+        g.fillEllipse (12.0f, 10.0f + ((float) subItemHeight - 1.0f) * 0.5f - 2.5f, 5.0f, 5.0f);
+    }
 
     drawItemName (g, item);
 }
 
 void ProcessorList::drawItemName (Graphics& g, ProcessorListItem* item)
 {
-    if (item->getName().equalsIgnoreCase ("Processors"))
-        g.setColour (findColour (ThemeColours::controlPanelText));
-    else
-        g.setColour (Colours::white);
-
     float offsetX, offsetY;
 
     if (item->getNumSubItems() == 0)
     {
+        // Sub-item (individual processor)
         String name = item->getName();
+        bool isHovered = (item == hoverItem);
+
+        g.setColour (findColour (ThemeColours::defaultText).withAlpha (isHovered ? 1.0f : 0.75f));
 
         float scrollbarOffset = 0.0f;
         float maxWidth = getWidth();
 
-        offsetX = 20.0f;
+        offsetX = 24.0f;
 
         g.setFont (listFontPlain);
 
-        if (item == hoverItem)
+        if (isHovered)
         {
             maxWidth = GlyphArrangement::getStringWidth (g.getCurrentFont(), name) + 5.0f;
 
-            if (maxWidth + 25 < getWidth() - scrollbarOffset)
+            if (maxWidth + 30 < getWidth() - scrollbarOffset)
             {
                 maximumNameOffset = 0;
                 stopTimer();
             }
-            else if (maximumNameOffset + getWidth() > maxWidth + 25 + scrollbarOffset)
+            else if (maximumNameOffset + getWidth() > maxWidth + 30 + scrollbarOffset)
             {
                 stopTimer();
             }
@@ -236,22 +262,32 @@ void ProcessorList::drawItemName (Graphics& g, ProcessorListItem* item)
 
         if (item->isSelected())
         {
-            g.drawText (">", offsetX - 15, 5, getWidth() - 9, itemHeight, Justification::left, false);
+            g.setColour (findColour (ThemeColours::highlightedFill));
+            g.drawText (">", offsetX - 12, 5, 12, itemHeight, Justification::centred, false);
+            g.setColour (findColour (ThemeColours::defaultText));
         }
         g.drawText (name, offsetX, 5, maxWidth, itemHeight, Justification::left, false);
     }
     else
     {
-        String name = item->getName().toUpperCase();
-        offsetX = 5.0f;
-        offsetY = 0.75f;
-
-        g.setFont (listFontLight);
-        g.drawText (name, offsetX, 0, getWidth(), itemHeight, Justification::left, false);
-
-        if (! item->getName().equalsIgnoreCase ("Processors"))
+        // Category header or root
+        if (item->getName().equalsIgnoreCase ("Processors"))
         {
-            g.setColour (Colours::black.withAlpha (0.25f));
+            g.setColour (findColour (ThemeColours::controlPanelText).withAlpha (0.8f));
+            g.setFont (listFontLight);
+            g.drawText (item->getName().toUpperCase(), 8.0f, 0, getWidth(), itemHeight, Justification::left, false);
+        }
+        else
+        {
+            String name = item->getName().toUpperCase();
+            offsetX = 12.0f;
+
+            g.setColour (findColour (ThemeColours::defaultText).withAlpha (0.9f));
+            g.setFont (listFontLight);
+            g.drawText (name, offsetX, 0, getWidth(), itemHeight, Justification::left, false);
+
+            // Arrow indicator
+            g.setColour (findColour (ThemeColours::defaultText).withAlpha (0.45f));
 
             if (item->isOpen())
             {

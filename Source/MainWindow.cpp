@@ -46,8 +46,17 @@ MainDocumentWindow::MainDocumentWindow()
     setAccessible (false);
 }
 
-MainWindow::MainWindow (const File& fileToLoad, bool isConsoleApp_) : isConsoleApp (isConsoleApp_)
+MainWindow::MainWindow (const File& fileToLoad, bool isConsoleApp_, OpenEphysSplashScreen* splash) : isConsoleApp (isConsoleApp_)
 {
+    // Helper lambda to update splash progress
+    auto updateSplash = [splash] (float progress, const String& msg)
+    {
+        if (splash != nullptr)
+            splash->setProgress (progress, msg);
+    };
+
+    updateSplash (0.0f, "Initializing look and feel...");
+
     customLookAndFeel = std::make_unique<CustomLookAndFeel>();
     LookAndFeel::setDefaultLookAndFeel (customLookAndFeel.get());
 
@@ -103,24 +112,29 @@ MainWindow::MainWindow (const File& fileToLoad, bool isConsoleApp_) : isConsoleA
     // Create ProcessorGraph and AudioComponent, and connect them.
     // Callbacks will be set by the play button in the control panel
 
+    updateSplash (0.05f, "Creating audio system...");
     LOGD ("Creating audio component...");
     audioComponent = std::make_unique<AudioComponent>();
 
+    updateSplash (0.15f, "Creating processor graph...");
     LOGD ("Creating processor graph...");
     processorGraph = std::make_unique<ProcessorGraph> (isConsoleApp);
 
+    updateSplash (0.30f, "Connecting audio pipeline...");
     LOGD ("Connecting audio component to processor graph...");
     audioComponent->connectToProcessorGraph (processorGraph.get());
 
+    updateSplash (0.40f, "Initializing control panel...");
     LOGD ("Creating control panel...");
     controlPanel = std::make_unique<ControlPanel> (processorGraph.get(), audioComponent.get(), isConsoleApp);
 
     if (! isConsoleApp)
     {
+        updateSplash (0.50f, "Building user interface...");
         LOGD ("Creating UI component...");
         documentWindow->setContentOwned (new UIComponent (this, processorGraph.get(), audioComponent.get(), controlPanel.get(), consoleViewer, customLookAndFeel.get()), true);
 
-        UIComponent* ui = (UIComponent*) documentWindow->getContentComponent();
+        UIComponent* ui = static_cast<UIComponent*> (documentWindow->getContentComponent());
 
 #if JUCE_MAC
         MenuBarModel::setMacMainMenu (ui);
@@ -159,8 +173,6 @@ MainWindow::MainWindow (const File& fileToLoad, bool isConsoleApp_) : isConsoleA
 #endif
 
         documentWindow->addToDesktop();
-        documentWindow->setVisible (true);
-        documentWindow->toFront (true);
 
         // Constraining the window's size doesn't seem to work:
         documentWindow->setResizeLimits (800, 600, 10000, 10000);
@@ -179,6 +191,8 @@ MainWindow::MainWindow (const File& fileToLoad, bool isConsoleApp_) : isConsoleA
     controlPanel->updateRecordEngineList();
 
     processorGraph->updateBufferSize(); // needs to happen after processorGraph gets the right pointers
+
+    updateSplash (0.65f, "Loading signal chain...");
 
     // Load a specific state of the GUI (custom, default, last-saved, or recovery config)
     if (! fileToLoad.getFullPathName().isEmpty())
@@ -238,6 +252,8 @@ MainWindow::MainWindow (const File& fileToLoad, bool isConsoleApp_) : isConsoleA
         }
     }
 
+    updateSplash (0.85f, "Starting HTTP server...");
+
     http_server_thread = std::make_unique<OpenEphysHttpServer> (processorGraph.get());
 
     if (shouldEnableHttpServer)
@@ -249,6 +265,8 @@ MainWindow::MainWindow (const File& fileToLoad, bool isConsoleApp_) : isConsoleA
         disableHttpServer();
     }
 
+    updateSplash (0.92f, "Checking for updates...");
+
 #ifdef NDEBUG
     if (automaticVersionChecking)
         LatestVersionCheckerAndUpdater::getInstance()->checkForNewVersion (true, this);
@@ -257,11 +275,25 @@ MainWindow::MainWindow (const File& fileToLoad, bool isConsoleApp_) : isConsoleA
     // Check for plugin updates and notify user if any are available
     if (! isConsoleApp)
     {
-        UIComponent* ui = (UIComponent*) documentWindow->getContentComponent();
+        UIComponent* ui = static_cast<UIComponent*> (documentWindow->getContentComponent());
         ui->checkForPluginUpdates();
     }
 
+    updateSplash (1.0f, "Ready!");
+
     Process::setPriority (Process::HighPriority);
+
+    // Show main window and fade out splash
+    if (! isConsoleApp)
+    {
+        documentWindow->setVisible (true);
+        documentWindow->toFront (true);
+    }
+
+    if (splash != nullptr)
+    {
+        splash->fadeOut();
+    }
 }
 
 MainWindow::~MainWindow()
@@ -279,7 +311,7 @@ MainWindow::~MainWindow()
     if (! isConsoleApp)
     {
         saveWindowBounds();
-        UIComponent* ui = (UIComponent*) documentWindow->getContentComponent();
+        UIComponent* ui = static_cast<UIComponent*> (documentWindow->getContentComponent());
         ui->disableDataViewport();
 
         documentWindow->setLookAndFeel (nullptr);
@@ -417,7 +449,7 @@ void MainWindow::saveWindowBounds()
 
     File file = configsDir.getChildFile ("windowState.xml");
 
-    XmlElement* xml = new XmlElement ("MAINWINDOW");
+    auto xml = std::make_unique<XmlElement> ("MAINWINDOW");
 
     xml->setAttribute ("version", JUCEApplication::getInstance()->getApplicationVersion());
     xml->setAttribute ("shouldReloadOnStartup", shouldReloadOnStartup);
@@ -425,7 +457,7 @@ void MainWindow::saveWindowBounds()
     xml->setAttribute ("automaticVersionChecking", automaticVersionChecking);
     xml->setAttribute ("colourTheme", (int) currentTheme);
 
-    XmlElement* bounds = new XmlElement ("BOUNDS");
+    auto* bounds = new XmlElement ("BOUNDS");
     bounds->setAttribute ("x", documentWindow->getScreenX());
     bounds->setAttribute ("y", documentWindow->getScreenY());
     bounds->setAttribute ("w", documentWindow->getWidth());
@@ -434,32 +466,28 @@ void MainWindow::saveWindowBounds()
 
     xml->addChildElement (bounds);
 
-    XmlElement* recentDirectories = new XmlElement ("RECENTDIRECTORYNAMES");
+    auto* recentDirectories = new XmlElement ("RECENTDIRECTORYNAMES");
 
-    UIComponent* ui = (UIComponent*) documentWindow->getContentComponent();
+    UIComponent* ui = static_cast<UIComponent*> (documentWindow->getContentComponent());
 
     StringArray dirs = ui->getRecentlyUsedFilenames();
 
     for (int i = 0; i < dirs.size(); i++)
     {
-        XmlElement* directory = new XmlElement ("DIRECTORY");
+        auto* directory = new XmlElement ("DIRECTORY");
         directory->setAttribute ("name", dirs[i]);
         recentDirectories->addChildElement (directory);
     }
 
     xml->addChildElement (recentDirectories);
 
-    XmlElement* signalChainLocked = new XmlElement ("SIGNALCHAIN");
+    auto* signalChainLocked = new XmlElement ("SIGNALCHAIN");
     signalChainLocked->setAttribute ("locked", ui->getEditorViewport()->isSignalChainLocked());
 
     xml->addChildElement (signalChainLocked);
 
-    String error;
-
     if (! xml->writeTo (file))
-        error = "Couldn't write to file";
-
-    delete xml;
+        LOGE ("Couldn't write window state to file");
 }
 
 void MainWindow::loadWindowBounds()
@@ -512,12 +540,12 @@ void MainWindow::loadWindowBounds()
                     }
                 }
 
-                UIComponent* ui = (UIComponent*) documentWindow->getContentComponent();
+                UIComponent* ui = static_cast<UIComponent*> (documentWindow->getContentComponent());
                 ui->setRecentlyUsedFilenames (filenames);
             }
             else if (e->hasTagName ("SIGNALCHAIN"))
             {
-                UIComponent* ui = (UIComponent*) documentWindow->getContentComponent();
+                UIComponent* ui = static_cast<UIComponent*> (documentWindow->getContentComponent());
                 ui->getEditorViewport()->lockSignalChain (e->getBoolAttribute ("locked", false));
             }
         }
@@ -570,6 +598,9 @@ bool MainWindow::compareConfigFiles (File file1, File file2)
 
     auto lcAudio = lcXml->getChildByName ("AUDIO");
     auto rcAudio = rcXml->getChildByName ("AUDIO");
+
+    if (lcAudio == nullptr || rcAudio == nullptr)
+        return (lcAudio == rcAudio);
 
     if (! lcAudio->isEquivalentTo (rcAudio, false))
         return false;

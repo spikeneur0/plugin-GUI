@@ -25,6 +25,7 @@
 #define RECORDNODE_H_DEFINED
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <map>
 #include <math.h>
@@ -211,8 +212,8 @@ public:
     int getTotalRecordedStreams();
 
     /** Variables to track whether or not particular channels are recorded*/
-    bool recordEvents;
-    bool recordSpikes;
+    std::atomic<bool> recordEvents;
+    std::atomic<bool> recordSpikes;
     std::map<uint16, std::vector<bool>> recordContinuousChannels;
 
     bool newDirectoryNeeded;
@@ -228,7 +229,7 @@ public:
 
     std::map<uint16, float> fifoUsage;
 
-    ScopedPointer<EventMonitor> eventMonitor;
+    std::unique_ptr<EventMonitor> eventMonitor;
 
     std::unique_ptr<DiskSpaceChecker> diskSpaceChecker;
 
@@ -277,11 +278,11 @@ private:
     /**RecordEngines loaded**/
     OwnedArray<RecordEngine> engineArray;
 
-    bool isProcessing;
-    bool isRecording;
+    std::atomic<bool> isProcessing;
+    std::atomic<bool> isRecording;
     bool hasRecorded;
     bool settingsNeeded;
-    bool shouldRecord;
+    std::atomic<bool> shouldRecord;
 
     File defaultRecordDirectory; // Default directory for saving data (set by the ControlPanel)
     File dataDirectory;

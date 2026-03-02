@@ -54,36 +54,36 @@ UIComponent::UIComponent (MainWindow* mainWindow_,
     messageCenterEditor = (MessageCenterEditor*) processorGraph->getMessageCenter()->createEditor();
     LOGD ("Created message center editor.");
 
-    infoLabel = new InfoLabel();
+    infoLabel = std::make_unique<InfoLabel>();
     LOGD ("Created info label.");
 
-    graphViewer = new GraphViewer();
+    graphViewer = std::make_unique<GraphViewer>();
     LOGD ("Created graph viewer.");
 
     consoleViewer.reset (consoleViewer_);
 
-    dataViewport = new DataViewport();
-    addChildComponent (dataViewport);
+    dataViewport = std::make_unique<DataViewport>();
+    addChildComponent (dataViewport.get());
     LOGD ("Created data viewport.");
 
-    signalChainTabComponent = new SignalChainTabComponent();
-    addAndMakeVisible (signalChainTabComponent);
+    signalChainTabComponent = std::make_unique<SignalChainTabComponent>();
+    addAndMakeVisible (signalChainTabComponent.get());
 
-    editorViewport = new EditorViewport (signalChainTabComponent);
+    editorViewport = new EditorViewport (signalChainTabComponent.get());
 
     LOGD ("Created editor viewport.");
 
-    showHideEditorViewportButton = new ShowHideEditorViewportButton();
+    showHideEditorViewportButton = std::make_unique<ShowHideEditorViewportButton>();
     showHideEditorViewportButton->addListener (this);
     showHideEditorViewportButton->setToggleState (true, dontSendNotification);
-    addAndMakeVisible (showHideEditorViewportButton);
+    addAndMakeVisible (showHideEditorViewportButton.get());
 
     addAndMakeVisible (controlPanel);
 
     LOGD ("Created control panel.");
 
-    processorList = new ProcessorList (&processorListViewport);
-    processorListViewport.setViewedComponent (processorList, false);
+    processorList = std::make_unique<ProcessorList> (&processorListViewport);
+    processorListViewport.setViewedComponent (processorList.get(), false);
     processorListViewport.setScrollBarsShown (false, false);
     addAndMakeVisible (&processorListViewport);
 
@@ -139,13 +139,13 @@ EditorViewport* UIComponent::getEditorViewport()
 /** Returns a pointer to the ProcessorList. */
 ProcessorList* UIComponent::getProcessorList()
 {
-    return processorList;
+    return processorList.get();
 }
 
 /** Returns a pointer to the DataViewport. */
 DataViewport* UIComponent::getDataViewport()
 {
-    return dataViewport;
+    return dataViewport.get();
 }
 
 /** Returns a pointer to the ProcessorGraph. */
@@ -157,7 +157,7 @@ ProcessorGraph* UIComponent::getProcessorGraph()
 /** Returns a pointer to the GraphViewer. */
 GraphViewer* UIComponent::getGraphViewer()
 {
-    return graphViewer;
+    return graphViewer.get();
 }
 
 /** Returns a pointer to the ControlPanel. */
@@ -410,7 +410,7 @@ void UIComponent::addInfoTab()
 {
     if (! infoTabIsOpen)
     {
-        dataViewport->addTab ("Info", infoLabel, 0);
+        dataViewport->addTab ("Info", infoLabel.get(), 0);
         infoTabIsOpen = true;
     }
 }
@@ -1084,7 +1084,7 @@ bool UIComponent::perform (const InvocationInfo& info)
                 dataViewport->removeTab (0);
             else
             {
-                dataViewport->addTab ("Info", infoLabel, 0);
+                dataViewport->addTab ("Info", infoLabel.get(), 0);
                 infoTabIsOpen = true;
             }
 
@@ -1300,7 +1300,7 @@ Component* UIComponent::findComponentByIDRecursive (Component* parent, const Str
 
 ShowHideEditorViewportButton::ShowHideEditorViewportButton() : ToggleButton()
 {
-    buttonFont = FontOptions ("CP Mono", "Light", 25);
+    buttonFont = FontOptions ("Inter", "Medium", 14);
     setTooltip ("Show/hide signal chain");
 
     arrow = std::make_unique<CustomArrowButton> (MathConstants<float>::pi / 2);
@@ -1319,7 +1319,10 @@ void ShowHideEditorViewportButton::paint (Graphics& g)
 {
     g.fillAll (findColour (ThemeColours::controlPanelBackground));
 
-    g.setColour (findColour (ThemeColours::controlPanelText));
+    g.setColour (findColour (ThemeColours::outline).withAlpha (0.25f));
+    g.fillRect (0, 0, getWidth(), 1);
+
+    g.setColour (findColour (ThemeColours::controlPanelText).withAlpha (0.7f));
     g.setFont (buttonFont);
     g.drawText ("SIGNAL CHAIN", 10, 0, getWidth(), getHeight(), Justification::left, false);
 

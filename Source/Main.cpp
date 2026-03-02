@@ -29,6 +29,7 @@
 #endif
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "MainWindow.h"
+#include "UI/SplashScreen.h"
 
 #include <fstream>
 #include <stdio.h>
@@ -102,11 +103,11 @@ public:
         SystemStats::setApplicationCrashHandler (handleCrash);
 
         // Parse parameters
+        bool isConsoleApp = false;
+        File fileToLoad;
+
         if (! parameters.isEmpty())
         {
-            bool isConsoleApp = false;
-            File fileToLoad;
-
             for (auto param : parameters)
             {
                 if (param.equalsIgnoreCase ("--headless"))
@@ -129,13 +130,19 @@ public:
                         fileToLoad = globalPath;
                 }
             }
+        }
 
-            mainWindow = std::make_unique<MainWindow> (fileToLoad, isConsoleApp);
-        }
-        else
+        // Show splash screen for GUI mode
+        OpenEphysSplashScreen* splashPtr = nullptr;
+
+        if (! isConsoleApp)
         {
-            mainWindow = std::make_unique<MainWindow>();
+            splashScreen = std::make_unique<OpenEphysSplashScreen>();
+            splashScreen->show();
+            splashPtr = splashScreen.get();
         }
+
+        mainWindow = std::make_unique<MainWindow> (fileToLoad, isConsoleApp, splashPtr);
     }
 
     void shutdown() {}
@@ -190,7 +197,7 @@ public:
 
     bool moreThanOneInstanceAllowed()
     {
-        return true;
+        return false;
     }
 
     void anotherInstanceStarted (const String& commandLine)
@@ -198,6 +205,7 @@ public:
     }
 
 private:
+    std::unique_ptr<OpenEphysSplashScreen> splashScreen;
     std::unique_ptr<MainWindow> mainWindow;
 };
 

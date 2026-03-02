@@ -1264,7 +1264,7 @@ public:
                    });
 
         LOGC ("Beginning HTTP server on port ", PORT);
-        svr_->listen ("0.0.0.0", PORT);
+        svr_->listen ("127.0.0.1", PORT);
     }
 
     void start()

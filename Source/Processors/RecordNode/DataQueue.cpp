@@ -141,8 +141,9 @@ void DataQueue::fillSampleNumbers (int channel, int index, int size, int64 sampl
     {
         if ((blockStartPos + i) < (index + size))
         {
-            latestSampleNumber = startSampleNumber + (i * m_blockSize);
-            m_sampleNumbers[channel]->at (blockIdx) = latestSampleNumber;
+            latestSampleNumber = startSampleNumber + i;
+            m_sampleNumbers[channel]->at (blockIdx % m_numBlocks) = latestSampleNumber;
+            blockIdx++;
         }
     }
 }
@@ -156,6 +157,7 @@ float DataQueue::writeSynchronizedTimestamps (double start, double step, int des
     if ((size1 + size2) < nSamples)
     {
         LOGE (__FUNCTION__, " Recording Data Queue Overflow: sz1: ", size1, " sz2: ", size2, " nSamples: ", nSamples);
+        m_overflowCount++;
     }
 
     for (int i = 0; i < size1; i++)
@@ -188,6 +190,7 @@ float DataQueue::writeChannel (const AudioBuffer<float>& buffer,
     if ((size1 + size2) < nSamples)
     {
         LOGE (__FUNCTION__, " Recording Data Queue Overflow: sz1: ", size1, " sz2: ", size2, " nSamples: ", nSamples);
+        m_overflowCount++;
     }
     m_buffer.copyFrom (destChannel,
                        index1,

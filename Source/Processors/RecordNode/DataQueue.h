@@ -26,6 +26,7 @@
 
 #include "../../Utils/Utils.h"
 #include <JuceHeader.h>
+#include <atomic>
 
 class Synchronizer;
 
@@ -90,6 +91,12 @@ public:
     /** Returns the current block size*/
     int getBlockSize();
 
+    /** Returns the number of buffer overflows that have occurred */
+    int getOverflowCount() const { return m_overflowCount.load(); }
+
+    /** Resets the overflow counter */
+    void resetOverflowCount() { m_overflowCount.store (0); }
+
 private:
     /** Fills the sample number buffer for a given channel */
     void fillSampleNumbers (int channel, int index, int size, int64 sampleNumber);
@@ -110,9 +117,10 @@ private:
     int m_numChans;
     int m_numFTSChans;
     int m_blockSize;
-    bool m_readInProgress;
+    std::atomic<bool> m_readInProgress;
     int m_numBlocks;
     int m_maxSize;
+    std::atomic<int> m_overflowCount { 0 };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DataQueue);
 };

@@ -153,7 +153,7 @@ TextBoxParameterEditor::TextBoxParameterEditor (Parameter* param, int rowHeightP
     else
         valueTextBox = std::make_unique<CustomTextBox> (param->getKey(), param->getValue().toString(), "");
 
-    valueTextBox->setFont (FontOptions ("CP Mono", "Plain", int (0.75 * rowHeightPixels)));
+    valueTextBox->setFont (FontOptions ("Fira Code", "Regular", int (0.75 * rowHeightPixels)));
     valueTextBox->setName (param->getKey());
     // valueTextBox->setColour(Label::textColourId, Colours::black);
     // valueTextBox->setColour(Label::backgroundColourId, Colours::lightgrey);

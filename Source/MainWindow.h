@@ -31,6 +31,7 @@
 #include "UI/DefaultConfig.h"
 #include "UI/LookAndFeel/CustomLookAndFeel.h"
 #include "UI/UIComponent.h"
+#include "UI/SplashScreen.h"
 #include "Utils/OpenEphysHttpServer.h"
 
 class OpenEphysHttpServer;
@@ -73,7 +74,8 @@ class MainWindow
 public:
     /** Initializes the MainWindow, creates the AudioComponent, ProcessorGraph,
         and UIComponent, and sets the window boundaries. */
-    MainWindow (const File& fileToLoad = File(), bool isConsoleApp = false);
+    MainWindow (const File& fileToLoad = File(), bool isConsoleApp = false,
+                OpenEphysSplashScreen* splash = nullptr);
 
     /** Destroys the AudioComponent, ProcessorGraph, and UIComponent, and saves the window boundaries. */
     ~MainWindow();

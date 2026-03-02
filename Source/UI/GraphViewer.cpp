@@ -48,21 +48,26 @@ GraphViewport::GraphViewport (GraphViewer* gv)
     JUCEApplication* app = JUCEApplication::getInstance();
     currentVersionText = "GUI version " + app->getApplicationVersion();
 
-    bw_logo = ImageCache::getFromMemory (BinaryData::bw_logo72_png, BinaryData::bw_logo72_pngSize);
+    bw_logo = ImageCache::getFromMemory (BinaryData::brain_wireframe_png, BinaryData::brain_wireframe_pngSize);
 }
 
 void GraphViewport::paint (Graphics& g)
 {
     g.fillAll (findColour (ThemeColours::componentParentBackground));
-    g.setOpacity (0.6f);
 
-    g.drawImageAt (bw_logo, getWidth() - 175, getHeight() - 115);
+    if (bw_logo.isValid())
+    {
+        float maxSize = jmin (getWidth(), getHeight()) * 0.55f;
+        float scale = maxSize / (float) jmax (bw_logo.getWidth(), bw_logo.getHeight());
+        int drawW = (int) (bw_logo.getWidth() * scale);
+        int drawH = (int) (bw_logo.getHeight() * scale);
+        int x = (getWidth() - drawW) / 2;
+        int y = (getHeight() - drawH) / 2;
 
-    g.setOpacity (1.0f);
-    g.setColour (findColour (ThemeColours::componentBackground).brighter (0.3f));
-
-    g.setFont (FontOptions ("Silkscreen", "Regular", 15));
-    g.drawFittedText (currentVersionText, getWidth() - 197, getHeight() - 30, 197, 15, Justification::centred, 1);
+        g.setOpacity (0.06f);
+        g.drawImage (bw_logo, x, y, drawW, drawH,
+                     0, 0, bw_logo.getWidth(), bw_logo.getHeight());
+    }
 }
 
 void GraphViewport::resized()
@@ -366,7 +371,7 @@ void GraphViewer::paint (Graphics& g)
             static const String letters = "ABCDEFGHI";
 
             g.setColour (findColour (ThemeColours::defaultText));
-            g.setFont (FontOptions ("Silkscreen", "Regular", 14));
+            g.setFont (FontOptions ("Inter", "Medium", 13));
             g.drawText (String::charToString (letters[level]), startPoint.x - 20, startPoint.y - 10, 20, 18, Justification::centred, true);
         }
 
@@ -775,7 +780,7 @@ GraphNode::GraphNode (GenericEditor* ed, GraphViewer* g)
     vertShift = 0;
     processorInfoVisible = false;
 
-    nodeNameFont = FontOptions ("CP Mono", "Plain", 15.0f);
+    nodeNameFont = FontOptions ("Inter", "Medium", 14.0f);
 
     updateWidth();
 
@@ -1212,14 +1217,13 @@ void GraphNode::paint (Graphics& g)
 {
     g.fillAll (findColour (ThemeColours::componentParentBackground));
 
-    g.setFont (FontOptions ("Fira Code", "Regular", 13.0f));
-
     if (processor->isEmpty())
     {
-        g.setColour (findColour (ThemeColours::defaultFill));
-        g.drawRoundedRectangle (1, 1, getWidth() - 2, 18, 5.0f, 2.0f);
+        g.setColour (findColour (ThemeColours::defaultFill).withAlpha (0.5f));
+        g.drawRoundedRectangle (1, 1, getWidth() - 2, 18, 5.0f, 1.0f);
 
-        g.setColour (findColour (ThemeColours::defaultText));
+        g.setFont (FontOptions ("Inter", "Regular", 12.0f));
+        g.setColour (findColour (ThemeColours::defaultText).withAlpha (0.5f));
         g.drawFittedText ("No Source", 10, 0, getWidth() - 10, 20, Justification::centredLeft, 1);
     }
     else
@@ -1228,13 +1232,17 @@ void GraphNode::paint (Graphics& g)
         g.fillRect (0, 0, 25, 20);
         g.setColour (editor->getBackgroundColour());
         g.fillRect (25, 0, getWidth() - 25, 20);
-        g.setColour (findColour (ThemeColours::outline));
+        g.setColour (findColour (ThemeColours::outline).withAlpha (0.3f));
         g.fillRect (25, 0, 1, getHeight());
 
         if (processorInfoVisible)
+        {
+            g.setColour (findColour (ThemeColours::outline).withAlpha (0.2f));
             g.fillRect (0, 19, getWidth(), 1);
+        }
 
-        g.setColour (findColour (ThemeColours::defaultText));
+        g.setFont (FontOptions ("Fira Code", "Regular", 11.0f));
+        g.setColour (findColour (ThemeColours::defaultText).withAlpha (0.5f));
         g.drawText (String (nodeId), 1, 1, 23, 20, Justification::centred, true);
         g.setColour (Colours::white);
         g.setFont (nodeNameFont);
@@ -1260,7 +1268,7 @@ void GraphNode::paintOverChildren (Graphics& g)
 
     if (isMouseOver)
     {
-        g.setColour (Colours::yellow);
-        g.drawRoundedRectangle (1, 1, getWidth() - 2, getHeight() - 2, 5.0f, 2.0f);
+        g.setColour (findColour (ThemeColours::highlightedFill).withAlpha (0.8f));
+        g.drawRoundedRectangle (1, 1, getWidth() - 2, getHeight() - 2, 5.0f, 1.5f);
     }
 }

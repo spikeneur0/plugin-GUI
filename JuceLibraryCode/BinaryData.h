@@ -112,10 +112,16 @@ namespace BinaryData
     extern const char*  SilkscreenRegular_ttf;
     const int           SilkscreenRegular_ttfSize = 31960;
 
+    extern const char*  splash_brain_png;
+    const int           splash_brain_pngSize = 37467;
+
     extern const char*  SourceDrop_png;
     const int           SourceDrop_pngSize = 6274;
 
     extern const char*  upload_png;
     const int           upload_pngSize = 1020;
+
+    extern const char*  brain_wireframe_png;
+    const int           brain_wireframe_pngSize = 69510;
 
 }

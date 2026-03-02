@@ -83,48 +83,48 @@ void CustomLookAndFeel::initializeColours()
 {
     // Processor colours are consistent across all themes, but
     // can be customized by right-clicking on the processor list
-    setColour (ProcessorColour::IDs::FILTER_COLOUR, Colour (0, 160, 225));
-    setColour (ProcessorColour::IDs::SINK_COLOUR, Colour (0, 166, 81));
-    setColour (ProcessorColour::IDs::SOURCE_COLOUR, Colour (241, 90, 41));
-    setColour (ProcessorColour::IDs::UTILITY_COLOUR, Colour (90, 110, 110));
-    setColour (ProcessorColour::IDs::RECORD_COLOUR, Colour (255, 0, 0));
-    setColour (ProcessorColour::IDs::AUDIO_COLOUR, Colour (0, 0, 0));
-    setColour (ProcessorColour::IDs::SYNC_COLOUR, Colour (255, 165, 0));
+    setColour (ProcessorColour::IDs::FILTER_COLOUR, Colour (55, 135, 195));
+    setColour (ProcessorColour::IDs::SINK_COLOUR, Colour (45, 148, 90));
+    setColour (ProcessorColour::IDs::SOURCE_COLOUR, Colour (200, 95, 55));
+    setColour (ProcessorColour::IDs::UTILITY_COLOUR, Colour (90, 105, 115));
+    setColour (ProcessorColour::IDs::RECORD_COLOUR, Colour (185, 60, 55));
+    setColour (ProcessorColour::IDs::AUDIO_COLOUR, Colour (55, 55, 65));
+    setColour (ProcessorColour::IDs::SYNC_COLOUR, Colour (195, 145, 50));
 
     themeColoursMap[MEDIUM] = {
-        { ThemeColours::componentBackground, Colour (130, 130, 130) },
-        { ThemeColours::componentParentBackground, Colour (58, 58, 58) },
-        { ThemeColours::windowBackground, Colour (15, 15, 15) },
-        { ThemeColours::widgetBackground, Colour (190, 190, 190) },
-        { ThemeColours::controlPanelBackground, Colour (50, 50, 50) },
-        { ThemeColours::controlPanelText, Colour (220, 220, 220) },
-        { ThemeColours::menuBackground, Colour (140, 140, 140) },
-        { ThemeColours::menuHighlightText, Colours::black },
-        { ThemeColours::menuHighlightBackground, Colour (244, 148, 32) },
-        { ThemeColours::outline, Colours::black },
-        { ThemeColours::defaultText, Colours::black },
-        { ThemeColours::defaultFill, Colour (95, 95, 95) },
-        { ThemeColours::highlightedText, Colours::black },
-        { ThemeColours::highlightedFill, Colour (244, 148, 32) },
-        { ThemeColours::dropShadowColour, Colours::black.withAlpha (0.5f) }
+        { ThemeColours::componentBackground, Colour (38, 40, 46) },
+        { ThemeColours::componentParentBackground, Colour (24, 25, 30) },
+        { ThemeColours::windowBackground, Colour (16, 16, 20) },
+        { ThemeColours::widgetBackground, Colour (50, 52, 60) },
+        { ThemeColours::controlPanelBackground, Colour (20, 21, 26) },
+        { ThemeColours::controlPanelText, Colour (200, 205, 215) },
+        { ThemeColours::menuBackground, Colour (30, 32, 38) },
+        { ThemeColours::menuHighlightText, Colour (255, 255, 255) },
+        { ThemeColours::menuHighlightBackground, Colour (80, 140, 220) },
+        { ThemeColours::outline, Colour (60, 63, 72).withAlpha (0.5f) },
+        { ThemeColours::defaultText, Colour (200, 205, 215) },
+        { ThemeColours::defaultFill, Colour (55, 58, 66) },
+        { ThemeColours::highlightedText, Colour (255, 255, 255) },
+        { ThemeColours::highlightedFill, Colour (80, 140, 220) },
+        { ThemeColours::dropShadowColour, Colours::black.withAlpha (0.45f) }
     };
 
     themeColoursMap[DARK] = {
-        { ThemeColours::componentBackground, Colour (45, 45, 45) },
-        { ThemeColours::componentParentBackground, Colour (30, 30, 30).darker (0.3f) },
-        { ThemeColours::windowBackground, Colour (15, 15, 15) },
-        { ThemeColours::widgetBackground, Colour (40, 40, 40).darker() },
-        { ThemeColours::controlPanelBackground, Colour (45, 45, 45) },
-        { ThemeColours::controlPanelText, Colour (224, 224, 224) },
-        { ThemeColours::menuBackground, Colour (30, 30, 30) },
-        { ThemeColours::menuHighlightText, Colour (20, 20, 20) },
-        { ThemeColours::menuHighlightBackground, Colour (153, 200, 214) },
-        { ThemeColours::outline, Colours::black },
-        { ThemeColours::defaultText, Colour (224, 224, 224) },
-        { ThemeColours::defaultFill, Colour (80, 80, 80) },
-        { ThemeColours::highlightedText, Colour (240, 240, 240) },
-        { ThemeColours::highlightedFill, Colour (230, 152, 63) },
-        { ThemeColours::dropShadowColour, Colours::black.withAlpha (0.75f) }
+        { ThemeColours::componentBackground, Colour (28, 30, 34) },
+        { ThemeColours::componentParentBackground, Colour (18, 19, 22) },
+        { ThemeColours::windowBackground, Colour (10, 10, 13) },
+        { ThemeColours::widgetBackground, Colour (38, 40, 46) },
+        { ThemeColours::controlPanelBackground, Colour (15, 16, 20) },
+        { ThemeColours::controlPanelText, Colour (190, 195, 205) },
+        { ThemeColours::menuBackground, Colour (22, 23, 28) },
+        { ThemeColours::menuHighlightText, Colour (255, 255, 255) },
+        { ThemeColours::menuHighlightBackground, Colour (70, 130, 210) },
+        { ThemeColours::outline, Colour (50, 52, 60).withAlpha (0.45f) },
+        { ThemeColours::defaultText, Colour (190, 195, 205) },
+        { ThemeColours::defaultFill, Colour (45, 48, 55) },
+        { ThemeColours::highlightedText, Colour (240, 242, 245) },
+        { ThemeColours::highlightedFill, Colour (70, 130, 210) },
+        { ThemeColours::dropShadowColour, Colours::black.withAlpha (0.55f) }
     };
 
     themeColoursMap[LIGHT] = {
@@ -397,29 +397,7 @@ void CustomLookAndFeel::drawScrollbarButton (Graphics& g,
                                              bool isMouseOverButton,
                                              bool isButtonDown)
 {
-    Path p;
-
-    float w1 = 0.25f;
-    float w2 = 0.75f;
-
-    if (buttonDirection == 0)
-        p.addTriangle (width * 0.5f, height * 0.2f, width * w1, height * 0.7f, width * w2, height * 0.7f);
-    else if (buttonDirection == 1)
-        p.addTriangle (width * 0.8f, height * 0.5f, width * 0.3f, height * w1, width * 0.3f, height * w2);
-    else if (buttonDirection == 2)
-        p.addTriangle (width * 0.5f, height * 0.8f, width * w1, height * 0.3f, width * w2, height * 0.3f);
-    else if (buttonDirection == 3)
-        p.addTriangle (width * 0.2f, height * 0.5f, width * 0.7f, height * w1, width * 0.7f, height * w2);
-
-    if (isButtonDown)
-        g.setColour (findColour (ScrollBar::thumbColourId).contrasting (0.2f));
-    else
-        g.setColour (findColour (ScrollBar::thumbColourId));
-
-    g.fillPath (p);
-
-    if (isMouseOverButton)
-        g.strokePath (p, PathStrokeType (1.0f));
+    // Modern scrollbars don't need arrow buttons — keep them invisible
 }
 
 void CustomLookAndFeel::drawScrollbar (Graphics& g,
@@ -437,30 +415,38 @@ void CustomLookAndFeel::drawScrollbar (Graphics& g,
 {
     Path thumbPath;
 
-    const float slotIndent = jmin (width, height) > 15 ? 1.0f : 0.0f;
-    const float thumbIndent = slotIndent + 3.0f;
+    const float thumbIndent = isScrollbarVertical ? (float) width * 0.25f : (float) height * 0.25f;
     const float thumbIndentx2 = thumbIndent * 2.0f;
 
     if (isScrollbarVertical)
     {
         if (thumbSize > 0)
+        {
+            auto thumbW = width - thumbIndentx2;
+            auto radius = thumbW * 0.5f;
             thumbPath.addRoundedRectangle (x + thumbIndent,
                                            thumbStartPosition + thumbIndent,
-                                           width - thumbIndentx2,
-                                           thumbSize - thumbIndentx2,
-                                           (width - thumbIndentx2) * 0.3f);
+                                           thumbW,
+                                           jmax (thumbW, (float) thumbSize - thumbIndentx2),
+                                           radius);
+        }
     }
     else
     {
         if (thumbSize > 0)
+        {
+            auto thumbH = height - thumbIndentx2;
+            auto radius = thumbH * 0.5f;
             thumbPath.addRoundedRectangle (thumbStartPosition + thumbIndent,
                                            y + thumbIndent,
-                                           thumbSize - thumbIndentx2,
-                                           height - thumbIndentx2,
-                                           (height - thumbIndentx2) * 0.3f);
+                                           jmax (thumbH, (float) thumbSize - thumbIndentx2),
+                                           thumbH,
+                                           radius);
+        }
     }
 
-    g.setColour (findColour (ScrollBar::thumbColourId));
+    auto alpha = (isMouseOver || isMouseDown) ? 0.85f : 0.5f;
+    g.setColour (findColour (ScrollBar::thumbColourId).withAlpha (alpha));
     g.fillPath (thumbPath);
 }
 
@@ -516,21 +502,28 @@ void CustomLookAndFeel::drawLinearSlider (Graphics& g, int x, int y, int width, 
 {
     if (slider.isBar())
     {
+        auto barBounds = Rectangle<float> ((float) x, (float) y, (float) width, (float) height);
+        auto radius = jmin ((float) width, (float) height) * 0.4f;
+
         g.setColour (slider.findColour (Slider::backgroundColourId));
-        g.fillRect (x, y, width, height);
+        g.fillRoundedRectangle (barBounds, radius);
+
+        auto fillBounds = slider.isHorizontal()
+            ? Rectangle<float> ((float) x, (float) y, sliderPos - (float) x, (float) height)
+            : Rectangle<float> ((float) x, sliderPos, (float) width, (float) y + (float) height - sliderPos);
 
         g.setColour (slider.findColour (Slider::trackColourId));
-        g.fillRect (slider.isHorizontal() ? Rectangle<float> (static_cast<float> (x), (float) y + 0.5f, sliderPos - (float) x, (float) height - 1.0f)
-                                          : Rectangle<float> ((float) x + 0.5f, sliderPos, (float) width - 1.0f, (float) y + ((float) height - sliderPos)));
+        g.fillRoundedRectangle (fillBounds, radius);
 
-        drawLinearSliderOutline (g, x, y, width, height, style, slider);
+        g.setColour (slider.findColour (Slider::backgroundColourId).brighter (0.15f));
+        g.drawRoundedRectangle (barBounds, radius, 1.0f);
     }
     else
     {
         auto isTwoVal = (style == Slider::SliderStyle::TwoValueVertical || style == Slider::SliderStyle::TwoValueHorizontal);
         auto isThreeVal = (style == Slider::SliderStyle::ThreeValueVertical || style == Slider::SliderStyle::ThreeValueHorizontal);
 
-        auto trackWidth = jmin (6.0f, slider.isHorizontal() ? (float) height * 0.25f : (float) width * 0.25f);
+        auto trackWidth = jmin (5.0f, slider.isHorizontal() ? (float) height * 0.3f : (float) width * 0.3f);
 
         Point<float> startPoint (slider.isHorizontal() ? (float) x : (float) x + (float) width * 0.5f,
                                  slider.isHorizontal() ? (float) y + (float) height * 0.5f : (float) (height + y));
@@ -577,8 +570,16 @@ void CustomLookAndFeel::drawLinearSlider (Graphics& g, int x, int y, int width, 
 
         if (! isTwoVal)
         {
-            g.setColour (slider.findColour (Slider::thumbColourId));
-            g.fillEllipse (Rectangle<float> (static_cast<float> (thumbWidth), static_cast<float> (thumbWidth)).withCentre (isThreeVal ? thumbPoint : maxPoint));
+            auto thumbCenter = isThreeVal ? thumbPoint : maxPoint;
+            auto thumbRadius = (float) thumbWidth * 0.5f;
+
+            // Thumb shadow
+            g.setColour (Colours::black.withAlpha (0.25f));
+            g.fillEllipse (Rectangle<float> ((float) thumbWidth, (float) thumbWidth).withCentre (thumbCenter.translated (0.0f, 1.0f)));
+
+            // Thumb fill
+            g.setColour (slider.findColour (Slider::thumbColourId).brighter (0.2f));
+            g.fillEllipse (Rectangle<float> ((float) thumbWidth, (float) thumbWidth).withCentre (thumbCenter));
         }
 
         if (isTwoVal || isThreeVal)
@@ -628,7 +629,7 @@ void CustomLookAndFeel::drawPointer (Graphics& g, const float x, const float y, 
 
 void CustomLookAndFeel::drawComboBox (Graphics& g, int width, int height, const bool isButtonDown, int buttonX, int buttonY, int buttonW, int buttonH, ComboBox& box)
 {
-    auto cornerSize = box.findParentComponentOfClass<ChoicePropertyComponent>() != nullptr ? 0.0f : 3.0f;
+    auto cornerSize = box.findParentComponentOfClass<ChoicePropertyComponent>() != nullptr ? 0.0f : 6.0f;
     bool flatonRight = box.findParentComponentOfClass<FilenameComponent>() != nullptr;
     Rectangle<int> boxBounds (0, 0, width, height);
     auto bounds = boxBounds.toFloat().reduced (0.5f, 0.5f);
@@ -698,13 +699,14 @@ void CustomLookAndFeel::positionComboBoxText (juce::ComboBox& box, juce::Label& 
 void CustomLookAndFeel::drawPopupMenuBackground (Graphics& g, int width, int height)
 {
     const Colour background (findColour (PopupMenu::backgroundColourId));
+    auto bounds = Rectangle<float> (0.0f, 0.0f, (float) width, (float) height);
 
-    g.fillAll (background);
-    g.setColour (background.overlaidWith (Colour (0x2badd8e6)));
+    g.setColour (background);
+    g.fillRoundedRectangle (bounds, 6.0f);
 
 #if ! JUCE_MAC
-    g.setColour (findColour (PopupMenu::textColourId).withAlpha (0.6f));
-    g.drawRect (0, 0, width, height);
+    g.setColour (findColour (ThemeColours::outline).withAlpha (0.4f));
+    g.drawRoundedRectangle (bounds.reduced (0.5f), 6.0f, 1.0f);
 #endif
 }
 
@@ -719,10 +721,10 @@ void CustomLookAndFeel::drawMenuBarBackground (Graphics& g, int width, int heigh
 
     Rectangle<int> r (0, 0, width, height);
 
-    g.setColour (colour.contrasting (0.15f));
+    g.setColour (findColour (ThemeColours::outline).withAlpha (0.25f));
     g.fillRect (r.removeFromBottom (1));
 
-    g.setGradientFill (ColourGradient::vertical (colour, 0, colour.darker (0.2f), (float) height));
+    g.setColour (colour);
     g.fillRect (r);
 
     if (menuBar.getName().equalsIgnoreCase ("MainMenu"))
@@ -750,16 +752,16 @@ void CustomLookAndFeel::drawButtonBackground (Graphics& g,
                                               bool isMouseOverButton,
                                               bool isButtonDown)
 {
-    auto cornerSize = 3.0f;
+    auto cornerSize = 6.0f;
     auto bounds = button.getLocalBounds().toFloat().reduced (0.5f, 0.5f);
 
     auto baseColour = backgroundColour.withMultipliedSaturation (button.hasKeyboardFocus (true) ? 1.3f : 1.0f)
                           .withMultipliedAlpha (button.isEnabled() ? 1.0f : 0.5f);
 
-    if (isButtonDown || isMouseOverButton)
-        baseColour = baseColour.contrasting (isButtonDown ? 0.2f : 0.05f);
-
-    g.setColour (baseColour);
+    if (isButtonDown)
+        baseColour = baseColour.darker (0.12f);
+    else if (isMouseOverButton)
+        baseColour = baseColour.brighter (0.08f);
 
     auto flatOnLeft = button.isConnectedOnLeft();
     auto flatOnRight = button.isConnectedOnRight();
@@ -771,16 +773,18 @@ void CustomLookAndFeel::drawButtonBackground (Graphics& g,
         Path path;
         path.addRoundedRectangle (bounds.getX(), bounds.getY(), bounds.getWidth(), bounds.getHeight(), cornerSize, cornerSize, ! (flatOnLeft || flatOnTop), ! (flatOnRight || flatOnTop), ! (flatOnLeft || flatOnBottom), ! (flatOnRight || flatOnBottom));
 
+        g.setGradientFill (ColourGradient::vertical (baseColour.brighter (0.04f), bounds.getY(), baseColour.darker (0.04f), bounds.getBottom()));
         g.fillPath (path);
 
-        g.setColour (button.findColour (ComboBox::outlineColourId).withMultipliedAlpha (button.isEnabled() ? 1.0f : 0.5f));
+        g.setColour (button.findColour (ComboBox::outlineColourId).withMultipliedAlpha (button.isEnabled() ? 0.45f : 0.2f));
         g.strokePath (path, PathStrokeType (1.0f));
     }
     else
     {
+        g.setGradientFill (ColourGradient::vertical (baseColour.brighter (0.04f), bounds.getY(), baseColour.darker (0.04f), bounds.getBottom()));
         g.fillRoundedRectangle (bounds, cornerSize);
 
-        g.setColour (button.findColour (ComboBox::outlineColourId).withMultipliedAlpha (button.isEnabled() ? 1.0f : 0.5f));
+        g.setColour (button.findColour (ComboBox::outlineColourId).withMultipliedAlpha (button.isEnabled() ? 0.45f : 0.2f));
         g.drawRoundedRectangle (bounds, cornerSize, 1.0f);
     }
 }
@@ -855,18 +859,24 @@ void CustomLookAndFeel::drawTickBox (Graphics& g, Component& component, float x,
     ignoreUnused (isEnabled, shouldDrawButtonAsHighlighted, shouldDrawButtonAsDown);
 
     Rectangle<float> tickBounds (x, y, w, h);
-
-    g.setColour (component.findColour (ToggleButton::tickDisabledColourId));
-    g.fillRoundedRectangle (tickBounds.reduced (0.5f, 0.5f), 3.0f);
-
-    g.setColour (findColour (ThemeColours::outline));
-    g.drawRoundedRectangle (tickBounds.reduced (0.5f, 0.5f), 3.0f, 1.0f);
+    auto cornerRadius = 4.0f;
 
     if (ticked)
     {
-        g.setColour (component.findColour (ToggleButton::tickColourId));
+        g.setColour (findColour (ThemeColours::highlightedFill));
+        g.fillRoundedRectangle (tickBounds.reduced (0.5f, 0.5f), cornerRadius);
+
+        g.setColour (Colours::white);
         auto tick = getTickShape (0.75f);
         g.fillPath (tick, tick.getTransformToScaleToFit (tickBounds.reduced (4, 5).toFloat(), false));
+    }
+    else
+    {
+        g.setColour (component.findColour (ToggleButton::tickDisabledColourId));
+        g.fillRoundedRectangle (tickBounds.reduced (0.5f, 0.5f), cornerRadius);
+
+        g.setColour (findColour (ThemeColours::outline));
+        g.drawRoundedRectangle (tickBounds.reduced (0.5f, 0.5f), cornerRadius, 1.0f);
     }
 }
 
@@ -1072,12 +1082,12 @@ void CustomLookAndFeel::drawDocumentWindowTitleBar (DocumentWindow& window, Grap
 
     auto isActive = window.isActiveWindow();
 
-    const Colour colour (findColour (ThemeColours::componentParentBackground));
+    const Colour colour (findColour (ThemeColours::controlPanelBackground));
 
-    g.setGradientFill (ColourGradient::vertical (colour, 0, colour.darker (0.2f), (float) h));
+    g.setColour (colour);
     g.fillRect (0, 0, w, h);
 
-    g.setColour (colour.contrasting (0.15f));
+    g.setColour (findColour (ThemeColours::outline).withAlpha (0.3f));
     g.fillRect (0, h - 1, w, 1);
 
     Font font (withDefaultMetrics (FontOptions ("Inter", "Semi Bold", (float) h * 0.65f)));
@@ -1147,10 +1157,10 @@ AlertWindow* CustomLookAndFeel::createAlertWindow (const String& title,
 
 void CustomLookAndFeel::drawAlertBox (Graphics& g, AlertWindow& alert, const Rectangle<int>& textArea, TextLayout& textLayout)
 {
-    auto cornerSize = 0.0f;
+    auto cornerSize = 8.0f;
 
-    g.setColour (alert.findColour (AlertWindow::outlineColourId));
-    g.drawRoundedRectangle (alert.getLocalBounds().toFloat(), cornerSize, 2.0f);
+    g.setColour (alert.findColour (AlertWindow::outlineColourId).withAlpha (0.5f));
+    g.drawRoundedRectangle (alert.getLocalBounds().toFloat(), cornerSize, 1.0f);
 
     auto bounds = alert.getLocalBounds().reduced (1);
     g.reduceClipRegion (bounds);
@@ -1306,58 +1316,8 @@ void CustomLookAndFeel::createTabButtonShape (TabBarButton& button, Path& p, boo
     auto w = (float) activeArea.getWidth();
     auto h = (float) activeArea.getHeight();
 
-    auto length = w;
-    auto depth = h;
-
-    if (button.getTabbedButtonBar().isVertical())
-        std::swap (length, depth);
-
-    const float indent = (float) getTabButtonOverlap ((int) depth);
-    const float overhang = 4.0f;
-
-    switch (button.getTabbedButtonBar().getOrientation())
-    {
-        case TabbedButtonBar::TabsAtLeft:
-            p.startNewSubPath (w, 0.0f);
-            p.lineTo (0.0f, indent);
-            p.lineTo (0.0f, h - indent);
-            p.lineTo (w, h);
-            p.lineTo (w + overhang, h + overhang);
-            p.lineTo (w + overhang, -overhang);
-            break;
-
-        case TabbedButtonBar::TabsAtRight:
-            p.startNewSubPath (0.0f, 0.0f);
-            p.lineTo (w, indent);
-            p.lineTo (w, h - indent);
-            p.lineTo (0.0f, h);
-            p.lineTo (-overhang, h + overhang);
-            p.lineTo (-overhang, -overhang);
-            break;
-
-        case TabbedButtonBar::TabsAtBottom:
-            p.startNewSubPath (0.0f, 0.0f);
-            p.lineTo (indent, h);
-            p.lineTo (w - indent, h);
-            p.lineTo (w, 0.0f);
-            p.lineTo (w + overhang, -overhang);
-            p.lineTo (-overhang, -overhang);
-            break;
-
-        case TabbedButtonBar::TabsAtTop:
-        default:
-            p.startNewSubPath (0.0f, h);
-            p.lineTo (indent, 0.0f);
-            p.lineTo (w - indent, 0.0f);
-            p.lineTo (w, h);
-            p.lineTo (w + overhang, h + overhang);
-            p.lineTo (-overhang, h + overhang);
-            break;
-    }
-
-    p.closeSubPath();
-
-    p = p.createPathWithRoundedCorners (4.0f);
+    // Modern flat rectangular tabs with rounded top corners
+    p.addRoundedRectangle (0.0f, 0.0f, w, h, 4.0f, 4.0f, true, true, false, false);
 }
 
 void CustomLookAndFeel::fillTabButtonShape (TabBarButton& button, Graphics& g, const Path& path, bool isMouseOver, bool isMouseDown)
@@ -1365,17 +1325,27 @@ void CustomLookAndFeel::fillTabButtonShape (TabBarButton& button, Graphics& g, c
     auto tabBackground = button.getTabBackgroundColour();
     const bool isFrontTab = button.isFrontTab();
 
-    g.setColour (isFrontTab ? tabBackground
-                            : tabBackground.withMultipliedAlpha (0.75f));
+    if (isFrontTab)
+    {
+        g.setColour (tabBackground);
+        g.fillPath (path);
+    }
+    else if (isMouseOver)
+    {
+        g.setColour (tabBackground.withMultipliedAlpha (0.4f));
+        g.fillPath (path);
+    }
 
-    g.fillPath (path);
-
-    g.setColour (button.findColour (isFrontTab ? TabbedButtonBar::frontOutlineColourId
-                                               : TabbedButtonBar::tabOutlineColourId,
-                                    false)
-                     .withMultipliedAlpha (button.isEnabled() ? 1.0f : 0.5f));
-
-    g.strokePath (path, PathStrokeType (isFrontTab ? 1.0f : 0.5f));
+    // Bottom indicator bar for active tab
+    if (isFrontTab)
+    {
+        auto activeArea = button.getActiveArea();
+        g.setColour (findColour (ThemeColours::highlightedFill));
+        g.fillRoundedRectangle ((float) activeArea.getX() + 4.0f,
+                                (float) activeArea.getBottom() - 3.0f,
+                                (float) activeArea.getWidth() - 8.0f,
+                                2.5f, 1.25f);
+    }
 }
 
 Font CustomLookAndFeel::getTabButtonFont (TabBarButton&, float height)
@@ -1425,7 +1395,9 @@ void CustomLookAndFeel::drawTabButtonText (TabBarButton& button, Graphics& g, bo
     else
         col = button.getTabBackgroundColour().contrasting();
 
-    auto alpha = button.isEnabled() ? ((isMouseOver || isMouseDown) ? 1.0f : 0.8f) : 0.3f;
+    auto alpha = button.isEnabled()
+                     ? (button.isFrontTab() ? 1.0f : ((isMouseOver || isMouseDown) ? 0.85f : 0.55f))
+                     : 0.3f;
 
     g.setColour (col.withMultipliedAlpha (alpha));
     g.setFont (font);
@@ -1449,8 +1421,6 @@ void CustomLookAndFeel::drawTabButton (TabBarButton& button, Graphics& g, bool i
     tabShape.applyTransform (AffineTransform::translation ((float) activeArea.getX(),
                                                            (float) activeArea.getY()));
 
-    DropShadow (findColour (ThemeColours::dropShadowColour), 8, Point<int> (0, 0)).drawForPath (g, tabShape);
-
     fillTabButtonShape (button, g, tabShape, isMouseOver, isMouseDown);
     drawTabButtonText (button, g, isMouseOver, isMouseDown);
 }
@@ -1459,45 +1429,26 @@ void CustomLookAndFeel::drawTabbedButtonBarBackground (TabbedButtonBar&, Graphic
 
 void CustomLookAndFeel::drawTabAreaBehindFrontButton (TabbedButtonBar& bar, Graphics& g, const int w, const int h)
 {
-    const float shadowSize = 0.15f;
-
-    Rectangle<int> shadowRect, line;
-    ColourGradient gradient (Colours::black.withAlpha (bar.isEnabled() ? 0.15f : 0.08f), 0, 0, Colours::transparentBlack, 0, 0, false);
+    // Clean separator line at bottom of tab bar
+    g.setColour (findColour (ThemeColours::outline).withAlpha (0.2f));
 
     switch (bar.getOrientation())
     {
         case TabbedButtonBar::TabsAtLeft:
-            gradient.point1.x = (float) w;
-            gradient.point2.x = (float) w * (1.0f - shadowSize);
-            shadowRect.setBounds ((int) gradient.point2.x, 0, w - (int) gradient.point2.x, h);
-            line.setBounds (w - 1, 0, 1, h);
+            g.fillRect (w - 1, 0, 1, h);
             break;
-
         case TabbedButtonBar::TabsAtRight:
-            gradient.point2.x = (float) w * shadowSize;
-            shadowRect.setBounds (0, 0, (int) gradient.point2.x, h);
-            line.setBounds (0, 0, 1, h);
+            g.fillRect (0, 0, 1, h);
             break;
-
         case TabbedButtonBar::TabsAtTop:
-            gradient.point1.y = (float) h;
-            gradient.point2.y = (float) h * (1.0f - shadowSize);
-            shadowRect.setBounds (0, (int) gradient.point2.y, w, h - (int) gradient.point2.y);
-            line.setBounds (0, h - 1, w, 1);
+            g.fillRect (0, h - 1, w, 1);
             break;
-
         case TabbedButtonBar::TabsAtBottom:
-            gradient.point2.y = (float) h * shadowSize;
-            shadowRect.setBounds (0, 0, w, (int) gradient.point2.y);
-            line.setBounds (0, 0, w, 1);
+            g.fillRect (0, 0, w, 1);
             break;
-
         default:
             break;
     }
-
-    g.setGradientFill (gradient);
-    g.fillRect (shadowRect.expanded (2, 2));
 }
 
 void CustomLookAndFeel::drawCallOutBoxBackground (CallOutBox& box, Graphics& g, const Path& path, Image& cachedImage)
