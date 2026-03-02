@@ -102,8 +102,11 @@ public:
     to draw scroll bars.*/
     int getTotalHeight();
 
-    /** Update Search button colour*/
-    void lookAndFeelChanged() override;
+    /** Forward key presses to the search field */
+    bool keyPressed (const KeyPress& key) override;
+
+    /** Returns true when the search field has active text */
+    bool isSearchMode() const { return searchText.isNotEmpty(); }
 
 private:
     /** The main method for drawing the SNAPProcessorList.*/
@@ -159,9 +162,11 @@ private:
     Path openArrowPath;
     Path closedArrowPath;
 
-    std::unique_ptr<ShapeButton> searchButton;
     std::unique_ptr<TextEditor> searchField;
     String searchText;
+
+    /** Returns badge text and colour for a processor item based on Plugin::Type */
+    std::pair<String, Colour> getSourceBadge (ProcessorListItem* item) const;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SNAPProcessorList);
 };

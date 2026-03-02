@@ -79,20 +79,8 @@ SNAPProcessorList::SNAPProcessorList (Viewport* v) : viewport (v),
     arrowButton->setInterceptsMouseClicks (false, false);
     addAndMakeVisible (arrowButton.get());
 
-    searchButton = std::make_unique<ShapeButton> ("Search", Colours::transparentBlack, Colours::transparentBlack, Colours::transparentBlack);
-    searchButton->setOutline (findColour (ThemeColours::controlPanelText), 1.0f);
-    String searchIconPath = "M15 15m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0 M18.5 18.5l2.5 2.5 M4 6h16 M4 12h4 M4 18h4";
-    searchButton->setShape (Drawable::parseSVGPath (searchIconPath), true, true, false);
-    searchButton->setClickingTogglesState (false);
-    searchButton->onClick = [this]
-    {
-        searchField->setVisible (true);
-        searchField->grabKeyboardFocus();
-    };
-    addAndMakeVisible (searchButton.get());
-
     searchField = std::make_unique<TextEditor>();
-    searchField->setTextToShowWhenEmpty ("Search...", Colours::grey);
+    searchField->setTextToShowWhenEmpty ("Search processors...", Colours::grey);
     searchField->setFont (FontOptions ("Fira Code", "Regular", 16.0f));
     searchField->setJustification (Justification::centredLeft);
     searchField->setPopupMenuEnabled (false);
@@ -104,22 +92,19 @@ SNAPProcessorList::SNAPProcessorList (Viewport* v) : viewport (v),
     searchField->onEscapeKey = [this]
     {
         searchField->setText ("");
-        searchField->setVisible (false);
     };
     searchField->onFocusLost = [this]
     {
         searchField->setText ("");
-        searchField->setVisible (false);
     };
-    addChildComponent (searchField.get());
+    addAndMakeVisible (searchField.get());
 }
 
 void SNAPProcessorList::resized()
 {
     setBounds (0, 0, 195, getTotalHeight());
     searchField->setBounds (0, 0, getWidth(), itemHeight);
-    searchButton->setBounds (getWidth() - 45, (itemHeight / 2) - 8, 16, 16);
-    arrowButton->setBounds (getWidth() - 25, (itemHeight / 2) - 10, 20, 20);
+    arrowButton->setBounds (getWidth() - 25, itemHeight + (itemHeight / 2) - 10, 20, 20);
 }
 
 void SNAPProcessorList::timerCallback()
@@ -129,9 +114,20 @@ void SNAPProcessorList::timerCallback()
     repaint();
 }
 
+bool SNAPProcessorList::keyPressed (const KeyPress& key)
+{
+    if (key.getTextCharacter() > 0 && ! key.getModifiers().isCommandDown())
+    {
+        searchField->grabKeyboardFocus();
+        searchField->setText (String::charToString (key.getTextCharacter()));
+        searchField->moveCaretToEnd();
+        return true;
+    }
+    return false;
+}
+
 void SNAPProcessorList::lookAndFeelChanged()
 {
-    searchButton->setOutline (findColour (ThemeColours::controlPanelText), 1.0f);
 }
 
 bool SNAPProcessorList::isOpen()
@@ -147,37 +143,63 @@ void SNAPProcessorList::paint (Graphics& g)
 
 void SNAPProcessorList::drawItems (Graphics& g)
 {
-    totalHeight = yBuffer + itemHeight;
+    // Reserve space for the always-visible search field at the top
+    totalHeight = itemHeight;
+    g.setOrigin (0, itemHeight);
 
-    category = baseItem->getName();
-
-    g.setOrigin (0, yBuffer);
-    drawItem (g, baseItem.get());
-
-    if (baseItem->isOpen())
+    if (searchText.isNotEmpty())
     {
+        // Search mode: flat list of matching processors only
         for (int n = 0; n < baseItem->getNumSubItems(); n++)
         {
-            setViewport (g, baseItem->hasSubItems());
-            category = baseItem->getSubItem (n)->getName();
-            drawItem (g, baseItem->getSubItem (n));
-
-            if (baseItem->getSubItem (n)->isOpen())
+            ProcessorListItem* cat = baseItem->getSubItem (n);
+            for (int m = 0; m < cat->getNumSubItems(); m++)
             {
-                for (int m = 0; m < baseItem->getSubItem (n)->getNumSubItems(); m++)
+                ProcessorListItem* item = cat->getSubItem (m);
+                if (item->getName().containsIgnoreCase (searchText))
                 {
-                    ProcessorListItem* subSubItem = baseItem->getSubItem (n)->getSubItem (m);
-                    if (subSubItem->getName().containsIgnoreCase (searchText) || searchText.isEmpty())
-                    {
-                        setViewport (g, subSubItem->hasSubItems());
-                        drawItem (g, subSubItem);
-                    }
+                    category = cat->getName();
+                    setViewport (g, false);
+                    drawItem (g, item);
                 }
             }
         }
 
         totalHeight += yBuffer;
         setSize (getWidth(), totalHeight);
+    }
+    else
+    {
+        // Normal tree mode
+        totalHeight += yBuffer;
+
+        category = baseItem->getName();
+
+        g.setOrigin (0, yBuffer);
+        drawItem (g, baseItem.get());
+
+        if (baseItem->isOpen())
+        {
+            for (int n = 0; n < baseItem->getNumSubItems(); n++)
+            {
+                setViewport (g, baseItem->hasSubItems());
+                category = baseItem->getSubItem (n)->getName();
+                drawItem (g, baseItem->getSubItem (n));
+
+                if (baseItem->getSubItem (n)->isOpen())
+                {
+                    for (int m = 0; m < baseItem->getSubItem (n)->getNumSubItems(); m++)
+                    {
+                        ProcessorListItem* subSubItem = baseItem->getSubItem (n)->getSubItem (m);
+                        setViewport (g, subSubItem->hasSubItems());
+                        drawItem (g, subSubItem);
+                    }
+                }
+            }
+
+            totalHeight += yBuffer;
+            setSize (getWidth(), totalHeight);
+        }
     }
 }
 
@@ -267,6 +289,20 @@ void SNAPProcessorList::drawItemName (Graphics& g, ProcessorListItem* item)
             g.setColour (findColour (ThemeColours::defaultText));
         }
         g.drawText (name, offsetX, 5, maxWidth, itemHeight, Justification::left, false);
+
+        // Source badge
+        auto [badgeText, badgeColour] = getSourceBadge (item);
+        Font badgeFont (FontOptions ("Inter", "Semi Bold", 10.0f));
+        float badgeTextWidth = GlyphArrangement::getStringWidth (badgeFont, badgeText) + 8.0f;
+        float badgeHeight = 14.0f;
+        float badgeX = (float) getWidth() - badgeTextWidth - 10.0f;
+        float badgeY = 5.0f + ((float) itemHeight - badgeHeight) * 0.5f;
+
+        g.setColour (badgeColour.withAlpha (0.25f));
+        g.fillRoundedRectangle (badgeX, badgeY, badgeTextWidth, badgeHeight, 3.0f);
+        g.setColour (badgeColour);
+        g.setFont (badgeFont);
+        g.drawText (badgeText, (int) badgeX, (int) badgeY, (int) badgeTextWidth, (int) badgeHeight, Justification::centred, false);
     }
     else
     {
@@ -318,14 +354,40 @@ void SNAPProcessorList::clearSelectionState()
 
 ProcessorListItem* SNAPProcessorList::getListItemForYPos (int y)
 {
-    int bottom = (yBuffer + itemHeight);
+    // Account for the always-visible search field at top
+    int bottom = itemHeight;
 
-    if (y < bottom)
+    if (searchText.isNotEmpty())
     {
-        return baseItem.get();
+        // Search mode: flat list of matching processors
+        for (int n = 0; n < baseItem->getNumSubItems(); n++)
+        {
+            ProcessorListItem* cat = baseItem->getSubItem (n);
+            for (int m = 0; m < cat->getNumSubItems(); m++)
+            {
+                ProcessorListItem* item = cat->getSubItem (m);
+                if (item->getName().containsIgnoreCase (searchText))
+                {
+                    bottom += (yBuffer + subItemHeight);
+
+                    if (y < bottom)
+                    {
+                        return item;
+                    }
+                }
+            }
+        }
     }
     else
     {
+        // Normal tree mode
+        bottom += (yBuffer + itemHeight);
+
+        if (y < bottom)
+        {
+            return baseItem.get();
+        }
+
         if (baseItem->isOpen())
         {
             for (int n = 0; n < baseItem->getNumSubItems(); n++)
@@ -342,14 +404,11 @@ ProcessorListItem* SNAPProcessorList::getListItemForYPos (int y)
                     for (int m = 0; m < baseItem->getSubItem (n)->getNumSubItems(); m++)
                     {
                         ProcessorListItem* subSubItem = baseItem->getSubItem (n)->getSubItem (m);
-                        if (subSubItem->getName().containsIgnoreCase (searchText) || searchText.isEmpty())
-                        {
-                            bottom += (yBuffer + subItemHeight);
+                        bottom += (yBuffer + subItemHeight);
 
-                            if (y < bottom)
-                            {
-                                return baseItem->getSubItem (n)->getSubItem (m);
-                            }
+                        if (y < bottom)
+                        {
+                            return subSubItem;
                         }
                     }
                 }
@@ -357,7 +416,7 @@ ProcessorListItem* SNAPProcessorList::getListItemForYPos (int y)
         }
     }
 
-    return 0;
+    return nullptr;
 }
 
 void SNAPProcessorList::setViewport (Graphics& g, bool hasSubItems)
@@ -385,11 +444,9 @@ int SNAPProcessorList::getTotalHeight()
 
 void SNAPProcessorList::toggleState()
 {
-    ProcessorListItem* fli = getListItemForYPos (0);
-    fli->reverseOpenState();
-    LOGC ("Processor List - Toggling state of ", fli->getName());
-    arrowButton->setToggleState (fli->isOpen(), dontSendNotification);
-    searchButton->setVisible (fli->isOpen());
+    baseItem->reverseOpenState();
+    LOGC ("Processor List - Toggling state of ", baseItem->getName());
+    arrowButton->setToggleState (baseItem->isOpen(), dontSendNotification);
     AccessClass::getSNAPUIComponent()->childComponentChanged();
     repaint();
 }
@@ -477,7 +534,6 @@ void SNAPProcessorList::mouseDown (const MouseEvent& e)
         if (listItem == baseItem.get())
         {
             arrowButton->setToggleState (listItem->isOpen(), dontSendNotification);
-            searchButton->setVisible (listItem->isOpen());
             AccessClass::getSNAPUIComponent()->childComponentChanged();
         }
     }
@@ -615,6 +671,14 @@ void SNAPProcessorList::saveStateToXml (XmlElement* xml)
         colourState->setAttribute ("G", (int) c.getGreen());
         colourState->setAttribute ("B", (int) c.getBlue());
     }
+
+    // Save category collapse state
+    for (int n = 0; n < baseItem->getNumSubItems(); n++)
+    {
+        XmlElement* categoryState = processorListState->createNewChildElement ("CATEGORY");
+        categoryState->setAttribute ("name", baseItem->getSubItem (n)->getName());
+        categoryState->setAttribute ("open", baseItem->getSubItem (n)->isOpen() ? 1 : 0);
+    }
 }
 
 void SNAPProcessorList::loadStateFromXml (XmlElement* xml)
@@ -623,19 +687,36 @@ void SNAPProcessorList::loadStateFromXml (XmlElement* xml)
     {
         if (xmlNode->hasTagName ("PROCESSORLIST"))
         {
-            for (auto* colourNode : xmlNode->getChildIterator())
+            for (auto* childNode : xmlNode->getChildIterator())
             {
-                int ID = colourNode->getIntAttribute ("ID");
+                if (childNode->hasTagName ("COLOUR"))
+                {
+                    int ID = childNode->getIntAttribute ("ID");
 
-                // Ignore the processor colour
-                if (ID == ProcessorColour::IDs::PROCESSOR_COLOUR)
-                    continue;
+                    // Ignore the processor colour
+                    if (ID == ProcessorColour::IDs::PROCESSOR_COLOUR)
+                        continue;
 
-                getLookAndFeel().setColour (ID,
-                                            Colour (
-                                                colourNode->getIntAttribute ("R"),
-                                                colourNode->getIntAttribute ("G"),
-                                                colourNode->getIntAttribute ("B")));
+                    getLookAndFeel().setColour (ID,
+                                                Colour (
+                                                    childNode->getIntAttribute ("R"),
+                                                    childNode->getIntAttribute ("G"),
+                                                    childNode->getIntAttribute ("B")));
+                }
+                else if (childNode->hasTagName ("CATEGORY"))
+                {
+                    String name = childNode->getStringAttribute ("name");
+                    bool open = childNode->getIntAttribute ("open", 1) != 0;
+
+                    for (int n = 0; n < baseItem->getNumSubItems(); n++)
+                    {
+                        if (baseItem->getSubItem (n)->getName() == name)
+                        {
+                            baseItem->getSubItem (n)->setOpen (open);
+                            break;
+                        }
+                    }
+                }
             }
         }
     }
@@ -796,6 +877,14 @@ Plugin::Description SNAPProcessorList::getItemDescriptionfromList (const String&
     }
 
     return description;
+}
+
+std::pair<String, Colour> SNAPProcessorList::getSourceBadge (ProcessorListItem* item) const
+{
+    if (item->pluginType == Plugin::BUILT_IN)
+        return { "SN", Colour (70, 130, 200) };
+    else
+        return { "OE", Colour (80, 180, 100) };
 }
 
 // ===================================================================
