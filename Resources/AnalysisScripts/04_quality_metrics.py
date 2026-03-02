@@ -12,8 +12,8 @@ Calculates:
 Edit paths below.
 """
 
-import spikeinterface.extractors as se
 import spikeinterface.core as sc
+import spikeinterface.sorters as ss
 from pathlib import Path
 
 # ============================================================
@@ -26,8 +26,8 @@ ANALYZER_PATH = r"C:\data\experiment1\analyzer"
 
 def main():
     print("Loading recording and sorting...")
-    recording = se.read_binary_folder(RECORDING_PATH)
-    sorting = se.read_sorter_folder(SORTING_PATH)
+    recording = sc.load(RECORDING_PATH)
+    sorting = ss.read_sorter_folder(SORTING_PATH)
 
     print(
         f"  {recording.get_num_channels()} channels, "

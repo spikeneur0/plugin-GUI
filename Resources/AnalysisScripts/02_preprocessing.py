@@ -66,23 +66,26 @@ def main():
     print("Plotting comparison...")
     fig, axes = plt.subplots(2, 1, figsize=(14, 8), sharex=True)
 
-    n_channels = min(8, recording.get_num_channels())
-    channel_ids = recording.get_channel_ids()[:n_channels]
+    n_channels_raw = min(8, recording.get_num_channels())
+    n_channels_clean = min(8, recording_clean.get_num_channels())
     n_samples = int(0.5 * recording.get_sampling_frequency())  # 0.5 seconds
 
     raw = recording.get_traces(
-        end_frame=n_samples, channel_ids=channel_ids, return_scaled=True
+        end_frame=n_samples,
+        channel_ids=recording.get_channel_ids()[:n_channels_raw],
+        return_scaled=True,
     )
     clean = recording_clean.get_traces(
         end_frame=n_samples,
-        channel_ids=recording_clean.get_channel_ids()[:n_channels],
+        channel_ids=recording_clean.get_channel_ids()[:n_channels_clean],
         return_scaled=True,
     )
 
     time = np.arange(n_samples) / recording.get_sampling_frequency()
 
-    for i in range(n_channels):
+    for i in range(n_channels_raw):
         axes[0].plot(time, raw[:, i] - i * 200, "k", linewidth=0.3)
+    for i in range(n_channels_clean):
         axes[1].plot(time, clean[:, i] - i * 200, "k", linewidth=0.3)
 
     axes[0].set_title("Raw")

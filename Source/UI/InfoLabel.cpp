@@ -273,8 +273,10 @@ void InfoLabel::setAboutText()
     aboutText.append ("Publications\n\n", FontOptions { "Inter", "Regular", 20.0f });
     aboutText.append ("Any publications based on data collected with this software should "
                       "cite the following article:\n\n"
-                      "   Open Ephys: an open-source, plugin-based platform for "
-                      "multichannel electrophysiology.\n\n"
+                      "   Siegle, J.H., Lopez, A.C., Patel, Y.A., Abramov, K., Ohayon, S., & Voigts, J.\n"
+                      "   Open Ephys: an open-source, plugin-based platform for multichannel\n"
+                      "   electrophysiology. Journal of Neural Engineering, 14(4), 045003, 2017.\n"
+                      "   DOI: 10.1088/1741-2552/aa5eea\n\n"
                       "Citations remain essential for measuring the impact of scientific "
                       "software, so be sure to include references to any open-source tools "
                       "that you use in your research!\n\n\n",
@@ -1144,31 +1146,11 @@ void InfoLabel::createHyperlinks()
         hyperlink.url = "https://spikeneuro.com";
         hyperlink.positionX = Range<int> (45, 345);
         hyperlink.positionY = Range<int> (40, 200);
+        hyperlinks.add (hyperlink);
 
-        // hyperlinks.add(hyperlink);
-
-        // hyperlink.url = "https://open-ephys.github.io/gui-docs/User-Manual/index.html";
-        // hyperlink.positionX = Range<int>(375, 610);
-        // hyperlink.positionY = Range<int>(410, 480);
-
-        // hyperlinks.add(hyperlink);
-
-        // hyperlink.url = "https://github.com/open-ephys/plugin-GUI";
-        // hyperlink.positionX = Range<int>(130, 385);
-        // hyperlink.positionY = Range<int>(500, 580);
-
-        // hyperlinks.add(hyperlink);
-
-        // hyperlink.url = "https://iopscience.iop.org/article/10.1088/1741-2552/aa5eea/meta";
-        // hyperlink.positionX = Range<int>(15, 635);
-        // hyperlink.positionY = Range<int>(650, 675);
-
-        // hyperlinks.add(hyperlink);
-
-        // hyperlink.url = "https://github.com/open-ephys/plugin-GUI/issues";
-        // hyperlink.positionX = Range<int>(450, 750);
-        // hyperlink.positionY = Range<int>(775, 840);
-
+        hyperlink.url = "https://doi.org/10.1088/1741-2552/aa5eea";
+        hyperlink.positionX = Range<int> (15, 635);
+        hyperlink.positionY = Range<int> (690, 780);
         hyperlinks.add (hyperlink);
     }
 }

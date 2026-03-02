@@ -63,8 +63,15 @@ class SNAPClient:
             )
         except requests.Timeout:
             raise TimeoutError("SNAP did not respond within 10 seconds")
+        except requests.HTTPError as e:
+            raise ConnectionError(f"HTTP error from SNAP: {e}")
 
-        result = response.json()
+        try:
+            result = response.json()
+        except ValueError:
+            raise ConnectionError(
+                f"Invalid JSON response from SNAP (status {response.status_code})"
+            )
 
         if "error" in result:
             err = result["error"]

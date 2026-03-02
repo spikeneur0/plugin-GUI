@@ -178,3 +178,6 @@ build/
 
 #14. IDE stuff
 .idea
+
+#15. Build output logs
+build_output*.txt

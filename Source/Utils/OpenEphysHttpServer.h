@@ -31,6 +31,7 @@
 
 #include "httplib.h"
 #include "json.hpp"
+#include <memory>
 #include <sstream>
 
 #include "../AccessClass.h"
@@ -1394,13 +1395,13 @@ private:
                 return true;
             }
 
-            std::promise<bool> done;
-            auto future = done.get_future();
+            auto done = std::make_shared<std::promise<bool>>();
+            auto future = done->get_future();
 
-            MessageManager::callAsync ([&done]
+            MessageManager::callAsync ([done]
             {
                 CoreServices::setAcquisitionStatus (true);
-                done.set_value (CoreServices::getAcquisitionStatus());
+                done->set_value (CoreServices::getAcquisitionStatus());
             });
 
             if (future.wait_for (std::chrono::seconds (5)) == std::future_status::timeout)
@@ -1422,14 +1423,14 @@ private:
                 return true;
             }
 
-            std::promise<void> done;
-            auto future = done.get_future();
+            auto done = std::make_shared<std::promise<void>>();
+            auto future = done->get_future();
 
-            MessageManager::callAsync ([&done]
+            MessageManager::callAsync ([done]
             {
                 CoreServices::setRecordingStatus (false);
                 CoreServices::setAcquisitionStatus (false);
-                done.set_value();
+                done->set_value();
             });
 
             if (future.wait_for (std::chrono::seconds (5)) == std::future_status::timeout)
@@ -1445,44 +1446,76 @@ private:
         // ----- status.get -----
         if (method == "status.get")
         {
-            result["acquiring"] = CoreServices::getAcquisitionStatus();
-            result["recording"] = CoreServices::getRecordingStatus();
-            result["processorCount"] = (int) graph_->getListOfProcessors().size();
+            auto done = std::make_shared<std::promise<json>>();
+            auto future = done->get_future();
 
-            if (CoreServices::getRecordingStatus())
-                result["mode"] = "RECORD";
-            else if (CoreServices::getAcquisitionStatus())
-                result["mode"] = "ACQUIRE";
-            else
-                result["mode"] = "IDLE";
+            MessageManager::callAsync ([this, done]
+            {
+                json r;
+                r["acquiring"] = CoreServices::getAcquisitionStatus();
+                r["recording"] = CoreServices::getRecordingStatus();
+                r["processorCount"] = (int) graph_->getListOfProcessors().size();
 
+                if (CoreServices::getRecordingStatus())
+                    r["mode"] = "RECORD";
+                else if (CoreServices::getAcquisitionStatus())
+                    r["mode"] = "ACQUIRE";
+                else
+                    r["mode"] = "IDLE";
+
+                done->set_value (r);
+            });
+
+            if (future.wait_for (std::chrono::seconds (5)) == std::future_status::timeout)
+            {
+                error = { { "code", -32000 }, { "message", "Timeout reading status" } };
+                return false;
+            }
+
+            result = future.get();
             return true;
         }
 
         // ----- processors.list -----
         if (method == "processors.list")
         {
-            auto processors = graph_->getListOfProcessors();
-            std::vector<json> list;
+            auto done = std::make_shared<std::promise<json>>();
+            auto future = done->get_future();
 
-            for (auto* p : processors)
+            MessageManager::callAsync ([this, done]
             {
-                json pj;
-                pj["id"] = p->getNodeId();
-                pj["name"] = p->getName().toStdString();
-                pj["state"] = processorStateToString (p->getProcessorState());
-                pj["type"] = p->getProcessorTypeString().toStdString();
+                auto processors = graph_->getListOfProcessors();
+                std::vector<json> list;
 
-                if (p->getSourceNode() != nullptr)
-                    pj["predecessor"] = p->getSourceNode()->getNodeId();
-                else
-                    pj["predecessor"] = nullptr;
+                for (auto* p : processors)
+                {
+                    json pj;
+                    pj["id"] = p->getNodeId();
+                    pj["name"] = p->getName().toStdString();
+                    pj["state"] = processorStateToString (p->getProcessorState());
+                    pj["type"] = p->getProcessorTypeString().toStdString();
 
-                pj["streamCount"] = (int) p->getDataStreams().size();
-                list.push_back (pj);
+                    if (p->getSourceNode() != nullptr)
+                        pj["predecessor"] = p->getSourceNode()->getNodeId();
+                    else
+                        pj["predecessor"] = nullptr;
+
+                    pj["streamCount"] = (int) p->getDataStreams().size();
+                    list.push_back (pj);
+                }
+
+                json r;
+                r["processors"] = list;
+                done->set_value (r);
+            });
+
+            if (future.wait_for (std::chrono::seconds (5)) == std::future_status::timeout)
+            {
+                error = { { "code", -32000 }, { "message", "Timeout listing processors" } };
+                return false;
             }
 
-            result["processors"] = list;
+            result = future.get();
             return true;
         }
 
@@ -1495,19 +1528,47 @@ private:
                 return false;
             }
 
-            int procId = params["id"];
-            auto* processor = graph_->getProcessorWithNodeId (procId);
-
-            if (processor == nullptr)
+            if (! params["id"].is_number_integer())
             {
-                error = { { "code", -32602 }, { "message", "Processor not found: " + std::to_string (procId) } };
+                error = { { "code", -32602 }, { "message", "Param 'id' must be an integer" } };
                 return false;
             }
 
-            json pj;
-            processor_to_json (processor, &pj);
-            pj["state"] = processorStateToString (processor->getProcessorState());
-            result = pj;
+            int procId = params["id"];
+
+            auto done = std::make_shared<std::promise<json>>();
+            auto future = done->get_future();
+
+            MessageManager::callAsync ([this, procId, done]
+            {
+                auto* processor = graph_->getProcessorWithNodeId (procId);
+
+                if (processor == nullptr)
+                {
+                    done->set_value (json { { "__error", true }, { "code", -32602 }, { "message", "Processor not found: " + std::to_string (procId) } });
+                    return;
+                }
+
+                json pj;
+                processor_to_json (processor, &pj);
+                pj["state"] = processorStateToString (processor->getProcessorState());
+                done->set_value (pj);
+            });
+
+            if (future.wait_for (std::chrono::seconds (5)) == std::future_status::timeout)
+            {
+                error = { { "code", -32000 }, { "message", "Timeout getting processor" } };
+                return false;
+            }
+
+            json res = future.get();
+            if (res.contains ("__error"))
+            {
+                error = { { "code", res["code"] }, { "message", res["message"] } };
+                return false;
+            }
+
+            result = res;
             return true;
         }
 
@@ -1520,6 +1581,12 @@ private:
                 return false;
             }
 
+            if (! params["path"].is_string())
+            {
+                error = { { "code", -32602 }, { "message", "Param 'path' must be a string" } };
+                return false;
+            }
+
             if (CoreServices::getAcquisitionStatus())
             {
                 error = { { "code", -32000 }, { "message", "Cannot load signal chain while acquisition is active" } };
@@ -1528,13 +1595,13 @@ private:
 
             std::string path = params["path"];
 
-            std::promise<void> done;
-            auto future = done.get_future();
+            auto done = std::make_shared<std::promise<void>>();
+            auto future = done->get_future();
 
-            MessageManager::callAsync ([path, &done]
+            MessageManager::callAsync ([path, done]
             {
                 CoreServices::loadSignalChain (String (path));
-                done.set_value();
+                done->set_value();
             });
 
             if (future.wait_for (std::chrono::seconds (5)) == std::future_status::timeout)
@@ -1557,6 +1624,12 @@ private:
                 return false;
             }
 
+            if (! params["path"].is_string())
+            {
+                error = { { "code", -32602 }, { "message", "Param 'path' must be a string" } };
+                return false;
+            }
+
             std::string path = params["path"];
             File writePath (path);
 
@@ -1566,14 +1639,14 @@ private:
                 return false;
             }
 
-            std::promise<bool> done;
-            auto future = done.get_future();
+            auto done = std::make_shared<std::promise<bool>>();
+            auto future = done->get_future();
 
-            MessageManager::callAsync ([this, writePath, &done]
+            MessageManager::callAsync ([this, writePath, done]
             {
                 auto xmlElement = std::make_unique<XmlElement> ("SETTINGS");
                 graph_->saveToXml (xmlElement.get());
-                done.set_value (xmlElement->writeTo (writePath));
+                done->set_value (xmlElement->writeTo (writePath));
             });
 
             if (future.wait_for (std::chrono::seconds (5)) == std::future_status::timeout)
@@ -1596,13 +1669,13 @@ private:
                 return false;
             }
 
-            std::promise<void> done;
-            auto future = done.get_future();
+            auto done = std::make_shared<std::promise<void>>();
+            auto future = done->get_future();
 
-            MessageManager::callAsync ([this, &done]
+            MessageManager::callAsync ([this, done]
             {
                 graph_->clearSignalChain();
-                done.set_value();
+                done->set_value();
             });
 
             if (future.wait_for (std::chrono::seconds (5)) == std::future_status::timeout)
@@ -1618,26 +1691,22 @@ private:
         // ----- recording.start -----
         if (method == "recording.start")
         {
-            if (params.contains ("path"))
-            {
-                std::string dir = params["path"];
-                const MessageManagerLock mml;
-                CoreServices::setRecordingParentDirectory (String (dir));
-            }
+            std::string dir = params.contains ("path") ? params["path"].get<std::string>() : "";
+            bool createNew = params.contains ("createNewDirectory") && params["createNewDirectory"].get<bool>();
 
-            if (params.contains ("createNewDirectory") && params["createNewDirectory"].get<bool>())
-            {
-                const MessageManagerLock mml;
-                CoreServices::createNewRecordingDirectory();
-            }
+            auto done = std::make_shared<std::promise<void>>();
+            auto future = done->get_future();
 
-            std::promise<void> done;
-            auto future = done.get_future();
-
-            MessageManager::callAsync ([&done]
+            MessageManager::callAsync ([done, dir, createNew]
             {
+                if (! dir.empty())
+                    CoreServices::setRecordingParentDirectory (String (dir));
+
+                if (createNew)
+                    CoreServices::createNewRecordingDirectory();
+
                 CoreServices::setRecordingStatus (true);
-                done.set_value();
+                done->set_value();
             });
 
             if (future.wait_for (std::chrono::seconds (5)) == std::future_status::timeout)
@@ -1660,13 +1729,13 @@ private:
                 return true;
             }
 
-            std::promise<void> done;
-            auto future = done.get_future();
+            auto done = std::make_shared<std::promise<void>>();
+            auto future = done->get_future();
 
-            MessageManager::callAsync ([&done]
+            MessageManager::callAsync ([done]
             {
                 CoreServices::setRecordingStatus (false);
-                done.set_value();
+                done->set_value();
             });
 
             if (future.wait_for (std::chrono::seconds (5)) == std::future_status::timeout)
@@ -1740,8 +1809,28 @@ private:
                 return false;
             }
 
+            if (! params["text"].is_string())
+            {
+                error = { { "code", -32602 }, { "message", "Param 'text' must be a string" } };
+                return false;
+            }
+
             std::string text = params["text"];
-            graph_->broadcastMessage (String (text));
+
+            auto done = std::make_shared<std::promise<void>>();
+            auto future = done->get_future();
+
+            MessageManager::callAsync ([this, text, done]
+            {
+                graph_->broadcastMessage (String (text));
+                done->set_value();
+            });
+
+            if (future.wait_for (std::chrono::seconds (5)) == std::future_status::timeout)
+            {
+                error = { { "code", -32000 }, { "message", "Timeout sending message" } };
+                return false;
+            }
 
             result["status"] = "sent";
             return true;

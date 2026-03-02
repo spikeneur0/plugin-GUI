@@ -11,6 +11,7 @@ Edit paths below.
 """
 
 import spikeinterface.core as sc
+from spikeinterface.exporters import export_to_phy
 from pathlib import Path
 
 # ============================================================
@@ -22,7 +23,7 @@ PHY_OUTPUT = r"C:\data\experiment1\phy"
 
 def main():
     print("Loading SortingAnalyzer...")
-    analyzer = sc.load_sorting_analyzer(ANALYZER_PATH)
+    analyzer = sc.load(ANALYZER_PATH)
 
     print(f"  {len(analyzer.sorting.get_unit_ids())} units")
 
@@ -35,7 +36,7 @@ def main():
 
     # Export to Phy
     print(f"\nExporting to Phy format: {PHY_OUTPUT}")
-    sc.export_to_phy(
+    export_to_phy(
         analyzer,
         output_folder=PHY_OUTPUT,
         copy_binary=True,

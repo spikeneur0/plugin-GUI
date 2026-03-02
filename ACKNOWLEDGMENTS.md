@@ -43,7 +43,7 @@ https://github.com/DeepLabCut/DeepLabCut-live
 
 **OPETH** (GPL-3.0) — ZeroMQ bridge architecture reference
 for Open Ephys to Python data streaming
-https://github.com/open-ephys-plugins/zmq-interface
+https://github.com/NeuroEngLabTAU/OPETH
 
 ## Data Standards
 

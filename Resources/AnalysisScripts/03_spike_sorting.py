@@ -9,7 +9,7 @@ Supports multiple sorters via SpikeInterface:
 Edit RECORDING_PATH and SORTER below.
 """
 
-import spikeinterface.extractors as se
+import spikeinterface.core as sc
 import spikeinterface.sorters as ss
 from pathlib import Path
 
@@ -23,7 +23,7 @@ SORTER = "mountainsort5"  # Options: "kilosort4", "mountainsort5", "spykingcircu
 
 def main():
     print(f"Loading preprocessed recording from: {RECORDING_PATH}")
-    recording = se.read_binary_folder(RECORDING_PATH)
+    recording = sc.load(RECORDING_PATH)
     print(
         f"  {recording.get_num_channels()} channels, "
         f"{recording.get_sampling_frequency()} Hz, "
