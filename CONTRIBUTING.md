@@ -1,50 +1,129 @@
-# Contributing to the Open Ephys GUI
+# Contributing to SNAP
 
-## Overview
+SNAP (Spike Neuro Acquisition Platform) is a GPL-3.0 fork of the
+[Open Ephys GUI](https://github.com/open-ephys/plugin-GUI). Contributions
+are welcome — bug reports, feature requests, documentation fixes, and code
+changes alike.
 
-The Open Ephys GUI has been collaboratively developed by scientists since 2011. The original work was done in the [GUI repository](https://github.com/open-ephys/GUI), but we migrated to the [plugin-GUI](https://github.com/open-ephys/plugin-GUI) after upgrading the software to use a plugin architecture.
+## GPL-3.0 Obligations
 
-We welcome any and all contributions, no matter how small! If you'd like to get involved but aren't sure where to start, feel free to email info@open-ephys.org.
+SNAP is licensed under the GNU General Public License v3.0. By submitting a
+pull request you agree that your contribution will be released under the same
+license. All source files must retain the GPL-3.0 header and include fork
+attribution where the original Open Ephys copyright applies.
 
-The following are common ways you can help:
+## Reporting Bugs
 
-1. [Reporting bugs](#reporting-bugs)
-2. [Suggesting enhancements](#suggesting-enhancements)
-3. [Updating the documentation](#updating-the-documentation)
-4. [Building a new plugin](#building-a-new-plugin)
-5. [Updating the host application](#updating-the-host-application)
+[Open an issue](https://github.com/spikeneuro/snap/issues) with:
 
-## Reporting bugs
+- SNAP version (shown in the bottom-right of the Graph tab)
+- Operating system and version
+- Steps to reproduce, expected vs. actual behaviour
+- Any relevant log output or screenshots
 
-If you observe some unexpected behavior with the GUI, please [submit an issue on GitHub](https://github.com/open-ephys/plugin-GUI/issues). This is the easiest way for us to keep track of things that need to be fixed. 
+## Building from Source
 
-When you submit an issue, make sure to include what version of the GUI you're using (visible in the lower right of the "Graph" tab), and what operating system you're running it on.
+### Prerequisites
 
-## Suggesting enhancements
+| Platform | Toolchain |
+|----------|-----------|
+| Windows  | Visual Studio 2019+ with C++ Desktop workload |
+| macOS    | Xcode 12+ command-line tools |
+| Linux    | GCC 9+ / Clang 10+, plus JUCE dependencies (see below) |
 
-If there's a missing feature that would help your science, feel free to [create an issue](https://github.com/open-ephys/plugin-GUI/issues) describing what you'd like to see. There's no guarantee that we'll be able to make the changes you request, but it's always helpful to know what people feel are the most important limitations of the current application.
+Linux packages (Ubuntu/Debian):
 
-We are keeping track of our current development plans using [GitHub projects](https://github.com/open-ephys/plugin-GUI/projects). Be sure to read through the list of projects before suggesting something new.
+```bash
+sudo apt install build-essential cmake libfreetype6-dev \
+  libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev \
+  libasound2-dev freeglut3-dev libcurl4-openssl-dev
+```
 
-## Updating the documentation
+### Build Steps
 
-The GUI's documentation is hosted on the [GitHub](https://github.com/open-ephys/gui-docs). If you'd like to edit the documentation, just fork this repository and submit a pull request to the `main` branch. You can also [open an issue](https://github.com/open-ephys/gui-docs/issues) in the documentation repository to recommend a fix.
+```bash
+# Clone the repository
+git clone https://github.com/spikeneuro/snap.git
+cd snap
 
-## Building a new plugin
+# CMake requires building inside the Build/ directory
+cd Build
+cmake -G "Unix Makefiles" ..    # or "Visual Studio 16 2019" on Windows
+cmake --build . --config Release
+```
 
-The recommended way to add new features to the GUI is by building a new plugin. Before you start developing a new plugin, you should read through the [Developer Guide](https://open-ephys.github.io/gui-docs/Developer-Guide/index.html) as well as the [plugin development tutorial](https://open-ephys.github.io/gui-docs/Tutorials/How-To-Make-Your-Own-Plugin.html).
+The resulting binary is placed in `Build/Release/` (or `Build/Debug/`).
 
-Each year, we select a number of plugins to make available to the community via the GUI's Plugin Installer. If you've built a plugin that you like to release to a wider audience, please get in touch with via info@open-ephys.org!
+### Python SDK (snap-neuro)
 
-## Updating the main repository
+```bash
+cd Resources/PythonSDK
+pip install -e ".[dev]"   # editable install
+python -c "from snap.client import SNAPClient; print('OK')"
+```
 
-If you'd like to make changes to the code found in this repository, please [open an issue](https://github.com/open-ephys/plugin-GUI/issues) that describes what you're working on. Then, edit the code in your [fork](https://help.github.com/en/github/getting-started-with-github/fork-a-repo) of the `plugin-GUI` repository. Once your changes are ready, please submit a pull request to the `development` branch, where we stage all changes before each new release.
+## Coding Conventions
 
-We adhere to the following development cycle:
-* New code is merged into the `development` branch
-* 2-3 weeks prior to a new release, the `development` branch is merged into `testing`, to allow users to test out any features that have been added
-* Once testing is complete, the `testing` branch is merged into `main`, and the pre-compiled binaries are updated
+### C++ (JUCE / Core Application)
 
-We do not have a predefined release schedule. You can expect releases that include new features to be made every 2-3 months; if there are any critical bug fixes, those will be included in a patch release.
+- **Standard:** C++17
+- **Style:** Allman braces, 4-space indentation (matching JUCE convention)
+- **Thread safety:** Use `MessageManager::callAsync` or the shared-ptr
+  promise/future pattern for anything that touches the signal chain:
+  ```cpp
+  auto done = std::make_shared<std::promise<json>>();
+  MessageManager::callAsync([done, accessClass]() {
+      // work on message thread
+      done->set_value(result);
+  });
+  json result = done->get_future().get();
+  ```
+- **No raw `new`:** Prefer `std::unique_ptr`, `std::shared_ptr`, or JUCE
+  `ScopedPointer` / `OwnedArray`.
+- **Frozen directories:** Do **not** modify files in `Source/Processors/` or
+  `Source/Plugins/Headers/` unless explicitly approved. These track upstream
+  Open Ephys and modifications create merge conflicts.
 
+### Python (SDK & Analysis Scripts)
 
+- **Standard:** Python >= 3.9
+- **Style:** PEP 8, 4-space indentation
+- **Type hints:** Encouraged for public API methods
+- **Imports:** stdlib → third-party → local, separated by blank lines
+
+### Adding a JSON-RPC Method
+
+1. Add the handler lambda in `OpenEphysHttpServer.h` inside `dispatchRpcMethod()`
+2. Use the shared-ptr promise/future pattern for message-thread dispatch
+3. Validate parameter types before use (`params["key"].is_string()`, etc.)
+4. Return a JSON object on success; throw or return a JSON-RPC error on failure
+5. Document the method in `docs/api-reference.md`
+6. Add a corresponding `SNAPClient` method in `Resources/PythonSDK/snap/client.py`
+7. Update `docs/python-sdk.md`
+
+### Adding a Plugin
+
+Follow the [Open Ephys Developer Guide](https://open-ephys.github.io/gui-docs/Developer-Guide/index.html)
+and the [plugin tutorial](https://open-ephys.github.io/gui-docs/Tutorials/How-To-Make-Your-Own-Plugin.html).
+SNAP uses the same plugin API as Open Ephys GUI, so existing OE plugins are
+compatible.
+
+### Adding an Analysis Script
+
+Place new scripts in `Resources/AnalysisScripts/` with a numbered prefix
+(e.g., `06_my_analysis.py`). Use SpikeInterface >= 0.101 APIs — see
+`docs/spikeinterface-guide.md` for the current conventions.
+
+## Pull Request Workflow
+
+1. Fork the repository and create a feature branch from `main`
+2. Keep commits focused — one logical change per commit
+3. Run the build and verify no regressions
+4. Open a PR against `main` with a clear description of what and why
+5. Address review feedback; maintainers may squash-merge
+
+## Contact
+
+- Issues: [GitHub Issues](https://github.com/spikeneuro/snap/issues)
+- Email: support@spikeneuro.com
+- Website: [spikeneuro.com](https://spikeneuro.com)

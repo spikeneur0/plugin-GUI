@@ -1,8 +1,18 @@
+import re
+from pathlib import Path
+
 from setuptools import setup, find_packages
+
+# Single source of truth: snap/__init__.py
+_version = re.search(
+    r'^__version__\s*=\s*["\']([^"\']+)["\']',
+    Path(__file__).parent.joinpath("snap", "__init__.py").read_text(),
+    re.M,
+).group(1)
 
 setup(
     name="snap-neuro",
-    version="0.1.0",
+    version=_version,
     description="Python SDK for SNAP (Spike Neuro Acquisition Platform) remote control",
     author="Spike Neuro",
     author_email="support@spikeneuro.com",
