@@ -54,6 +54,14 @@ Between 2014 and 2019, the support efforts of [Aarón Cuevas López](https://git
 
 Since 2019, the support efforts of [Pavel Kulik](https://github.com/medengineer) and [Anjal Doshi](https://github.com/anjaldoshi) have been funded by a [BRAIN Initiative U24 Award](https://reporter.nih.gov/project-details/9645567) and a [BRAIN Initiative U01 Award](https://reporter.nih.gov/project-details/10731991) to the Allen Institute.
 
+## Documentation
+
+Developer documentation is available in the [`docs/`](docs/README.md) directory:
+
+- [**API Reference**](docs/api-reference.md) — JSON-RPC 2.0 and REST API for remote control
+- [**Python SDK**](docs/python-sdk.md) — `snap-neuro` package for scripted experiments
+- [**SpikeInterface Guide**](docs/spikeinterface-guide.md) — End-to-end analysis: preprocessing, spike sorting, quality metrics, Phy export
+
 ## How to contribute
 
 We welcome bug reports, feature recommendations, pull requests, and plugins from the community. For more information, see [Contributing to the Open Ephys GUI](CONTRIBUTING.md).
